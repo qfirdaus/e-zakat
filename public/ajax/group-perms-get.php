@@ -1,0 +1,79 @@
+<?php
+// ajax/group-perms-get.php
+declare(strict_types=1);
+require_once __DIR__ . '/../includes/init.php';
+require_login();
+require_once __DIR__ . '/_helpers.php';
+header('Content-Type: application/json; charset=utf-8');
+
+try{
+  $db = Database::getInstance('mysql')->getConnection();
+  ensureAjaxGroupManagePermission($db);
+
+  $gid = isset($_GET['groupID']) ? (int)$_GET['groupID'] : 0;
+  if ($gid <= 0) { http_response_code(400); echo json_encode(['error'=>true,'message'=>'groupID tidak sah'], JSON_UNESCAPED_UNICODE); exit; }
+  
+  // Rate limiting: max 30 requests per 60 seconds (read operation)
+  if (!checkRateLimit('group_perms_get', 30, 60)) {
+    http_response_code(429);
+    echo json_encode(['error'=>true,'message'=>'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE); exit;
+  }
+  
+  // Check cache (30 min TTL)
+  $cacheKey = 'group_perms_' . $gid . '_' . ($_SESSION['lang'] ?? 'ms');
+  $cached = GroupDataCache::get($cacheKey, 1800);
+  if ($cached !== null) {
+    header('X-Cache: HIT');
+    echo json_encode($cached, JSON_UNESCAPED_UNICODE);
+    exit;
+  }
+
+  $lang = $_SESSION['lang'] ?? 'ms';
+    // Only support 'ms' and 'en' — zh/ta columns removed from schema
+    if (!in_array(strtolower($lang), ['ms','en'], true)) { $lang = 'ms'; }
+
+  $stmt = $db->prepare("SELECT f_groupID, f_groupKod, f_groupName, COALESCE(f_modulAccess,'') AS f_modulAccess, COALESCE(f_menuAccess,'') AS f_menuAccess FROM tbl_m_group WHERE f_groupID=:g LIMIT 1");
+  $stmt->execute([':g'=>$gid]);
+  $grp = $stmt->fetch(PDO::FETCH_ASSOC);
+  if (!$grp){ echo json_encode(['error'=>true,'message'=>'Kumpulan tidak ditemui.']); exit; }
+
+  $toInts = function(string $csv){ $out=[]; foreach (explode(',', $csv) as $v){ $v=trim($v); if ($v!=='' && ctype_digit($v)) $out[]=(int)$v; } return array_values(array_unique($out)); };
+  $modulIDs = $toInts($grp['f_modulAccess']);
+  $menuIDs  = $toInts($grp['f_menuAccess']);
+
+    // Fetch modules (only ms + en supported)
+    $mods = $db->query(
+      "SELECT f_modulID AS id, COALESCE(NULLIF(f_modulName_{$lang}, ''), NULLIF(f_modulName_ms,''), NULLIF(f_modulName_en,''), CONCAT('Modul ', f_modulID)) AS nama FROM tbl_m_modul ORDER BY COALESCE(f_order, 99999), f_modulID ASC"
+    )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+  $nameColMenu = "f_menuName_{$lang}";
+    // Fetch menus — only ms + en columns exist
+    $menus = $db->query(
+      "SELECT f_menuID AS id, f_modulID AS modulID, COALESCE(NULLIF(" . $nameColMenu . ",''), NULLIF(f_menuName_ms,''), NULLIF(f_menuName_en,''), CONCAT('Menu ', f_menuID)) AS nama, COALESCE(f_path,'') AS path FROM tbl_m_menu ORDER BY f_modulID, COALESCE(f_order,99999), f_menuID"
+    )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+  $byMod = [];
+  foreach($menus as $m){
+    $mid = (int)$m['modulID'];
+    if (!isset($byMod[$mid])) $byMod[$mid]=[];
+    $byMod[$mid][] = ['id'=>(int)$m['id'], 'nama'=>$m['nama'], 'path'=>($m['path']!==''?$m['path']:null)];
+  }
+
+  $result = [
+    'error'=>false,
+    'group'=>['id'=>(int)$grp['f_groupID'],'kod'=>$grp['f_groupKod'],'nama'=>$grp['f_groupName']],
+    'modulIDs'=>$modulIDs,
+    'menuIDs'=>$menuIDs,
+    'modules'=>$mods,
+    'menusByModul'=>$byMod
+  ];
+  
+  // Store in cache
+  GroupDataCache::set($cacheKey, $result);
+  header('X-Cache: MISS');
+  echo json_encode($result, JSON_UNESCAPED_UNICODE);
+
+} catch(Throwable $e){
+  http_response_code(500);
+  echo json_encode(['error'=>true,'message'=>'Ralat server: '.$e->getMessage()], JSON_UNESCAPED_UNICODE);
+}

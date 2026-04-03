@@ -1,0 +1,123 @@
+/**
+ * Shared utilities untuk kumpulan-pengguna.php
+ */
+
+// =========================================================
+// 🔧 KONFIG: Base path detection
+// =========================================================
+const GroupUtils = {
+  // Base path projek yang betul di semua environment
+  getBasePath() {
+    return document.querySelector('meta[name="base-path"]')?.getAttribute('content') ||
+           (location.pathname.replace(/\/(pages|ajax)(\/.*)?$/, '') || '');
+  },
+  
+  getAjaxBase() {
+    const base = this.getBasePath();
+    return (base || '') + '/ajax/';
+  },
+  
+  getCSRF() {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  },
+  
+  hasDataTable() {
+    return !!(window.jQuery && jQuery.fn && jQuery.fn.DataTable);
+  },
+  
+  // Escape HTML
+  esc(s) {
+    return (s || '').toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+  
+  // Build API URL
+  apiUrl(file, params) {
+    const u = new URL(this.getAjaxBase() + file, window.location.origin);
+    if (params && typeof params === 'object') {
+      Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, String(v)));
+    }
+    u.searchParams.set('_', Date.now()); // cache-bust
+    return u.toString();
+  },
+  
+  // Safe JSON fetch
+  async fetchJSONSafe(url, opts) {
+    const r = await fetch(url, Object.assign({ headers: { 'Accept': 'application/json' } }, opts || {}));
+    const txt = await r.text();
+    try {
+      return JSON.parse(txt);
+    } catch (e) {
+      const snippet = txt.slice(0, 240).replace(/\s+/g, ' ').trim();
+      throw new Error('Server did not return JSON. Preview: ' + snippet);
+    }
+  },
+  
+  // Modal helpers
+  ensureInBody(el) {
+    if (!el) return;
+    if (el.parentElement !== document.body) {
+      document.body.appendChild(el);
+    }
+  },
+  
+  getModal(el) {
+    if (!el) return null;
+    this.ensureInBody(el);
+    const B = window.bootstrap && bootstrap.Modal ? bootstrap.Modal : null;
+    return B ? B.getOrCreateInstance(el, { backdrop: true, focus: true, keyboard: true }) : null;
+  },
+  
+  showModalSafe(el) {
+    const M = window.bootstrap && bootstrap.Modal ? bootstrap.Modal : null;
+    if (!M || !el) return false;
+    this.ensureInBody(el);
+    M.getOrCreateInstance(el, { backdrop: true, focus: true, keyboard: true }).show();
+    return true;
+  },
+  
+  // Normalize path
+  normalizePath(href) {
+    if (!href) return '';
+    try {
+      const a = document.createElement('a');
+      a.href = href;
+      const p = (a.pathname || href).toLowerCase();
+      const seg = p.split('/').filter(Boolean);
+      const base = seg.length ? seg[seg.length - 1] : p;
+      return base.split('?')[0].split('#')[0];
+    } catch (_) {
+      const s = String(href).toLowerCase();
+      return s.split('/').pop().split('?')[0].split('#')[0];
+    }
+  }
+};
+
+// Setup modal stacking
+document.addEventListener('show.bs.modal', function (e) {
+  const openCount = document.querySelectorAll('.modal.show').length;
+  const zBase = 1060 + (openCount * 20);
+  e.target.style.zIndex = zBase;
+  setTimeout(() => {
+    document.querySelectorAll('.modal-backdrop:not(.modal-stack)').forEach(bd => {
+      bd.style.zIndex = zBase - 1;
+      bd.classList.add('modal-stack');
+    });
+  }, 0);
+});
+
+// Export untuk global access
+window.GroupUtils = GroupUtils;
+
+
+
+
+
+
+
+
+

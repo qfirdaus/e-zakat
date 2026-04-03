@@ -1,0 +1,52 @@
+<?php
+// ajax/menu-get.php
+declare(strict_types=1);
+require_once __DIR__ . '/../includes/init.php';
+require_login();
+require_once __DIR__ . '/_helpers.php';
+header('Content-Type: application/json; charset=UTF-8');
+
+$menuID = isset($_GET['menuID']) ? (int)$_GET['menuID'] : 0;
+$lang   = $_SESSION['lang'] ?? 'ms';
+
+// Rate limiting: max 30 requests per 60 seconds (read operation)
+if (!checkRateLimit('menu_get', 30, 60)) {
+  http_response_code(429);
+  echo json_encode(['error' => true, 'message' => 'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE);
+  exit;
+}
+
+try {
+  if ($menuID <= 0) throw new Exception('Parameter tidak lengkap.');
+
+  $pdo = Database::getInstance('mysql')->getConnection();
+
+  // Butiran menu (nama ikut bahasa + semua varian untuk edit)
+  $menuStmt = $pdo->prepare(
+    "SELECT f_menuID, f_modulID, f_path, f_flag, f_order,\n" .
+    "       COALESCE(f_domain,'SHARED') AS f_domain,\n" .
+    "       COALESCE(f_show_staff_only,1) AS f_show_staff_only,\n" .
+    "       COALESCE(f_menuName_{$lang}, f_menuName_ms, f_menuName_en) AS menuName,\n" .
+    "       f_menuName_ms, f_menuName_en\n" .
+    "FROM tbl_m_menu\n" .
+    "WHERE f_menuID = ?\n" .
+    "LIMIT 1"
+  );
+  $menuStmt->execute([$menuID]);
+  $menu = $menuStmt->fetch(PDO::FETCH_ASSOC);
+  if (!$menu) throw new Exception('Menu tidak ditemui.');
+
+  // Senarai modul (nama ikut bahasa)
+  $modStmt = $pdo->query("
+    SELECT f_modulID,
+           COALESCE(f_modulName_$lang, f_modulName_ms, f_modulName_en) AS modulName
+    FROM tbl_m_modul
+    ORDER BY COALESCE(f_order, 99999), f_modulID
+  ");
+  $moduls = $modStmt->fetchAll(PDO::FETCH_ASSOC);
+
+  echo json_encode(['ok'=>true, 'menu'=>$menu, 'moduls'=>$moduls], JSON_UNESCAPED_UNICODE);
+} catch (Throwable $e) {
+  http_response_code(400);
+  echo json_encode(['error'=>true, 'message'=>$e->getMessage()], JSON_UNESCAPED_UNICODE);
+}

@@ -1,0 +1,3491 @@
+<?php
+// pages/kumpulan-pengguna.php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../includes/init.php';
+require_login();
+require_once __DIR__ . '/../ajax/_helpers.php';
+require_once __DIR__ . '/../classes/Database.php';
+require_once __DIR__ . '/../classes/SystemConfigConstants.php';
+
+$pdoPerm = Database::getInstance('mysql')->getConnection();
+ensurePageGroupManagePermission($pdoPerm);
+
+require_once __DIR__ . '/../controllers/GroupController.php';
+$controller    = new GroupController();
+
+$lang          = $controller->lang ?? 'ms';
+$profile       = $controller->profile ?? [];
+$senaraiGroup  = $controller->senaraiGroup ?? [];
+$version       = (string)($_ENV['APP_ASSET_VER'] ?? date('ymdHis'));
+
+// UI permission guard (use existing backend helper)
+$canManageGroups = false;
+try {
+  $canManageGroups = hasGroupManagePermission($pdoPerm);
+} catch (Throwable $e) {
+  $canManageGroups = false;
+}
+$permDisabledAttr = $canManageGroups ? '' : 'disabled aria-disabled="true"';
+$permDisabledClass = $canManageGroups ? '' : ' disabled';
+
+// helper escape
+function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+
+$PAGE_TITLE = (string)__('userGroup_page_title');
+
+// CSRF
+if (empty($_SESSION['csrf_token'])) {
+  $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+}
+$csrf = $_SESSION['csrf_token'];
+
+// Default order for new module: max(f_order) + 1
+$nextModuleOrder = 1;
+try {
+  $pdoOrder = Database::getInstance('mysql')->getConnection();
+  $nextStmt = $pdoOrder->query("SELECT COALESCE(MAX(f_order), 0) + 1 AS next_order FROM tbl_m_modul");
+  $nextVal = (int)($nextStmt->fetchColumn() ?: 1);
+  $nextModuleOrder = ($nextVal > 0) ? $nextVal : 1;
+} catch (Throwable $e) {
+  $nextModuleOrder = 1;
+}
+
+$moduleIconOptions = SystemConfigConstants::ALLOWED_SIDEBAR_ICONS;
+$moduleIconOptions = array_values(array_unique(array_filter(array_map(
+  static fn($icon): string => trim((string)$icon),
+  $moduleIconOptions
+))));
+$moduleIconCategoryMap = [
+  'modul_icon_group_general' => [
+    'ri-folder-fill',
+    'ri-folder-line',
+    'ri-apps-2-fill',
+    'ri-apps-2-line',
+    'ri-layout-grid-fill',
+    'ri-layout-grid-line',
+    'ri-home-fill',
+    'ri-home-line',
+    'ri-home-office-fill',
+    'ri-home-office-line',
+    'ri-function-fill',
+    'ri-function-line',
+  ],
+  'modul_icon_group_users' => [
+    'ri-user-fill',
+    'ri-user-line',
+    'ri-user-settings-fill',
+    'ri-user-settings-line',
+    'ri-user-star-fill',
+    'ri-user-star-line',
+    'ri-group-fill',
+    'ri-group-line',
+    'ri-team-fill',
+    'ri-team-line',
+    'ri-admin-fill',
+    'ri-admin-line',
+  ],
+  'modul_icon_group_system' => [
+    'ri-dashboard-fill',
+    'ri-dashboard-line',
+    'ri-settings-fill',
+    'ri-settings-line',
+    'ri-tools-fill',
+    'ri-tools-line',
+    'ri-sliders-fill',
+    'ri-sliders-line',
+    'ri-server-fill',
+    'ri-server-line',
+    'ri-hard-drive-fill',
+    'ri-hard-drive-line',
+  ],
+  'modul_icon_group_files' => [
+    'ri-file-list-fill',
+    'ri-file-list-line',
+    'ri-file-settings-fill',
+    'ri-file-settings-line',
+    'ri-file-copy-fill',
+    'ri-file-copy-line',
+    'ri-file-paper-2-fill',
+    'ri-file-paper-2-line',
+    'ri-file-text-fill',
+    'ri-file-text-line',
+    'ri-article-fill',
+    'ri-article-line',
+    'ri-book-fill',
+    'ri-book-line',
+    'ri-book-open-fill',
+    'ri-book-open-line',
+    'ri-book-2-fill',
+    'ri-book-2-line',
+    'ri-questionnaire-fill',
+    'ri-questionnaire-line',
+    'ri-survey-fill',
+    'ri-survey-line',
+    'ri-task-fill',
+    'ri-task-line',
+    'ri-todo-fill',
+    'ri-todo-line',
+    'ri-list-check',
+    'ri-list-check-2',
+  ],
+  'modul_icon_group_data' => [
+    'ri-database-fill',
+    'ri-database-line',
+    'ri-folder-chart-fill',
+    'ri-folder-chart-line',
+    'ri-folder-user-fill',
+    'ri-folder-user-line',
+    'ri-chart-fill',
+    'ri-chart-line',
+    'ri-bar-chart-fill',
+    'ri-bar-chart-line',
+    'ri-bar-chart-box-fill',
+    'ri-bar-chart-box-line',
+    'ri-line-chart-fill',
+    'ri-line-chart-line',
+    'ri-pie-chart-fill',
+    'ri-pie-chart-line',
+    'ri-calendar-fill',
+    'ri-calendar-line',
+    'ri-calendar-check-fill',
+    'ri-calendar-check-line',
+    'ri-time-fill',
+    'ri-time-line',
+  ],
+  'modul_icon_group_security' => [
+    'ri-shield-fill',
+    'ri-shield-line',
+    'ri-shield-user-fill',
+    'ri-shield-user-line',
+    'ri-lock-fill',
+    'ri-lock-line',
+    'ri-lock-password-fill',
+    'ri-lock-password-line',
+    'ri-key-fill',
+    'ri-key-line',
+    'ri-notification-fill',
+    'ri-notification-line',
+    'ri-notification-badge-fill',
+    'ri-notification-badge-line',
+  ],
+  'modul_icon_group_communication' => [
+    'ri-mail-fill',
+    'ri-mail-line',
+    'ri-inbox-fill',
+    'ri-inbox-line',
+    'ri-send-plane-fill',
+    'ri-send-plane-line',
+    'ri-links-fill',
+    'ri-links-line',
+    'ri-link-unlink-m',
+    'ri-global-fill',
+    'ri-global-line',
+    'ri-earth-fill',
+    'ri-earth-line',
+    'ri-building-fill',
+    'ri-building-line',
+    'ri-building-2-fill',
+    'ri-building-2-line',
+    'ri-briefcase-fill',
+    'ri-briefcase-line',
+    'ri-award-fill',
+    'ri-award-line',
+    'ri-medal-fill',
+    'ri-medal-line',
+    'ri-wallet-3-fill',
+    'ri-wallet-3-line',
+    'ri-bank-card-fill',
+    'ri-bank-card-line',
+    'ri-price-tag-3-fill',
+    'ri-price-tag-3-line',
+    'ri-logout-box-r-fill',
+    'ri-logout-box-r-line',
+    'ri-arrow-right-s-fill',
+    'ri-arrow-right-s-line',
+  ],
+];
+$moduleIconGroups = [];
+$usedModuleIcons = [];
+foreach ($moduleIconCategoryMap as $groupKey => $icons) {
+  $filtered = [];
+  foreach ($icons as $iconClass) {
+    if (!in_array($iconClass, $moduleIconOptions, true)) {
+      continue;
+    }
+    $filtered[] = $iconClass;
+    $usedModuleIcons[$iconClass] = true;
+  }
+  if ($filtered !== []) {
+    $moduleIconGroups[] = [
+      'label' => (string)__($groupKey),
+      'icons' => array_values(array_unique($filtered)),
+    ];
+  }
+}
+$remainingModuleIcons = array_values(array_filter(
+  $moduleIconOptions,
+  static fn(string $iconClass): bool => !isset($usedModuleIcons[$iconClass])
+));
+if ($remainingModuleIcons !== []) {
+  $moduleIconGroups[] = [
+    'label' => (string)__('modul_icon_group_more'),
+    'icons' => $remainingModuleIcons,
+  ];
+}
+
+// Add Module (POST, non-AJAX)
+$moduleFormData = [
+  'modulNameMs' => '',
+  'modulNameEn' => '',
+  'icon' => '',
+  'order' => (string)$nextModuleOrder,
+];
+$defaultModuleIcon = 'ri-folder-fill';
+$moduleFormOpen = false;
+$moduleSwal = null;
+
+if (!empty($_SESSION['module_add_flash']) && is_array($_SESSION['module_add_flash'])) {
+  $flash = $_SESSION['module_add_flash'];
+  unset($_SESSION['module_add_flash']);
+  $moduleSwal = [
+    'icon' => (string)($flash['icon'] ?? 'success'),
+    'title' => (string)($flash['title'] ?? ''),
+    'text' => (string)($flash['text'] ?? ''),
+  ];
+}
+
+$defaultModuleIcon = in_array($moduleFormData['icon'], $moduleIconOptions, true)
+  ? (string)$moduleFormData['icon']
+  : 'ri-folder-fill';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') === 'add_module') {
+  $moduleFormOpen = true;
+  $moduleFormData['modulNameMs'] = trim((string)($_POST['modulNameMs'] ?? ''));
+  $moduleFormData['modulNameEn'] = trim((string)($_POST['modulNameEn'] ?? ''));
+  $moduleFormData['icon'] = trim((string)($_POST['icon'] ?? ''));
+  $moduleFormData['order'] = trim((string)($_POST['order'] ?? ''));
+
+  $postedCsrf = (string)($_POST['csrf_token'] ?? '');
+  if ($postedCsrf === '' || !hash_equals((string)($_SESSION['csrf_token'] ?? ''), $postedCsrf)) {
+    $moduleSwal = [
+      'icon' => 'error',
+      'title' => (string)__('modul_ralat_title'),
+      'text' => (string)__('userGroup_error_unknown'),
+    ];
+  } elseif (!$canManageGroups) {
+    $moduleSwal = [
+      'icon' => 'error',
+      'title' => (string)__('modul_ralat_title'),
+      'text' => (string)__('userList_err_no_permission'),
+    ];
+  } elseif ($moduleFormData['modulNameMs'] === '') {
+    $moduleSwal = [
+      'icon' => 'warning',
+      'title' => (string)__('modul_ralat_title'),
+      'text' => (string)__('modul_ralat_wajib'),
+    ];
+  } else {
+    try {
+      $pdo = Database::getInstance('mysql')->getConnection();
+      $nameMs = $moduleFormData['modulNameMs'];
+      $nameEn = $moduleFormData['modulNameEn'];
+      $iconVal = in_array($moduleFormData['icon'], $moduleIconOptions, true)
+        ? $moduleFormData['icon']
+        : $defaultModuleIcon;
+
+      $dupSql = "
+        SELECT 1
+        FROM tbl_m_modul
+        WHERE LOWER(TRIM(f_modulName_ms)) = LOWER(TRIM(:name_ms_1))
+           OR LOWER(TRIM(f_modulName_en)) = LOWER(TRIM(:name_ms_2))
+      ";
+      $dupParams = [
+        ':name_ms_1' => $nameMs,
+        ':name_ms_2' => $nameMs,
+      ];
+      if ($nameEn !== '') {
+        $dupSql .= "
+           OR LOWER(TRIM(f_modulName_ms)) = LOWER(TRIM(:name_en_1))
+           OR LOWER(TRIM(f_modulName_en)) = LOWER(TRIM(:name_en_2))
+        ";
+        $dupParams[':name_en_1'] = $nameEn;
+        $dupParams[':name_en_2'] = $nameEn;
+      }
+      $dupSql .= " LIMIT 1";
+
+      $dupStmt = $pdo->prepare($dupSql);
+      $dupStmt->execute($dupParams);
+      $isDuplicate = (bool)$dupStmt->fetchColumn();
+
+      if ($isDuplicate) {
+        $moduleSwal = [
+          'icon' => 'error',
+          'title' => (string)__('modul_ralat_title'),
+          'text' => (string)__('modul_ralat_duplikat'),
+        ];
+      } else {
+        $pdo->beginTransaction();
+        $orderStmt = $pdo->query("SELECT COALESCE(MAX(f_order), 0) + 1 AS next_order FROM tbl_m_modul");
+        $orderVal = (int)($orderStmt->fetchColumn() ?: 1);
+        if ($orderVal <= 0) {
+          $orderVal = 1;
+        }
+
+        $ins = $pdo->prepare("
+          INSERT INTO tbl_m_modul (f_modulName_ms, f_modulName_en, f_icon, f_order)
+          VALUES (:name_ms, :name_en, :icon, :f_order)
+        ");
+        $ins->execute([
+          ':name_ms' => $nameMs,
+          ':name_en' => ($nameEn !== '' ? $nameEn : null),
+          ':icon' => $iconVal,
+          ':f_order' => $orderVal,
+        ]);
+        $newModuleId = (int)$pdo->lastInsertId();
+
+        if ($newModuleId > 0) {
+          $groups = $pdo->query("SELECT f_groupID, COALESCE(f_modulAccess, '') AS f_modulAccess FROM tbl_m_group FOR UPDATE")
+            ->fetchAll(PDO::FETCH_ASSOC) ?: [];
+          $updateGroupAccess = $pdo->prepare("UPDATE tbl_m_group SET f_modulAccess = :access WHERE f_groupID = :gid");
+
+          foreach ($groups as $groupRow) {
+            $groupId = (int)($groupRow['f_groupID'] ?? 0);
+            if ($groupId <= 0) {
+              continue;
+            }
+
+            $ids = array_values(array_filter(array_map(static function ($value): ?int {
+              $value = trim((string)$value);
+              return ctype_digit($value) ? (int)$value : null;
+            }, explode(',', (string)($groupRow['f_modulAccess'] ?? ''))), static fn($value) => $value !== null));
+
+            if (!in_array($newModuleId, $ids, true)) {
+              $ids[] = $newModuleId;
+            }
+
+            $updateGroupAccess->execute([
+              ':access' => implode(',', array_values(array_unique($ids))),
+              ':gid' => $groupId,
+            ]);
+          }
+        }
+
+        $pdo->commit();
+        clearGroupUiCaches();
+        GroupDataCache::clear('modul_list_');
+        clearSidebarNavigationCaches();
+
+        $_SESSION['module_add_flash'] = [
+          'icon' => 'success',
+          'title' => (string)__('modul_berjaya_title'),
+          'text' => (string)__('modul_berjaya_msg'),
+        ];
+        header('Location: ' . base_url('pages/kumpulan-pengguna.php'));
+        exit;
+      }
+    } catch (Throwable $e) {
+      if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+        $pdo->rollBack();
+      }
+      error_log('[kumpulan-pengguna:add-module] ' . $e->getMessage());
+      $moduleSwal = [
+        'icon' => 'error',
+        'title' => (string)__('modul_ralat_title'),
+        'text' => (string)__('userGroup_error_unknown'),
+      ];
+    }
+  }
+}
+?>
+<!DOCTYPE html>
+<html lang="<?= h($lang) ?>" data-bs-theme="<?= h($_SESSION['theme.layout'] ?? 'light') ?>">
+<head>
+  <?php include __DIR__ . '/../includes/head.php'; ?>
+
+  <meta name="csrf-token" content="<?= h($csrf) ?>">
+  <!-- ✅ Standard DataTables CSS (shared) -->
+  <link href="<?= base_url('assets/css/datatables-standard.css') ?>?v=<?= h($version ?? date('ymdHis')) ?>" rel="stylesheet">
+  <style>
+    .icon-btn { line-height:1; }
+
+    /* Kolum jadual kumpulan - use percentages to match requested layout */
+    table.table th.th-nowrap { white-space: nowrap; }
+    table.table th.th-color, table.table td.td-color { width: 4%; min-width: 46px; max-width: 56px; }
+    table.table th.th-mod,  table.table td.td-mod  { width: 10%; }
+    table.table th.th-menu, table.table td.td-menu { width: 10%; }
+    table.table th.th-grp,  table.table td.td-grp  { width: 10%; }
+    .group-color-cell { display: flex; justify-content: flex-end; }
+    .group-color-bar {
+      display: inline-block;
+      width: 40px;
+      height: 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.22);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    }
+    html[data-bs-theme="dark"] .group-color-bar { border-color: rgba(148, 163, 184, 0.55); }
+
+    /* Reorder view */
+    .modul-badge { font-size:.75rem; }
+    .menu-path { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:.775rem; opacity:.8; }
+    .menu-row { display:grid; grid-template-columns: 1fr auto; gap:.75rem; padding:.6rem 0; border-bottom:1px dashed var(--bs-border-color); }
+    .menu-row:last-child { border-bottom:0; }
+    .reorder-group .btn { padding:.25rem .55rem; }
+    .menu-row.saving { opacity:.6; pointer-events:none; }
+    .module-reorder-note {
+      font-size: .82rem;
+      color: #64748b;
+      margin-bottom: .9rem;
+    }
+    .module-drag-handle {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      background: rgba(148, 163, 184, 0.12);
+      cursor: grab;
+      flex: 0 0 auto;
+      margin-right: .75rem;
+      touch-action: none;
+      user-select: none;
+    }
+    .module-drag-handle:active { cursor: grabbing; }
+    .module-ordering .accordion-button {
+      display: flex;
+      align-items: center;
+    }
+    .module-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      width: 100%;
+    }
+    .module-title-main {
+      min-width: 0;
+    }
+    .module-inline-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      margin-right: 2.25rem;
+      position: relative;
+      z-index: 2;
+    }
+    .module-delete-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .32rem .62rem;
+      border-radius: 999px;
+      border: 1px solid rgba(239, 68, 68, 0.18);
+      background: rgba(239, 68, 68, 0.08);
+      color: #dc2626;
+      font-size: .76rem;
+      font-weight: 600;
+      line-height: 1;
+      cursor: pointer;
+      transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+      user-select: none;
+    }
+    .module-edit-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .32rem .62rem;
+      border-radius: 999px;
+      border: 1px solid rgba(37, 99, 235, 0.18);
+      background: rgba(37, 99, 235, 0.08);
+      color: #1d4ed8;
+      font-size: .76rem;
+      font-weight: 600;
+      line-height: 1;
+      cursor: pointer;
+      transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+      user-select: none;
+    }
+    .module-edit-chip:hover {
+      background: rgba(37, 99, 235, 0.14);
+      border-color: rgba(37, 99, 235, 0.3);
+      color: #1e40af;
+      transform: translateY(-1px);
+    }
+    .module-edit-chip:focus-visible {
+      outline: 2px solid rgba(37, 99, 235, 0.18);
+      outline-offset: 2px;
+    }
+    .module-edit-chip i {
+      font-size: .92rem;
+    }
+    .module-edit-text {
+      letter-spacing: .01em;
+    }
+    .module-delete-chip:hover {
+      background: rgba(239, 68, 68, 0.14);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #b91c1c;
+      transform: translateY(-1px);
+    }
+    .module-delete-chip:focus-visible {
+      outline: 2px solid rgba(220, 38, 38, 0.18);
+      outline-offset: 2px;
+    }
+    .module-delete-chip i {
+      font-size: .92rem;
+    }
+    .module-delete-text {
+      letter-spacing: .01em;
+    }
+    .module-ordering .accordion-button::after {
+      position: relative;
+      z-index: 1;
+      margin-left: .85rem;
+    }
+    .module-ordering .accordion-button.collapsed .module-inline-actions,
+    .module-ordering .accordion-button .module-inline-actions {
+      pointer-events: auto;
+    }
+    html[data-bs-theme="dark"] .module-delete-chip {
+      background: rgba(248, 113, 113, 0.12);
+      border-color: rgba(248, 113, 113, 0.18);
+      color: #fca5a5;
+    }
+    html[data-bs-theme="dark"] .module-delete-chip:hover {
+      background: rgba(248, 113, 113, 0.18);
+      border-color: rgba(248, 113, 113, 0.3);
+      color: #fecaca;
+    }
+    html[data-bs-theme="dark"] .module-edit-chip {
+      background: rgba(96, 165, 250, 0.14);
+      border-color: rgba(96, 165, 250, 0.2);
+      color: #bfdbfe;
+    }
+    html[data-bs-theme="dark"] .module-edit-chip:hover {
+      background: rgba(96, 165, 250, 0.2);
+      border-color: rgba(96, 165, 250, 0.34);
+      color: #dbeafe;
+    }
+    @media (max-width: 767.98px) {
+      .module-title-row {
+        gap: .7rem;
+      }
+      .module-inline-actions {
+        margin-right: 1.5rem;
+      }
+      .module-delete-text {
+        display: none;
+      }
+      .module-edit-text {
+        display: none;
+      }
+    }
+    .module-delete-btn {
+      flex: 0 0 auto;
+      align-self: center;
+      width: 2.2rem;
+      height: 2.2rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+    .module-ordering .accordion-item {
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+    .module-ordering .accordion-item.is-dragging {
+      opacity: .65;
+      transform: scale(.985);
+    }
+    .module-ordering .accordion-item.drop-before {
+      border-top: 3px solid #2563eb;
+    }
+    .module-ordering .accordion-item.drop-after {
+      border-bottom: 3px solid #2563eb;
+    }
+    .module-ordering.is-saving {
+      pointer-events: none;
+      opacity: .7;
+    }
+    body.module-dragging {
+      user-select: none;
+      cursor: grabbing;
+    }
+    html[data-bs-theme="dark"] .module-drag-handle {
+      background: rgba(148, 163, 184, 0.18);
+      color: #cbd5e1;
+    }
+
+    /* DataTable: top & bottom bars */
+    .dt-topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:.75rem; border-bottom:1px solid var(--bs-border-color); padding-bottom:.5rem; margin-bottom:.75rem;
+    }
+    .dt-topbar .left, .dt-topbar .right{ display:flex; align-items:center; gap:.5rem; }
+    .dt-topbar .right .form-control{ width:260px; max-width:100%; }
+    .dt-bottom-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:nowrap; gap:.5rem; }
+    @media (max-width:575.98px){ .dt-topbar{ flex-wrap:wrap; } .dt-topbar .right{ margin-left:auto; } }
+
+    /* Fix DataTables layout untuk groupTable - prevent horizontal scroll */
+    #groupTable_wrapper {
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100%;
+    }
+    
+    /* ✅ Table styling sama seperti senarai-pengguna.php */
+    #groupTable {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 14px 26px rgba(15,23,42,.08);
+      table-layout: fixed;
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+    }
+    #groupTable thead th {
+      background: linear-gradient(180deg, rgba(248,250,252,.96), rgba(241,245,249,.92));
+      border-bottom: 1px solid rgba(148,163,184,.16) !important;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #64748b;
+      font-weight: 700;
+      padding: 1rem 0.75rem;
+      border-top: none !important;
+      border-left: none !important;
+      border-right: none !important;
+    }
+    #groupTable thead th:first-child,
+    #groupTable tbody td:first-child {
+      text-align: center;
+    }
+    #groupTable tbody tr {
+      transition: background-color .16s ease, transform .16s ease;
+    }
+    #groupTable tbody tr:hover {
+      background: rgba(15,23,42,.018) !important;
+    }
+    #groupTable tbody td {
+        padding: .62rem .78rem;
+        border-top-color: rgba(148,163,184,.1) !important;
+        vertical-align: middle;
+        line-height: 1.28;
+      }
+    /* Dark theme support */
+    html[data-bs-theme="dark"] #groupTable thead th {
+      background: linear-gradient(180deg, rgba(30,41,59,.92), rgba(15,23,42,.95));
+      color: #cbd5e1;
+      border-bottom-color: rgba(255,255,255,.08) !important;
+    }
+    html[data-bs-theme="dark"] #groupTable tbody td {
+      border-top-color: rgba(255,255,255,.06) !important;
+    }
+    html[data-bs-theme="dark"] #groupTable tbody tr:hover {
+      background: rgba(148,163,184,.08) !important;
+    }
+    /* Remove stripline effect */
+    #groupTable tbody tr,
+    #groupTable tbody tr:nth-of-type(odd),
+    #groupTable tbody tr:nth-of-type(even) {
+      background-color: transparent !important;
+    }
+    #groupTable_wrapper .dataTables_length {
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      overflow: hidden;
+      flex-wrap: nowrap;
+      max-width: 100%;
+    }
+    #groupTable_wrapper .dataTables_length label {
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      margin-bottom: 0;
+      flex-wrap: nowrap;
+      gap: 0.5rem;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    #groupTable_wrapper .dataTables_length select {
+      margin: 0;
+      width: auto;
+      min-width: 70px;
+      max-width: 100px;
+      display: inline-block;
+    }
+    #groupTable_wrapper .dataTables_filter {
+      text-align: right;
+      margin-left: auto;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    #groupTable_wrapper .dataTables_filter label {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-bottom: 0;
+      width: 100%;
+      white-space: nowrap;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    #groupTable_wrapper .dataTables_filter input {
+        margin-left: 0.5rem;
+        width: auto;
+        min-width: 150px;
+        max-width: 250px;
+        height: 36px !important;
+        min-height: 36px !important;
+        line-height: 1.4 !important;
+      }
+    #groupTable_wrapper .dataTables_info {
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    #groupTable_wrapper .dataTables_paginate {
+      text-align: right;
+      margin-left: auto;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    #groupTable_wrapper .dataTables_paginate .pagination {
+      justify-content: flex-end;
+      margin-bottom: 0;
+      flex-wrap: nowrap;
+    }
+    #groupTable_wrapper .row {
+      margin-left: -0.75rem;
+      margin-right: -0.75rem;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    #groupTable_wrapper .row > [class*="col-"] {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        max-width: 100%;
+        overflow: hidden;
+      }
+    #groupTable_wrapper .row.mb-2 > .dt-top-left {
+        padding-left: 1.55rem !important;
+        position: relative !important;
+        top: 7px !important;
+      }
+    #groupTable_wrapper .dt-top-left {
+        padding-left: 1.55rem !important;
+      }
+    #groupTable_length {
+        margin-left: 0 !important;
+      }
+    #groupTable_length .dataTables_length,
+    #groupTable_length label {
+        padding-left: 0 !important;
+        margin-left: 0 !important;
+      }
+    #groupTable_wrapper .dt-top-left .dataTables_length,
+    #groupTable_wrapper .dt-top-left .dataTables_length label {
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+      }
+    #groupTable_wrapper .dt-bottom-row .dt-info-left,
+    #groupTable_wrapper .dt-bottom-row .dataTables_info {
+        padding-left: 1.55rem;
+      }
+    #groupTable_wrapper .dt-bottom-row > .dt-info-left {
+        padding-left: 1.2rem !important;
+        margin-left: 0 !important;
+      }
+    #groupTable_wrapper .dt-bottom-row > .dt-info-left .dataTables_info {
+        padding-left: 0 !important;
+        margin-left: 0 !important;
+      }
+    /* Fix bottom row layout */
+    #groupTable_wrapper .row.mt-3 {
+        display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    #groupTable_wrapper .row.mt-3 > [class*="col-md-5"] {
+      display: flex;
+      align-items: center;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    #groupTable_wrapper .row.mt-3 > [class*="col-md-7"] {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    /* Ensure table container doesn't overflow */
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    @media (max-width: 991.98px) {
+      .table-responsive {
+        overflow-x: auto;
+      }
+    }
+    @media (max-width: 767.98px) {
+      #groupTable_wrapper .dataTables_length,
+      #groupTable_wrapper .dataTables_filter {
+        margin-bottom: 0.75rem;
+      }
+      #groupTable_wrapper .dataTables_filter {
+        text-align: left;
+        margin-left: 0;
+      }
+      #groupTable_wrapper .dataTables_filter label {
+        justify-content: flex-start;
+      }
+      #groupTable_wrapper .dataTables_info,
+      #groupTable_wrapper .dataTables_paginate {
+        text-align: center;
+        margin-top: 0.5rem;
+      }
+      #groupTable_wrapper .row.mt-3 {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      #groupTable_wrapper .row.mt-3 > [class*="col-md-5"],
+      #groupTable_wrapper .row.mt-3 > [class*="col-md-7"] {
+        justify-content: center;
+        margin-top: 0.5rem;
+      }
+    }
+
+    /* Buang class lama yang tak digunakan */
+    #menuDT_wrapper .dt-top-right, #grpCnt .dt-top-right { display:none!important; }
+
+    /* Akses Kumpulan – kolum “Menu”: kecil & 1 baris */
+    #groupPermsDT th.col-menu, #groupPermsDT td.col-menu {
+      width: 140px; white-space: nowrap;
+    }
+
+    /* Akses Menu */
+    #aksesMenuModal .modal-dialog { max-width: 1180px; }
+    #aksesMenuModal .modal-content {
+      border: 1px solid rgba(148,163,184,.16);
+      overflow: hidden;
+    }
+    #aksesMenuModal .modal-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-bottom: none;
+    }
+    #aksesMenuModal .modal-subtitle {
+      background: rgba(102, 126, 234, 0.08);
+      border-bottom: 1px solid rgba(102, 126, 234, 0.12);
+      color: #4c63d2;
+    }
+    #aksesMenuModal .modal-body {
+      padding-top: 1rem;
+    }
+    #menuDT {
+      table-layout: fixed;
+    }
+    #menuDT thead th,
+    #menuDT tbody td {
+      vertical-align: top !important;
+    }
+    #menuDT thead th {
+      padding: .78rem .8rem;
+      font-size: .79rem;
+      letter-spacing: .04em;
+    }
+    #menuDT tbody td {
+      padding: .62rem .8rem;
+      font-size: .92rem;
+      line-height: 1.3;
+    }
+    #menuDT tbody .fw-semibold {
+      line-height: 1.25;
+    }
+    #menuDT th:nth-child(1), #menuDT td:nth-child(1) { width: 20%; text-align: left; }
+    #menuDT th:nth-child(2), #menuDT td:nth-child(2) { width: 20%; text-align: left; }
+    #menuDT th:nth-child(3), #menuDT td:nth-child(3) { width: 30%; text-align: left; }
+    #menuDT th.col-status, #menuDT td.col-status { width: 15%; white-space: nowrap; text-align: center; }
+    #menuDT th.col-actions, #menuDT td.col-actions { width: 15%; white-space: nowrap; text-align: center; }
+    #menuDT td:nth-child(3) .d-flex {
+      flex-wrap: nowrap !important;
+      overflow: hidden;
+      white-space: nowrap;
+      gap: .35rem !important;
+    }
+    #menuDT td:nth-child(3) .badge {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: .72rem;
+      padding: .32rem .58rem;
+    }
+    #menuDT .menu-domain-badge {
+      border: 1px solid rgba(148,163,184,.24);
+      font-weight: 700;
+      letter-spacing: .03em;
+    }
+    #menuDT .menu-domain-badge[data-domain="STAF"] {
+      background: rgba(59,130,246,.12);
+      color: #1d4ed8;
+      border-color: rgba(59,130,246,.28);
+    }
+    #menuDT .menu-domain-badge[data-domain="PELAJAR"] {
+      background: rgba(168,85,247,.12);
+      color: #7e22ce;
+      border-color: rgba(168,85,247,.28);
+    }
+    #menuDT .menu-domain-badge[data-domain="UMUM"] {
+      background: rgba(245,158,11,.14);
+      color: #b45309;
+      border-color: rgba(245,158,11,.28);
+    }
+    #menuDT .menu-domain-badge[data-domain="SHARED"] {
+      background: rgba(71,85,105,.1);
+      color: #334155;
+      border-color: rgba(100,116,139,.24);
+    }
+    #menuDT .menu-path-info {
+      text-decoration: none !important;
+      line-height: 1;
+      top: -1px;
+      position: relative;
+    }
+    #menuDT .menu-path-info i {
+      font-size: .95rem;
+    }
+    #menuDT .btn-sm {
+      padding: .24rem .46rem;
+      font-size: .69rem;
+    }
+    #menuDT .icon-btn {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    #menuDT td.col-status .btn {
+      min-width: 48px;
+      margin-right: .2rem !important;
+    }
+    #menuDT td.col-actions .icon-btn + .icon-btn {
+      margin-left: .18rem !important;
+    }
+
+    /* Multi-modal stacking */
+    .modal-backdrop.show + .modal-backdrop.show { z-index: 1065; }
+    .modal.show { z-index: 1055; }
+    .modal.show + .modal.show { z-index: 1070; }
+    .modal-backdrop.show {
+      opacity: .32;
+    }
+    .modal.show + .modal-backdrop.show,
+    .modal-backdrop.show + .modal-backdrop.show {
+      opacity: .16;
+    }
+
+    /* Professional SweetAlert */
+      .group-swal-popup {
+        border: 1px solid rgba(148, 163, 184, 0.18) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.22), 0 10px 30px rgba(15, 23, 42, 0.08) !important;
+        padding: 1.1rem 1.1rem 1rem !important;
+      }
+      .group-swal-container {
+        z-index: 20000 !important;
+      }
+      .group-swal-title {
+        font-size: 1.35rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.02em !important;
+      color: #0f172a !important;
+      margin-bottom: .35rem !important;
+    }
+    .group-swal-html,
+    .group-swal-text {
+      font-size: .96rem !important;
+      line-height: 1.65 !important;
+      color: #475569 !important;
+    }
+    .group-swal-confirm,
+    .group-swal-cancel {
+      min-width: 132px !important;
+      border-radius: 8px !important;
+      font-weight: 700 !important;
+      font-size: .94rem !important;
+      padding: .72rem 1.1rem !important;
+      box-shadow: none !important;
+    }
+    .group-swal-confirm {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    }
+    .group-swal-confirm:hover {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+    }
+    .group-swal-cancel {
+      background: #fff !important;
+      color: #334155 !important;
+      border: 1px solid rgba(148, 163, 184, 0.45) !important;
+    }
+    .group-swal-actions {
+      gap: .65rem !important;
+      margin-top: 1.2rem !important;
+    }
+    .group-swal-icon.swal2-success { border-color: rgba(34, 197, 94, 0.22) !important; }
+    .group-swal-icon.swal2-error { border-color: rgba(239, 68, 68, 0.22) !important; }
+    .group-swal-icon.swal2-warning { border-color: rgba(245, 158, 11, 0.24) !important; }
+    .group-swal-icon.swal2-info { border-color: rgba(59, 130, 246, 0.24) !important; }
+
+    /* Professional Modal Styling */
+      .modal-content {
+        border: none;
+        border-radius: 8px;
+        box-shadow: none !important;
+        outline: 0 !important;
+        filter: none !important;
+        overflow: hidden;
+      }
+      .modal,
+      .modal-dialog,
+      .modal-dialog-centered,
+      .modal-content,
+      .modal-content::before,
+      .modal-content::after {
+        box-shadow: none !important;
+        outline: 0 !important;
+        filter: none !important;
+      }
+      .modal-dialog {
+        border: 0 !important;
+        background: transparent !important;
+      }
+      .modal.fade {
+        transition: none !important;
+      }
+      .modal.fade .modal-dialog {
+        transition: none !important;
+        transform: none !important;
+      }
+      .modal.show .modal-dialog {
+        transform: none !important;
+      }
+      .modal.show .modal-content {
+        box-shadow: none !important;
+      }
+    .modal.show + .modal.show .modal-content,
+    body .modal.show[style*="display: block"] .modal-content {
+      box-shadow: none !important;
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.1rem 1.35rem;
+      border-bottom: none;
+      position: relative;
+    }
+
+    .modal-header.bg-body-tertiary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .modal-header .modal-title {
+      color: white;
+      font-weight: 600;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .modal-header .modal-title i {
+      font-size: 1.5rem;
+      opacity: 0.95;
+    }
+
+    .modal-header .btn-close {
+      filter: brightness(0) invert(1);
+      opacity: 0.9;
+      transition: opacity 0.2s;
+    }
+
+    .modal-header .btn-close:hover {
+      opacity: 1;
+    }
+
+    .modal-subtitle {
+      padding: 0.65rem 1.35rem;
+      background: rgba(102, 126, 234, 0.08);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      font-size: 0.875rem;
+      color: #6c757d;
+      font-weight: 500;
+    }
+
+    .modal-body {
+      padding: 1.35rem;
+      background: #fff;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.35rem;
+      background: #f8f9fa;
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 0 0 8px 8px;
+    }
+
+    .modal-footer .btn {
+      padding: 0.5rem 1.15rem;
+      font-weight: 600;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .modal-footer .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .modal-footer .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Loading States */
+    .modal-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .modal-loading .spinner-border {
+      width: 3rem;
+      height: 3rem;
+      border-width: 3px;
+      color: #667eea;
+      margin-bottom: 1rem;
+    }
+
+    .modal-loading span {
+      color: #6c757d;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    /* Error States */
+    .modal-error {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      background: #fee;
+      border-left: 4px solid #dc3545;
+      margin-bottom: 1rem;
+    }
+
+    /* Form Styling in Modals */
+    .modal-body .form-label {
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .modal-body .form-control,
+    .modal-body .form-select {
+      border-radius: 8px;
+      border: 1.5px solid #e0e0e0;
+      padding: 0.625rem 0.875rem;
+      transition: all 0.2s ease;
+    }
+
+    .modal-body .form-control:focus,
+    .modal-body .form-select:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    }
+
+    /* Make module/menu multi-selects in the create modal taller for easier selection */
+    #gc_moduls, #gc_menus {
+      min-height: 200px;
+      height: 200px;
+      overflow: auto;
+    }
+    @media (max-width: 767.98px) {
+      #gc_moduls, #gc_menus { min-height: 140px; height: 140px; }
+    }
+    .group-create-section-title {
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      font-weight:700;
+      font-size:.9rem;
+      color:#334155;
+      margin-bottom:.7rem;
+    }
+    .group-create-section-title i {
+      color:#2563eb;
+    }
+    .group-create-preview {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      padding:.95rem 1rem;
+      border:1px solid rgba(148,163,184,.22);
+      border-radius:10px;
+      background:linear-gradient(180deg,#ffffff,#f8fafc);
+      min-height:60px;
+    }
+    .group-create-preview-meta {
+      min-width:0;
+    }
+    .group-create-preview-label {
+      font-size:.72rem;
+      font-weight:700;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:#64748b;
+      margin-bottom:.35rem;
+    }
+    .group-create-preview-main {
+      display:flex;
+      align-items:center;
+      gap:.6rem;
+      flex-wrap:wrap;
+    }
+    .group-create-preview-code {
+      font-weight:700;
+      color:#0f172a;
+    }
+    .group-create-preview-chip {
+      display:inline-flex;
+      align-items:center;
+      gap:.4rem;
+      padding:.38rem .7rem;
+      border-radius:999px;
+      font-size:.8rem;
+      font-weight:700;
+      color:#0f172a;
+      background:#e2e8f0;
+      border:1px solid rgba(148,163,184,.24);
+      white-space:nowrap;
+    }
+    .group-category-chip[data-category="STAF"] {
+      background:rgba(59,130,246,.12);
+      color:#1d4ed8;
+      border-color:rgba(59,130,246,.24);
+    }
+    .group-category-chip[data-category="PELAJAR"] {
+      background:rgba(168,85,247,.12);
+      color:#7e22ce;
+      border-color:rgba(168,85,247,.26);
+    }
+    .group-category-chip[data-category="UMUM"] {
+      background:rgba(245,158,11,.14);
+      color:#b45309;
+      border-color:rgba(245,158,11,.28);
+    }
+    #groupTable .group-table-category-chip {
+      gap: .28rem;
+      padding: .24rem .58rem;
+      font-size: .69rem;
+      font-weight: 600;
+      letter-spacing: .02em;
+      line-height: 1.15;
+      text-transform: uppercase;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.28);
+    }
+    html[data-bs-theme="dark"] #groupTable .group-table-category-chip {
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    html[data-bs-theme="dark"] .group-create-section-title {
+      color:#e2e8f0;
+    }
+    html[data-bs-theme="dark"] .group-create-preview {
+      background:linear-gradient(180deg,rgba(15,23,42,.92),rgba(15,23,42,.86));
+      border-color:rgba(148,163,184,.22);
+    }
+    html[data-bs-theme="dark"] .group-create-preview-code {
+      color:#f8fafc;
+    }
+    html[data-bs-theme="dark"] .group-create-preview-label {
+      color:#94a3b8;
+    }
+    #groupCreateForm .row.g-3 {
+      --bs-gutter-y: .75rem;
+    }
+    #groupCreateForm .mt-4 {
+      margin-top: 1rem !important;
+    }
+    #groupCreateForm .mt-1 {
+      margin-top: .15rem !important;
+    }
+
+    /* Search Input in Modals */
+    .modal-body input[type="search"] {
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      border: 2px solid #e9ecef;
+      transition: all 0.2s ease;
+    }
+
+    .modal-body input[type="search"]:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    }
+
+    /* Themed Modal Accent */
+    .modal-themed .modal-content {
+      position: relative;
+    }
+
+    .modal-themed .modal-content::before {
+      content: none;
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 3px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      pointer-events: none;
+    }
+
+    /* Child Modal Standard */
+    .modal-child-accent .modal-header {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    #menuEditModal .modal-dialog {
+      max-width: 1040px;
+    }
+
+    .modal-child-accent .modal-footer {
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+    .modal-child-accent .modal-footer .btn {
+      min-width: 140px;
+      justify-content: center;
+    }
+    .modal-child-accent .modal-footer .btn-primary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+    }
+    .modal-child-accent .modal-footer .btn-primary,
+    .modal-child-accent .modal-footer .btn-primary span,
+    .modal-child-accent .modal-footer .btn-primary i {
+      color: #fff !important;
+    }
+
+    .modal-child-accent .modal-footer .btn-primary:hover {
+      box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+    }
+
+    .tooltip.menu-path-tooltip .tooltip-inner {
+      max-width: 520px;
+      text-align: left;
+      white-space: normal;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.35;
+      padding: .65rem .8rem;
+    }
+    html[data-bs-theme="dark"] #aksesMenuModal .modal-content {
+      border-color: rgba(148,163,184,.22);
+    }
+    html[data-bs-theme="dark"] #aksesMenuModal .modal-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    html[data-bs-theme="dark"] #aksesMenuModal .modal-subtitle {
+      background: rgba(102, 126, 234, 0.14);
+      border-bottom-color: rgba(102, 126, 234, 0.24);
+      color: #c7d2fe;
+    }
+    html[data-bs-theme="dark"] #menuDT .menu-domain-badge[data-domain="STAF"] {
+      background: rgba(59,130,246,.18);
+      color: #bfdbfe;
+      border-color: rgba(96,165,250,.3);
+    }
+    html[data-bs-theme="dark"] #menuDT .menu-domain-badge[data-domain="PELAJAR"] {
+      background: rgba(168,85,247,.18);
+      color: #e9d5ff;
+      border-color: rgba(192,132,252,.3);
+    }
+    html[data-bs-theme="dark"] #menuDT .menu-domain-badge[data-domain="UMUM"] {
+      background: rgba(245,158,11,.2);
+      color: #fde68a;
+      border-color: rgba(251,191,36,.32);
+    }
+    html[data-bs-theme="dark"] #menuDT .menu-domain-badge[data-domain="SHARED"] {
+      background: rgba(71,85,105,.32);
+      color: #e2e8f0;
+      border-color: rgba(148,163,184,.28);
+    }
+
+    .modal-add-accent .modal-header {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: #fff;
+      border-bottom: none;
+    }
+
+    .modal-add-accent .modal-header .modal-title,
+    .modal-add-accent .modal-header .btn-close {
+      color: #fff;
+    }
+
+    .modal-add-accent .modal-header .btn-close {
+      filter: brightness(0) invert(1);
+      opacity: 0.9;
+    }
+
+    .modal-add-accent .modal-header .btn-close:hover {
+      opacity: 1;
+      transform: scale(1.04);
+    }
+
+    .modal-add-accent .modal-footer {
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-add-accent .modal-footer .btn {
+      min-width: 140px;
+      justify-content: center;
+    }
+
+    .modal-add-accent .modal-footer .btn-primary {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(32, 201, 151, 0.28);
+    }
+
+    .modal-add-accent .modal-footer .btn-primary:hover {
+      box-shadow: 0 6px 16px rgba(32, 201, 151, 0.38);
+    }
+
+    /* Accordion in Modals */
+    .modal-body .accordion {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .modal-body .accordion-item {
+      border: 1px solid #e9ecef;
+      margin-bottom: 0.5rem;
+      border-radius: 8px;
+    }
+
+    .modal-body .accordion-button {
+      background: #f8f9fa;
+      font-weight: 600;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+    }
+
+    .modal-body .accordion-button:not(.collapsed) {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      color: #667eea;
+    }
+
+    /* Table in Modals */
+    .modal-body .table {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .modal-body .table thead {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    }
+
+    /* Badge Styling */
+    .modal-body .badge {
+      padding: 0.4rem 0.75rem;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+
+    /* Input Group Styling */
+    .modal-body .input-group-text {
+      border-radius: 8px 0 0 8px;
+      background: #f8f9fa;
+      border-color: #e0e0e0;
+    }
+
+    .modal-body .input-group .form-control {
+      border-left: none;
+      border-radius: 0 8px 8px 0;
+    }
+
+    /* Button Group in Forms */
+    .modal-body .btn-group .btn {
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .modal-body .btn-group .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    /* List Group in Modals */
+    .modal-body .list-group-item {
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      border: 1.5px solid #e9ecef;
+      transition: all 0.2s ease;
+    }
+
+    .modal-body .list-group-item:hover {
+      border-color: #667eea;
+      background: rgba(102, 126, 234, 0.05);
+      transform: translateX(4px);
+    }
+
+    /* Smooth Transitions */
+    .modal.fade .modal-dialog {
+      transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    }
+
+    .modal.show .modal-dialog {
+      transform: none;
+    }
+
+    /* Content Animation */
+    .modal-body > div:not(.d-none) {
+      animation: fadeInUp 0.3s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    #groupPermsDT { table-layout: fixed; }
+    #groupPermsDT th.col-check, #groupPermsDT td.col-check { width: 60px; }
+    #groupPermsDT th.col-menu,  #groupPermsDT td.col-menu  { width: 140px; white-space: nowrap; }
+
+    /* Loading indicators */
+    .btn-loading {
+      position: relative;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    .btn-loading::after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      top: 50%;
+      left: 50%;
+      margin-left: -8px;
+      margin-top: -8px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .btn-loading .btn-text {
+      opacity: 0;
+    }
+
+    /* Undo notification */
+    .undo-notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      min-width: 300px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    /* Controls & buttons: align with senarai-pengguna.php styles */
+    .dt-bottom-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:nowrap; gap:.5rem; }
+    #groupTable_wrapper .dt-bottom-row {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      flex-wrap: nowrap !important;
+      width: 100%;
+      gap: .5rem !important;
+      margin-top: 0 !important;
+      padding-top: .15rem !important;
+    }
+    #groupTable_wrapper .dt-bottom-row.mt-2 {
+      margin-top: 0 !important;
+    }
+    #groupTable_wrapper .dt-bottom-row > .dt-info-left {
+      flex: 0 1 auto !important;
+      min-width: 0 !important;
+      overflow: hidden !important;
+      display: flex !important;
+      justify-content: flex-start !important;
+      align-items: center !important;
+      text-align: left !important;
+      margin-right: auto !important;
+    }
+    #groupTable_wrapper .dt-bottom-row > .dt-paging-right {
+      flex: 0 0 auto !important;
+      margin-left: auto !important;
+      display: flex !important;
+      justify-content: flex-end !important;
+      align-items: center !important;
+      position: relative !important;
+      top: -7px !important;
+    }
+    #groupTable_wrapper .dataTables_paginate {
+      margin-top: 0 !important;
+      margin-left: auto !important;
+      white-space: nowrap !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-end !important;
+    }
+    #groupTable_wrapper .dataTables_info {
+      text-align: left !important;
+      justify-content: flex-start !important;
+      width: auto !important;
+    }
+    .dataTables_length, #groupTable_wrapper .dataTables_length {
+      white-space: nowrap !important;
+      line-height: 1.4;
+      display: inline-block;
+    }
+    .dataTables_length label, #groupTable_wrapper .dataTables_length label {
+      white-space: nowrap !important;
+      display: inline-flex !important;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 0;
+      flex-wrap: nowrap !important;
+      font-size: 0.875rem !important;
+    }
+    .dataTables_length select, #groupTable_wrapper .dataTables_length select {
+      display: inline-block !important;
+      margin: 0 0.4rem !important;
+      flex-shrink: 0 !important;
+      height: 36px !important;
+      min-height: 36px !important;
+      padding: 0.5rem 0.75rem !important;
+      font-size: 0.875rem !important;
+      line-height: 1.4 !important;
+      border: 2px solid #e9ecef !important;
+      border-radius: 8px !important;
+      min-width: 70px !important;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+    }
+    .dataTables_length select:hover, #groupTable_wrapper .dataTables_length select:hover { border-color: #ced4da !important; }
+    .dataTables_length select:focus, #groupTable_wrapper .dataTables_length select:focus {
+      border-color: #86b7fe !important;
+      box-shadow: 0 0 0 0.25rem rgba(13,110,253,0.25) !important;
+      outline: none !important;
+    }
+    .dt-top-left { white-space: nowrap !important; flex-wrap: nowrap !important; }
+    #groupTable_wrapper .row.mb-2 {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      flex-wrap: wrap !important;
+      row-gap: 0.75rem !important;
+      overflow: visible !important;
+    }
+    #groupTable_wrapper .row.mb-2 > .dt-top-left {
+      flex: 0 1 auto !important;
+      width: auto !important;
+      max-width: 100% !important;
+      overflow: visible !important;
+    }
+    #groupTable_wrapper .row.mb-2 > .dt-top-right {
+      flex: 1 1 auto !important;
+      width: auto !important;
+      max-width: 100% !important;
+      overflow: visible !important;
+    }
+    /* Buttons in top-right: sizing, borders and gap consistent with senarai-pengguna */
+    .dt-top-right button, #groupTable_wrapper .dt-top-right button {
+      height: 36px !important;
+      min-height: 36px !important;
+      border: 2px solid #e9ecef !important;
+      border-radius: 8px !important;
+      padding: 0.5rem 0.75rem !important;
+      font-size: 0.875rem !important;
+      line-height: 1.4 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      white-space: nowrap !important;
+    }
+    .dt-top-right button:hover, #groupTable_wrapper .dt-top-right button:hover { border-color: #ced4da !important; }
+    .dt-top-right button:focus, #groupTable_wrapper .dt-top-right button:focus {
+      border-color: #86b7fe !important;
+      box-shadow: 0 0 0 0.25rem rgba(13,110,253,0.25) !important;
+    }
+    .dt-top-right {
+      gap: 0.5rem !important;
+      flex-wrap: wrap !important;
+      overflow: visible !important;
+      scrollbar-width: none;
+    }
+    .dt-top-right::-webkit-scrollbar {
+      display: none;
+    }
+    .dt-top-right button + button { margin-left: 0 !important; }
+    #groupTable_wrapper .dt-top-right,
+    #groupTable_wrapper .dt-top-right .dataTables_filter,
+    #groupTable_wrapper .dt-top-right .dataTables_filter label {
+      align-items: center !important;
+    }
+    #groupTable_wrapper .dt-top-right .dataTables_filter {
+      display: flex !important;
+      margin-bottom: 0 !important;
+      flex: 0 1 auto !important;
+      min-width: 0 !important;
+      overflow: visible !important;
+    }
+    #groupTable_wrapper .dt-top-right .dataTables_filter label {
+      justify-content: flex-end !important;
+      min-width: 0 !important;
+      overflow: visible !important;
+    }
+    #groupTable_wrapper .dt-top-right .btn {
+      align-self: center !important;
+      flex: 0 0 auto !important;
+    }
+
+    .module-icon-picker {
+      display: flex;
+      align-items: flex-start;
+      gap: .9rem;
+    }
+    .module-create-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+    .module-create-panel {
+      background: linear-gradient(135deg, rgba(248, 250, 252, 0.94) 0%, rgba(255, 255, 255, 0.98) 100%);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 8px;
+      padding: 1.15rem 1.1rem;
+    }
+    .module-create-panel-title {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      margin-bottom: 1rem;
+      font-size: .95rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: .01em;
+    }
+    .module-create-panel-title i {
+      font-size: 1.05rem;
+      color: #2563eb;
+    }
+    .module-icon-preview {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(102, 126, 234, 0.18) 100%);
+      color: #1d4ed8;
+      border: 1px solid rgba(37, 99, 235, 0.16);
+      flex: 0 0 auto;
+    }
+    .module-icon-preview i {
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+    .module-icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+      gap: .6rem;
+      padding: .15rem;
+    }
+    .module-icon-groups {
+      margin-top: .8rem;
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: .25rem;
+    }
+    .module-icon-group + .module-icon-group {
+      margin-top: 1rem;
+    }
+    .module-icon-group-title {
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #475569;
+      margin-bottom: .55rem;
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+    }
+    .module-icon-group-title::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #60a5fa 0%, #6366f1 100%);
+      flex: 0 0 auto;
+      opacity: .9;
+    }
+    .module-icon-option {
+      width: 100%;
+      min-height: 52px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: #fff;
+      color: #475569;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .18s ease;
+      cursor: pointer;
+    }
+    .module-icon-option i {
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+    .module-icon-option:hover {
+      border-color: rgba(37, 99, 235, 0.35);
+      color: #2563eb;
+      background: rgba(37, 99, 235, 0.05);
+      transform: translateY(-1px);
+    }
+    .module-icon-option.is-active {
+      border-color: rgba(37, 99, 235, 0.5);
+      color: #1d4ed8;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(102, 126, 234, 0.18) 100%);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .module-order-readonly {
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 600;
+      cursor: not-allowed;
+    }
+    .module-field-help {
+      display: block;
+      margin-top: .45rem;
+      color: #64748b;
+      font-size: .82rem;
+      line-height: 1.45;
+    }
+    html[data-bs-theme="dark"] .module-icon-preview {
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.18) 0%, rgba(129, 140, 248, 0.18) 100%);
+      color: #bfdbfe;
+      border-color: rgba(96, 165, 250, 0.18);
+    }
+    html[data-bs-theme="dark"] .module-order-readonly {
+      background: rgba(30, 41, 59, 0.9);
+      color: #e2e8f0;
+      border-color: rgba(148, 163, 184, 0.24);
+    }
+    html[data-bs-theme="dark"] .module-create-panel {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.98) 100%);
+      border-color: rgba(148, 163, 184, 0.16);
+    }
+    html[data-bs-theme="dark"] .module-create-panel-title {
+      color: #e2e8f0;
+    }
+    html[data-bs-theme="dark"] .module-create-panel-title i {
+      color: #93c5fd;
+    }
+    html[data-bs-theme="dark"] .module-icon-option {
+      background: rgba(15, 23, 42, 0.82);
+      color: #cbd5e1;
+      border-color: rgba(148, 163, 184, 0.22);
+    }
+    html[data-bs-theme="dark"] .module-icon-option:hover {
+      color: #bfdbfe;
+      border-color: rgba(96, 165, 250, 0.35);
+      background: rgba(59, 130, 246, 0.12);
+    }
+    html[data-bs-theme="dark"] .module-icon-option.is-active {
+      color: #dbeafe;
+      border-color: rgba(96, 165, 250, 0.45);
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.22) 0%, rgba(99, 102, 241, 0.2) 100%);
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
+    }
+    html[data-bs-theme="dark"] .module-icon-group-title {
+      color: #cbd5e1;
+    }
+    @media (max-width: 991.98px) {
+      .module-create-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Match senarai-pengguna table shell */
+    .content-page .card {
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+    .content-page .card > .card-body {
+      padding: 1.15rem 1.15rem 1rem;
+    }
+    #groupTable {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: none;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(255, 255, 255, 0.96);
+    }
+    #groupTable thead {
+      background: transparent;
+      color: inherit;
+    }
+    #groupTable thead th {
+      padding: 0.9rem 0.85rem;
+      border: 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+      background: linear-gradient(180deg, rgba(248, 250, 252, 0.98) 0%, rgba(241, 245, 249, 0.95) 100%);
+      color: #334155;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    #groupTable thead th:first-child,
+    #groupTable tbody td:first-child {
+      text-align: center;
+    }
+    #groupTable tbody td {
+        padding: 0.62rem 0.78rem;
+        border-color: rgba(226, 232, 240, 0.9);
+        font-size: 0.88rem;
+        line-height: 1.28;
+        vertical-align: middle;
+      }
+    #groupTable tbody tr {
+      transition: background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    }
+    #groupTable tbody tr:hover {
+      background: rgba(241, 245, 249, 0.88) !important;
+      transform: none;
+      box-shadow: inset 0 0 0 999px rgba(241, 245, 249, 0.3);
+    }
+    #groupTable_wrapper .dataTables_filter input,
+    #groupTable_wrapper .dataTables_length select,
+    #groupTable_wrapper #dtGroupFilter {
+      border-radius: 8px !important;
+      border: 1px solid rgba(148, 163, 184, 0.24) !important;
+      background: rgba(255, 255, 255, 0.98) !important;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+    #groupTable_wrapper .dataTables_filter input:focus,
+    #groupTable_wrapper .dataTables_length select:focus,
+    #groupTable_wrapper #dtGroupFilter:focus {
+      border-color: rgba(59, 130, 246, 0.45) !important;
+      box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.14), 0 12px 24px rgba(15, 23, 42, 0.06) !important;
+    }
+    #groupTable_wrapper .dt-top-right .btn {
+      border-radius: 8px !important;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+    }
+    #groupTable_wrapper .dt-top-right .btn-primary {
+      box-shadow: 0 12px 26px rgba(37, 99, 235, 0.18);
+    }
+    #groupTable_wrapper .paginate_button .page-link {
+      border-radius: 8px !important;
+    }
+    html[data-bs-theme="dark"] #groupTable {
+      background: rgba(15, 23, 42, 0.92);
+      border-color: rgba(148, 163, 184, 0.22);
+    }
+    html[data-bs-theme="dark"] #groupTable thead th {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.96) 0%, rgba(15, 23, 42, 0.94) 100%);
+      color: #dbe4f0;
+      border-bottom-color: rgba(148, 163, 184, 0.18);
+    }
+    html[data-bs-theme="dark"] #groupTable tbody td {
+      border-color: rgba(51, 65, 85, 0.95);
+    }
+    html[data-bs-theme="dark"] #groupTable tbody tr:hover {
+      background: rgba(30, 41, 59, 0.76) !important;
+      box-shadow: inset 0 0 0 999px rgba(30, 41, 59, 0.18);
+    }
+    html[data-bs-theme="dark"] #groupTable_wrapper .dataTables_filter input,
+    html[data-bs-theme="dark"] #groupTable_wrapper .dataTables_length select,
+    html[data-bs-theme="dark"] #groupTable_wrapper #dtGroupFilter {
+      background: rgba(15, 23, 42, 0.96) !important;
+      border-color: rgba(148, 163, 184, 0.24) !important;
+      color: #e2e8f0 !important;
+    }
+
+
+  </style>
+</head>
+
+<body
+  data-topbar-color="<?= h($_SESSION['theme.topbar'] ?? 'light') ?>"
+  data-menu-color="<?= h($_SESSION['theme.menu'] ?? 'light') ?>"
+  data-layout="vertical"
+  data-sidebar-size="default"
+  class="loading">
+
+<div class="wrapper">
+  <?php include __DIR__ . '/../includes/topbar.php'; ?>
+  <?php include __DIR__ . '/../includes/sidebar.php'; ?>
+
+  <div class="content-page">
+    <div class="content">
+      <div class="container-fluid">
+
+        <!-- Tajuk + breadcrumb -->
+        <div class="row mb-3">
+          <div class="col-12">
+            <div class="page-title-box d-flex justify-content-between align-items-center flex-wrap">
+              <h4 class="page-title"><i class="ri-team-line me-1"></i> <?= __('userGroup_page_title') ?></h4>
+              <div class="page-title-right">
+                  <ol class="breadcrumb m-0">
+                  <li class="breadcrumb-item">
+                    <a href="dashboard.php">
+                      <i class="ri-home-4-line align-middle me-1"></i> <?= __('breadcrumb_home') ?? 'Home' ?>
+                    </a>
+                  </li>
+                  <li class="breadcrumb-item active"><?= __('userGroup_page_title') ?></li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jadual Kumpulan -->
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body">
+                <p class="text-muted mb-3"><?= __('userGroup_intro') ?></p>
+
+                <div class="table-responsive dt-standard">
+                  <table class="table table-bordered align-middle" id="groupTable">
+                    <thead>
+                        <tr>
+                          <th style="width:5%" class="th-nowrap">#</th>
+                          <th style="width:12%" class="th-nowrap"><?= __('userGroup_col_code') ?></th>
+                          <th style="width:24%" class="th-nowrap"><?= __('userGroup_col_name') ?></th>
+                          <th style="width:10%" class="th-nowrap"><?= __('userGroup_col_category') ?></th>
+                          <th style="width:4%" class="text-end th-nowrap th-color">&nbsp;</th>
+                          <th style="width:15%" class="text-start th-nowrap th-grp"><?= __('userGroup_col_group_access') ?></th>
+                          <th style="width:15%" class="text-center th-nowrap th-mod"><?= __('userGroup_col_module_access') ?></th>
+                          <th style="width:16%" class="text-center th-nowrap th-menu"><?= __('userGroup_col_menu_access') ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                      <?php if (!empty($senaraiGroup)): ?>
+                        <?php foreach ($senaraiGroup as $i => $g): ?>
+                          <?php
+                            $groupID = (int)($g['f_groupID'] ?? 0);
+                            $kod     = (string)($g['f_groupKod'] ?? '');
+                            $nama    = (string)($g['f_groupName'] ?? '');
+                            $categoryUser = (string)($g['f_categoryUser'] ?? '');
+                            $modAks  = (string)($g['f_modulAccess'] ?? '');
+                            $menuAks = (string)($g['f_menuAccess'] ?? '');
+                            $rawColor = trim((string)($g['f_color'] ?? ''));
+                            $barColor = '#94a3b8';
+                            if (
+                              $rawColor !== '' &&
+                              (preg_match('/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i', $rawColor) || preg_match('/^[a-zA-Z]+$/', $rawColor))
+                            ) {
+                              $barColor = $rawColor;
+                            }
+                            $hasAccess = (trim($modAks) !== '' || trim($menuAks) !== '');
+                            $canDeleteGroup = (trim($modAks) === '' && trim($menuAks) === '');
+                          ?>
+                          <tr data-group-id="<?= $groupID ?>">
+                            <td><?= $i + 1 ?></td>
+                            <td><?= h($kod) ?></td>
+                            <td><?= h($nama) ?></td>
+                            <td>
+                              <span class="group-create-preview-chip group-category-chip group-table-category-chip" data-category="<?= h($categoryUser) ?>">
+                                <?= h($categoryUser !== '' ? $categoryUser : 'STAF') ?>
+                              </span>
+                            </td>
+                            <td class="text-end td-color">
+                              <div class="group-color-cell">
+                                <span class="group-color-bar" style="background-color: <?= h($barColor) ?>;" title="<?= h($barColor) ?>"></span>
+                              </div>
+                            </td>
+
+                            <!-- Akses Kumpulan -->
+                            <td class="text-start td-grp">
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary icon-btn view-group-perms<?= $permDisabledClass ?>"
+                                <?= $permDisabledAttr ?>
+                                data-group-id="<?= $groupID ?>"
+                                data-group-kod="<?= h($kod) ?>"
+                                data-group-nama="<?= h($nama) ?>"
+                                title="<?= h(__('userGroup_col_group_access')) ?>">
+                                <i class="ri-user-settings-line"></i>
+                              </button>
+                              <?php if ($canManageGroups): ?>
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-outline-warning icon-btn btn-edit-group-meta ms-1<?= $permDisabledClass ?>"
+                                  <?= $permDisabledAttr ?>
+                                  data-group-id="<?= $groupID ?>"
+                                  data-group-kod="<?= h($kod) ?>"
+                                  data-group-nama="<?= h($nama) ?>"
+                                  data-group-category="<?= h($categoryUser) ?>"
+                                  data-group-priority="<?= h((string)($g['f_priority'] ?? 0)) ?>"
+                                  data-group-mod="<?= h((string)($g['f_mod'] ?? 0)) ?>"
+                                  data-group-color="<?= h((string)($g['f_color'] ?? '')) ?>"
+                                  title="<?= h(__('userGroup_edit_group')) ?>">
+                                  <i class="ri-pencil-line"></i>
+                                </button>
+                                <?php if ($canDeleteGroup): ?>
+                                  <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-danger icon-btn btn-delete-group ms-1<?= $permDisabledClass ?>"
+                                    <?= $permDisabledAttr ?>
+                                    data-group-id="<?= $groupID ?>"
+                                    data-group-kod="<?= h($kod) ?>"
+                                    data-group-nama="<?= h($nama) ?>"
+                                    title="<?= h(__('userGroup_delete_group')) ?>">
+                                    <i class="ri-delete-bin-line"></i>
+                                  </button>
+                                <?php endif; ?>
+                              <?php endif; ?>
+                            </td>
+
+                            <!-- Akses Modul -->
+                            <td class="text-center td-mod">
+                              <?php if ($hasAccess): ?>
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-outline-primary icon-btn view-access<?= $permDisabledClass ?>"
+                                  <?= $permDisabledAttr ?>
+                                  data-group-id="<?= $groupID ?>"
+                                  data-group-kod="<?= h($kod) ?>"
+                                  data-group-nama="<?= h($nama) ?>"
+                                  title="<?= h(__('userGroup_col_module_access')) ?>">
+                                  <i class="ri-links-line"></i>
+                                </button>
+                              <?php else: ?>
+                                <span class="text-muted"><i class="ri-link-unlink-m"></i></span>
+                              <?php endif; ?>
+                            </td>
+
+                            <!-- Akses Menu -->
+                            <td class="text-center td-menu">
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-outline-success icon-btn view-menu<?= $permDisabledClass ?>"
+                                <?= $permDisabledAttr ?>
+                                data-group-id="<?= $groupID ?>"
+                                data-group-kod="<?= h($kod) ?>"
+                                data-group-nama="<?= h($nama) ?>"
+                                title="<?= h(__('userGroup_col_menu_access')) ?>">
+                                <i class="ri-menu-2-line"></i>
+                              </button>
+                            </td>
+
+                          </tr>
+                        <?php endforeach; ?>
+                      <?php else: ?>
+                        <tr>
+                          <td colspan="7" class="text-center text-muted"><?= __('userGroup_no_records') ?></td>
+                        </tr>
+                      <?php endif; ?>
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.container-fluid -->
+    </div><!-- /.content -->
+    <?php include __DIR__ . '/../includes/footer.php'; ?>
+  </div><!-- /.content-page -->
+</div><!-- /.wrapper -->
+
+<?php include __DIR__ . '/../includes/script.php'; ?>
+<!-- Extracted JavaScript Modules -->
+<script src="<?= base_url('assets/js/helpers/datatables-standard.js') ?>?v=<?= $version ?? date('ymdHis') ?>"></script>
+<script src="<?= base_url('assets/js/group-utils.js') ?>?v=<?= $version ?? date('ymdHis') ?>"></script>
+<script src="<?= base_url('assets/js/group-state.js') ?>?v=<?= $version ?? date('ymdHis') ?>"></script>
+<script src="<?= base_url('assets/js/group-menu-refresh.js') ?>?v=<?= $version ?? date('ymdHis') ?>"></script>
+<script src="<?= base_url('assets/js/group-module-access.js') ?>?v=<?= $version ?? date('ymdHis') ?>"></script>
+<script src="<?= base_url('assets/js/group-menu-access.js') ?>?v=<?= $version ?? date('ymdHis') ?>"></script>
+<script src="<?= base_url('assets/js/group-permissions.js') ?>?v=<?= $version ?? date('ymdHis') ?>"></script>
+<!-- MODAL: Akses Modul (REORDER) -->
+<div class="modal fade modal-themed" id="aksesModal" tabindex="-1" aria-hidden="true" aria-labelledby="aksesModalTitle">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="aksesModalTitle">
+          <i class="ri-shield-keyhole-line"></i>
+          <span><?= h(__('userGroup_col_module_access')) ?></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= h(__('userGroup_btn_close')) ?>"></button>
+      </div>
+      <div class="modal-subtitle" id="aksesModalSub"></div>
+      <div class="modal-body">
+        <div id="aksesLoading" class="modal-loading">
+          <div class="spinner-border" role="status" aria-hidden="true"></div>
+          <span><?= h(__('userGroup_loading')) ?>…</span>
+        </div>
+        <div id="aksesError" class="modal-error alert alert-danger d-none"></div>
+        <div id="aksesContent" class="d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="ri-close-line me-1"></i> <?= h(__('userGroup_btn_close')) ?>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Akses Menu (DataTable) -->
+<div class="modal fade modal-themed" id="aksesMenuModal" tabindex="-1" aria-hidden="true" aria-labelledby="aksesMenuTitle">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="aksesMenuTitle">
+          <i class="ri-list-settings-line"></i>
+          <span><?= h(__('userGroup_col_menu_access')) ?></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= h(__('userGroup_btn_close')) ?>"></button>
+      </div>
+      <div class="modal-subtitle" id="aksesMenuSub"></div>
+      <div class="modal-body">
+        <div id="menuLoading" class="modal-loading">
+          <div class="spinner-border" role="status" aria-hidden="true"></div>
+          <span><?= h(__('userGroup_loading')) ?>…</span>
+        </div>
+        <div id="menuError" class="modal-error alert alert-danger d-none"></div>
+        <div id="menuContent" class="d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="ri-close-line me-1"></i> <?= h(__('userGroup_btn_close')) ?>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit Menu -->
+<div class="modal fade modal-child-accent" id="menuEditModal" tabindex="-1" aria-hidden="true" aria-labelledby="menuEditTitle" data-bs-backdrop="static">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="menuEditTitle">
+          <i class="ri-pencil-line"></i>
+          <span id="menuEditTitleText" data-title-create="<?= h(__('userGroup_modal_add_menu_title')) ?>" data-title-edit="<?= h(__('userGroup_modal_edit_menu_title')) ?>"><?= h(__('userGroup_modal_edit_menu_title')) ?></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= h(__('userGroup_btn_close')) ?>"></button>
+      </div>
+      <div class="modal-body">
+        <form id="menuEditForm" autocomplete="off">
+          <input type="hidden" name="menuID" id="em_menuID">
+          <input type="hidden" name="groupID" id="em_groupID">
+          <div class="alert alert-light border mb-3 small d-none" id="em_groupInfoWrap">
+            <strong><?= h(__('userGroup_label_group')) ?>:</strong>
+            <span id="em_groupInfo"></span>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label"><?= h(__('userGroup_field_modul')) ?></label>
+              <select class="form-select" name="modulID" id="em_modulID"></select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><?= h(__('userGroup_field_path')) ?></label>
+              <input type="text" class="form-control" name="path" id="em_path" placeholder="<?= h(__('userGroup_field_path_placeholder')) ?>" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><?= h(__('userGroup_field_name_ms')) ?></label>
+              <input type="text" class="form-control" name="name_ms" id="em_name_ms">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><?= h(__('userGroup_field_name_en')) ?></label>
+              <input type="text" class="form-control" name="name_en" id="em_name_en">
+            </div>
+            <!-- Removed zh/ta language fields: menu names now only use ms + en -->
+            <div class="col-md-6">
+              <label class="form-label"><?= h(__('userGroup_field_menu_domain') ?? 'Domain') ?></label>
+              <select class="form-select" name="domain" id="em_domain">
+                <option value="SHARED"><?= h(__('userGroup_menu_domain_shared') ?? 'SHARED') ?></option>
+                <option value="STAF"><?= h(__('userGroup_menu_domain_staff') ?? 'STAF') ?></option>
+                <option value="PELAJAR"><?= h(__('userGroup_menu_domain_student') ?? 'PELAJAR') ?></option>
+                <option value="UMUM"><?= h(__('userGroup_menu_domain_public') ?? 'UMUM') ?></option>
+              </select>
+              <div class="form-text"><?= h(__('userGroup_field_menu_domain_help') ?? 'Tentukan domain fungsi menu ini.') ?></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label d-block"><?= h(__('userGroup_field_menu_staff_only_visibility') ?? 'Paparan Semasa Staff Only') ?></label>
+              <div class="btn-group mt-1" role="group" aria-label="<?= h(__('userGroup_field_menu_staff_only_visibility') ?? 'Paparan Semasa Staff Only') ?>">
+                <input type="radio" class="btn-check" name="show_staff_only" id="em_show_staff_only_yes" value="1" checked>
+                <label class="btn btn-outline-primary" for="em_show_staff_only_yes"><?= h(__('userGroup_menu_staff_only_show') ?? 'Papar') ?></label>
+                <input type="radio" class="btn-check" name="show_staff_only" id="em_show_staff_only_no" value="0">
+                <label class="btn btn-outline-secondary" for="em_show_staff_only_no"><?= h(__('userGroup_menu_staff_only_hide') ?? 'Sembunyi') ?></label>
+              </div>
+              <div class="form-text"><?= h(__('userGroup_field_menu_staff_only_visibility_help') ?? 'Kawal sama ada menu ini masih dipaparkan apabila mode Staff Only diaktifkan.') ?></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label d-block"><?= h(__('userGroup_field_status')) ?></label>
+              <div class="btn-group mt-1" role="group" aria-label="<?= h(__('userGroup_field_status')) ?>">
+                <input type="radio" class="btn-check" name="flag" id="em_flag_on" value="1">
+                <label class="btn btn-outline-success" for="em_flag_on"><?= h(__('userGroup_status_on')) ?></label>
+                <input type="radio" class="btn-check" name="flag" id="em_flag_off" value="0">
+                <label class="btn btn-outline-secondary" for="em_flag_off"><?= h(__('userGroup_status_off')) ?></label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><?= h(__('userGroup_field_position_label')) ?></label>
+              <select class="form-select" id="em_position">
+                <option value="bottom" selected><?= h(__('userGroup_position_bottom')) ?></option>
+                <option value="top"><?= h(__('userGroup_position_top')) ?></option>
+              </select>
+            </div>
+          </div>
+        </form>
+        <div id="menuEditError" class="modal-error alert alert-danger d-none mt-3"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="ri-close-line me-1"></i> <?= h(__('userGroup_btn_close')) ?>
+        </button>
+        <button class="btn btn-primary" id="menuEditSaveBtn" <?= $permDisabledAttr ?>>
+          <i class="ri-save-3-line me-1"></i> <span id="menuEditSaveBtnText"><?= h(__('userGroup_btn_save')) ?></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- MODAL: Akses Kumpulan -->
+<div class="modal fade modal-themed" id="aksesGroupModal" tabindex="-1" aria-hidden="true" aria-labelledby="aksesGroupTitle">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="aksesGroupTitle">
+          <i class="ri-user-settings-line"></i>
+          <span><?= h(__('userGroup_modal_group_access_title')) ?></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= h(__('userGroup_btn_close')) ?>"></button>
+      </div>
+      <div class="modal-subtitle" id="aksesGroupSub"></div>
+      <div class="modal-body">
+        <div id="grpLoading" class="modal-loading">
+          <div class="spinner-border" role="status" aria-hidden="true"></div>
+          <span><?= h(__('userGroup_loading')) ?>…</span>
+        </div>
+        <div id="grpError" class="modal-error alert alert-danger d-none"></div>
+        <div id="grpCnt" class="d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="ri-close-line me-1"></i> <?= h(__('userGroup_btn_close')) ?>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ringkasan (SEPARATE) -->
+<div class="modal fade modal-themed modal-child-accent" id="ringkasanModal" tabindex="-1" aria-hidden="true" aria-labelledby="ringkasanTitle">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ringkasanTitle">
+          <i class="ri-file-list-3-line"></i>
+          <span><?= h(__('userGroup_modal_summary_title')) ?></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= h(__('userGroup_btn_close')) ?>"></button>
+      </div>
+      <div class="modal-body">
+        <div id="ringkasanLoading" class="modal-loading">
+          <div class="spinner-border" role="status" aria-hidden="true"></div>
+          <span><?= h(__('userGroup_loading')) ?>…</span>
+        </div>
+        <div id="ringkasanError" class="modal-error alert alert-danger d-none"></div>
+        <div id="ringkasanContent" class="d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="ri-close-line me-1"></i> <?= h(__('userGroup_btn_close')) ?>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Pemilih Menu (SEPARATE) -->
+<div class="modal fade modal-themed modal-child-accent" id="menuPickModal" tabindex="-1" aria-hidden="true" aria-labelledby="menuPickTitle">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="menuPickTitle">
+          <i class="ri-list-check-2"></i>
+          <span><?= h(__('userGroup_modal_pick_menu_title')) ?></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= h(__('userGroup_btn_close')) ?>"></button>
+      </div>
+      <div class="modal-subtitle" id="menuPickSub"></div>
+      <div class="modal-body">
+        <div id="menuPickLoading" class="modal-loading">
+          <div class="spinner-border" role="status" aria-hidden="true"></div>
+          <span><?= h(__('userGroup_loading')) ?>…</span>
+        </div>
+        <div id="menuPickError" class="modal-error alert alert-danger d-none"></div>
+        <div id="menuPickContent" class="d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="ri-close-line me-1"></i> <?= h(__('userGroup_btn_close')) ?>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+      <!-- MODAL: Tambah Kumpulan -->
+      <div class="modal fade modal-themed" id="groupCreateModal" tabindex="-1" aria-hidden="true" aria-labelledby="groupCreateTitle">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="groupCreateTitle"><i class="ri-add-line"></i> <span><?= h(__('userGroup_modal_group_create_title')) ?></span></h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= h(__('userGroup_btn_close')) ?>"></button>
+            </div>
+            <div class="modal-body">
+              <form id="groupCreateForm" autocomplete="off">
+                <input type="hidden" id="gc_groupID" name="groupID" value="">
+                <div class="group-create-section-title">
+                  <i class="ri-shield-user-line"></i>
+                  <span><?= h(__('userGroup_field_group_identity')) ?></span>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label"><?= h(__('userGroup_field_group_code')) ?></label>
+                    <input type="text" class="form-control" id="gc_groupKod" name="groupKod" placeholder="e.g. ADM-XX" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label"><?= h(__('userGroup_field_group_name')) ?></label>
+                    <input type="text" class="form-control" id="gc_groupName" name="groupName" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label"><?= h(__('userGroup_field_group_category')) ?></label>
+                    <select class="form-select" id="gc_categoryUser" name="categoryUser" required>
+                      <option value="STAF">STAF</option>
+                      <option value="PELAJAR">PELAJAR</option>
+                      <option value="UMUM">UMUM</option>
+                    </select>
+                    <div class="form-text"><?= h(__('userGroup_field_group_category_help')) ?></div>
+                  </div>
+                  <input type="hidden" id="gc_priority" name="priority" value="0">
+                  <input type="hidden" id="gc_mod" name="mod" value="0">
+                </div>
+
+                <div class="group-create-section-title mt-4">
+                  <i class="ri-palette-line"></i>
+                  <span><?= h(__('userGroup_field_group_presentation')) ?></span>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label"><?= h(__('userGroup_field_color')) ?></label>
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="gc_color_picker" value="#50a4c1" title="Pilih warna">
+                      <input type="text" class="form-control" id="gc_color" name="color" placeholder="#50a4c1" readonly>
+                    </div>
+                    <div class="form-text"><?= h(__('userGroup_field_color_help')) ?></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label"><?= h(__('userGroup_field_group_preview')) ?></label>
+                    <div class="group-create-preview">
+                      <div class="group-create-preview-meta">
+                        <div class="group-create-preview-label"><?= h(__('userGroup_field_group_preview')) ?></div>
+                        <div class="group-create-preview-main">
+                          <span class="group-create-preview-code" id="gc_previewCode">ADM-XX</span>
+                          <span class="group-create-preview-chip" id="gc_previewName">Nama Kumpulan</span>
+                        </div>
+                      </div>
+                      <span class="group-create-preview-chip group-category-chip" id="gc_previewCategory" data-category="STAF">STAF</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="group-create-section-title mt-4">
+                  <i class="ri-links-line"></i>
+                  <span><?= h(__('userGroup_field_group_access_setup')) ?></span>
+                </div>
+                <div class="row g-3 mt-1">
+                  <div class="col-md-6">
+                    <label class="form-label"><?= h(__('userGroup_field_pick_module')) ?></label>
+                    <select class="form-select" id="gc_moduls" name="modulAccess" multiple size="6">
+                      <!-- options populated dynamically -->
+                    </select>
+                    <div class="form-text"><?= h(__('userGroup_field_pick_module_help')) ?></div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label"><?= h(__('userGroup_field_pick_menu')) ?></label>
+                    <select class="form-select" id="gc_menus" name="menuAccess" multiple size="6">
+                      <!-- options populated dynamically based on selected modul -->
+                    </select>
+                    <div class="form-text"><?= h(__('userGroup_field_pick_menu_help')) ?></div>
+                  </div>
+                </div>
+              </form>
+              <div id="groupCreateError" class="modal-error alert alert-danger d-none mt-3"></div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="ri-close-line me-1"></i> <?= __('btn_close') ?></button>
+              <button class="btn btn-primary" id="groupCreateSaveBtn" <?= $permDisabledAttr ?>><i class="ri-save-3-line me-1"></i> <span id="groupCreateSaveBtnText"><?= __('btn_save') ?></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: Tambah Modul -->
+<div class="modal fade modal-themed" id="moduleCreateModal" tabindex="-1" aria-hidden="true" aria-labelledby="moduleCreateTitle">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="moduleCreateTitle"><i class="ri-stack-line"></i> <span><?= h(__('modul_tambah_title')) ?></span></h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?= h(__('modul_batal')) ?>"></button>
+            </div>
+            <div class="modal-body">
+              <form id="moduleCreateForm" method="post" autocomplete="off">
+                <input type="hidden" name="action" value="add_module">
+                <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
+                <input type="hidden" name="moduleID" id="mc_moduleID" value="">
+                <div class="module-create-layout">
+                  <div class="module-create-panel">
+                    <div class="module-create-panel-title">
+                      <i class="ri-file-text-line"></i>
+                      <span id="moduleCreatePanelTitleText"><?= h(__('modul_tambah_title')) ?></span>
+                    </div>
+                    <div class="row g-3">
+                      <div class="col-12">
+                        <label class="form-label"><?= h(__('modul_nama_ms')) ?></label>
+                        <input type="text" class="form-control" id="mc_modulNameMs" name="modulNameMs" value="<?= h($moduleFormData['modulNameMs']) ?>" required>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label"><?= h(__('modul_nama_en')) ?></label>
+                        <input type="text" class="form-control" id="mc_modulNameEn" name="modulNameEn" value="<?= h($moduleFormData['modulNameEn']) ?>">
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label"><?= h(__('modul_susunan')) ?></label>
+                        <input type="text" class="form-control module-order-readonly" id="mc_order" value="<?= h((string)$nextModuleOrder) ?>" readonly aria-readonly="true">
+                        <small class="module-field-help"><?= h(__('modul_order_auto_help')) ?></small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="module-create-panel">
+                    <div class="module-create-panel-title">
+                      <i class="ri-apps-2-line"></i>
+                      <span><?= h(__('modul_icon')) ?></span>
+                    </div>
+                    <div class="module-icon-picker">
+                      <div class="module-icon-preview" id="mc_iconPreview" aria-hidden="true">
+                        <i class="<?= h($defaultModuleIcon) ?>"></i>
+                      </div>
+                      <div class="flex-grow-1">
+                        <input type="text" class="form-control" id="mc_icon" name="icon" value="<?= h($defaultModuleIcon) ?>" autocomplete="off">
+                        <small class="module-field-help"><?= h(__('modul_icon_help')) ?></small>
+                      </div>
+                    </div>
+                    <div class="module-icon-groups" id="mc_iconGrid" aria-label="<?= h(__('modul_icon')) ?>">
+                      <?php foreach ($moduleIconGroups as $iconGroup): ?>
+                        <div class="module-icon-group">
+                          <div class="module-icon-group-title"><?= h((string)($iconGroup['label'] ?? '')) ?></div>
+                          <div class="module-icon-grid">
+                            <?php foreach (($iconGroup['icons'] ?? []) as $iconClass): ?>
+                              <button
+                                type="button"
+                                class="module-icon-option<?= ((string)$defaultModuleIcon === (string)$iconClass) ? ' is-active' : '' ?>"
+                                data-icon="<?= h($iconClass) ?>"
+                                title="<?= h($iconClass) ?>"
+                                aria-label="<?= h($iconClass) ?>">
+                                <i class="<?= h($iconClass) ?>"></i>
+                              </button>
+                            <?php endforeach; ?>
+                          </div>
+                        </div>
+                      <?php endforeach; ?>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-bs-dismiss="modal"><i class="ri-close-line me-1"></i> <?= h(__('modul_batal')) ?></button>
+              <button class="btn btn-primary" id="moduleCreateSaveBtn" <?= $permDisabledAttr ?>><i class="ri-save-3-line me-1"></i> <span id="moduleCreateSaveBtnText"><?= h(__('modul_simpan')) ?></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+<script>
+// ✅ Global utility function untuk check DataTables availability
+window.hasDT = function() {
+  return !!(window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable);
+};
+
+(function(){
+  const canManageGroups = <?= $canManageGroups ? 'true' : 'false' ?>;
+  // =========================================================
+  // 🔧 KONFIG: Lock semua AJAX ke path yang betul sahaja
+  // Tukar ikut deploy path (root → '/ajax/', subfolder → '/e-prestasi/ajax/')
+  // =========================================================
+  //const AJAX_BASE = '/ajax/'; // <-- UBAH jika perlu
+  // Base path projek yang betul di semua environment (dev subfolder / production root)
+  const __BASE_PATH =
+    document.querySelector('meta[name="base-path"]')?.getAttribute('content') ||
+    // fallback kalau meta tak wujud: buang /pages atau /ajax dari pathname
+    (location.pathname.replace(/\/(pages|ajax)(\/.*)?$/, '') || '');
+
+  const AJAX_BASE = (__BASE_PATH || '') + '/ajax/';
+
+
+  const CSRF  = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  const hasDT = window.hasDT; // Use global function
+  const esc = (s)=> (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+  // Utility untuk bina URL endpoint di bawah AJAX_BASE
+  function apiUrl(file, params){
+    const u = new URL(AJAX_BASE + file, window.location.origin);
+    if (params && typeof params === 'object'){
+      Object.entries(params).forEach(([k,v])=>u.searchParams.set(k, String(v)));
+    }
+    u.searchParams.set('_', Date.now()); // cache-bust
+    return u.toString();
+  }
+  // ↓↓↓ tambah baris ni supaya boleh guna di console
+  window.apiUrl = apiUrl;
+
+  // Helper: fetch → cuba parse JSON, kalau HTML/teks lain bagi error mesra
+  async function fetchJSONSafe(url, opts){
+    const r = await fetch(url, Object.assign({ headers:{'Accept':'application/json'} }, opts||{}));
+    const txt = await r.text();
+    try { return JSON.parse(txt); }
+    catch(e){
+      const snippet = txt.slice(0, 240).replace(/\s+/g,' ').trim();
+      throw new Error('Server did not return JSON. Preview: ' + snippet);
+    }
+  }
+
+  // ===================== I18N ringkas ======================
+  const T = {
+    label_module: <?= json_encode(__('userGroup_label_module')) ?>,
+    label_menu: <?= json_encode(__('userGroup_label_menu')) ?>,
+    modul_fallback: <?= json_encode(__('userGroup_label_modul_fallback')) ?>,
+    no_records: <?= json_encode(__('userGroup_no_records')) ?>,
+    col_menu: <?= json_encode(__('userGroup_col_menu')) ?>,
+    col_reorder: <?= json_encode(__('userGroup_col_reorder')) ?>,
+    move_up: <?= json_encode(__('userGroup_move_up')) ?>,
+    move_down: <?= json_encode(__('userGroup_move_down')) ?>,
+    btn_add_menu: <?= json_encode(__('userGroup_btn_add_menu')) ?>,
+    btn_add_module: <?= json_encode(__('modul_tambah')) ?>,
+    col_status: <?= json_encode(__('userGroup_col_status')) ?>,
+    col_actions: <?= json_encode(__('userGroup_col_actions')) ?>,
+    status_on: <?= json_encode(__('userGroup_status_on')) ?>,
+    status_off: <?= json_encode(__('userGroup_status_off')) ?>,
+    loading: <?= json_encode(__('userGroup_loading')) ?>,
+    error_network: <?= json_encode(__('userGroup_error_network')) ?>,
+    error_unknown: <?= json_encode(__('userGroup_error_unknown')) ?>,
+    error_reorder: <?= json_encode(__('userGroup_error_reorder')) ?>,
+    error_load_access: <?= json_encode(__('userGroup_error_load_access')) ?>,
+    error_load_menu: <?= json_encode(__('userGroup_error_load_menu')) ?>,
+    error_get_menu: <?= json_encode(__('userGroup_error_get_menu')) ?>,
+    err_path_required: <?= json_encode(__('userGroup_err_path_required')) ?>,
+    err_modul_required: <?= json_encode(__('userGroup_err_modul_required')) ?>,
+    err_group_modul_path_required: <?= json_encode(__('userGroup_err_group_modul_path_required')) ?>,
+    err_add_menu: <?= json_encode(__('userGroup_err_add_menu')) ?>,
+    err_save_menu: <?= json_encode(__('userGroup_err_save_menu')) ?>,
+    delete_fail: <?= json_encode(__('userGroup_delete_fail')) ?>,
+    delete_group_success: <?= json_encode(__('userGroup_delete_group_success')) ?>,
+    delete_group_fail: <?= json_encode(__('userGroup_delete_group_fail')) ?>,
+    delete_group_network_fail: <?= json_encode(__('userGroup_delete_group_network_fail')) ?>,
+    delete_menu_cleanup_success: <?= json_encode(__('userGroup_delete_menu_cleanup_success')) ?>,
+    deleted_title: <?= json_encode(__('userGroup_deleted_title')) ?>,
+    delete_failed_title: <?= json_encode(__('userGroup_delete_failed_title')) ?>,
+    not_allowed_title: <?= json_encode(__('userGroup_not_allowed_title')) ?>,
+    field_modul: <?= json_encode(__('userGroup_field_modul')) ?>,
+    edit: <?= json_encode(__('userGroup_edit')) ?>,
+    delete: <?= json_encode(__('userGroup_delete')) ?>,
+    loading_modules: <?= json_encode(__('userGroup_loading_modules')) ?>,
+    loading_short: <?= json_encode(__('userGroup_loading_short')) ?>,
+    load_modules_fail: <?= json_encode(__('userGroup_load_modules_fail')) ?>,
+    no_modules_found: <?= json_encode(__('userGroup_no_modules_found')) ?>,
+    search_group_placeholder: <?= json_encode(__('userGroup_search_group_placeholder')) ?>,
+    search_menu_placeholder: <?= json_encode(__('userGroup_search_menu_placeholder')) ?>,
+    undo_btn: <?= json_encode(__('userGroup_undo_btn')) ?>,
+    undo_message: <?= json_encode(__('userGroup_undo_message')) ?>,
+    module_reorder_note: <?= json_encode(__('userGroup_module_reorder_note')) ?>,
+    module_drag_label: <?= json_encode(__('userGroup_module_drag_label')) ?>,
+    module_edit_label: <?= json_encode(__('modul_edit_label')) ?>,
+    module_delete_label: <?= json_encode(__('userGroup_module_delete_label')) ?>,
+    module_edit_success: <?= json_encode(__('modul_kemaskini_msg')) ?>,
+    module_update_title: <?= json_encode(__('modul_kemaskini_title')) ?>,
+    delete_module_confirm_title: <?= json_encode(__('userGroup_delete_module_confirm_title')) ?>,
+    delete_module_confirm_text: <?= json_encode(__('userGroup_delete_module_confirm_text')) ?>,
+    delete_module_confirm_fallback: <?= json_encode(__('userGroup_delete_module_confirm_fallback')) ?>,
+    delete_module_fail: <?= json_encode(__('userGroup_delete_module_fail')) ?>,
+    delete_module_success: <?= json_encode(__('userGroup_delete_module_success')) ?>,
+    delete_module_network_fail: <?= json_encode(__('userGroup_delete_module_network_fail')) ?>,
+    success_title: <?= json_encode(__('config_js_berjaya')) ?>,
+    btn_ok: <?= json_encode(__('config_js_btn_ok')) ?>,
+    btn_cancel: <?= json_encode(__('config_js_btn_cancel')) ?>,
+    undo_title: <?= json_encode(__('userGroup_undo_title')) ?>,
+    undo_info: <?= json_encode(__('userGroup_undo_info')) ?>,
+    dt_length_menu: <?= json_encode(__('userGroup_dt_length_menu')) ?>,
+    dt_info: <?= json_encode(__('userGroup_dt_info')) ?>,
+    dt_info_empty: <?= json_encode(__('userGroup_dt_info_empty')) ?>,
+    dt_info_filtered: <?= json_encode(__('userGroup_dt_info_filtered')) ?>,
+    dt_paginate_first: <?= json_encode(__('userGroup_dt_paginate_first')) ?>,
+    dt_paginate_last: <?= json_encode(__('userGroup_dt_paginate_last')) ?>,
+    dt_paginate_next: <?= json_encode(__('userGroup_dt_paginate_next')) ?>,
+    dt_paginate_previous: <?= json_encode(__('userGroup_dt_paginate_previous')) ?>,
+    modal_group_create_title: <?= json_encode(__('userGroup_modal_group_create_title')) ?>,
+    modal_group_edit_title: <?= json_encode(__('userGroup_modal_group_edit_title')) ?>,
+    field_group_preview: <?= json_encode(__('userGroup_field_group_preview')) ?>,
+    btn_save: <?= json_encode(__('btn_save')) ?>,
+    btn_update: <?= json_encode(__('btn_update')) ?>,
+    btn_close: <?= json_encode(__('btn_close')) ?>,
+    err_group_code_name_required: <?= json_encode(__('userGroup_err_group_code_name_required')) ?>,
+    confirm_title: <?= json_encode(__('userGroup_confirm_title')) ?>,
+    confirm_delete_group_text: <?= json_encode(__('userGroup_confirm_delete_group_text')) ?>,
+    confirm_delete_menu_title: <?= json_encode(__('userGroup_confirm_delete_menu_title')) ?>,
+    confirm_delete_menu_intro: <?= json_encode(__('userGroup_confirm_delete_menu_intro')) ?>,
+    confirm_delete_menu_cleanup: <?= json_encode(__('userGroup_confirm_delete_menu_cleanup')) ?>,
+    confirm_delete_menu_irreversible: <?= json_encode(__('userGroup_confirm_delete_menu_irreversible')) ?>,
+    confirm_delete_menu_fallback: <?= json_encode(__('userGroup_confirm_delete_menu_fallback')) ?>,
+    confirm_yes_delete: <?= json_encode(__('userGroup_confirm_yes_delete')) ?>,
+    confirm_cancel: <?= json_encode(__('userGroup_confirm_cancel')) ?>,
+    info_title: <?= json_encode(__('userGroup_info_title')) ?>,
+    info_select_group_first: <?= json_encode(__('userGroup_info_select_group_first')) ?>,
+    btn_menu_label: <?= json_encode(__('userGroup_btn_menu_label')) ?>,
+    btn_module_label: <?= json_encode(__('userGroup_btn_module_label')) ?>,
+    btn_group_label: <?= json_encode(__('userGroup_btn_group_label')) ?>,
+    btn_ok: <?= json_encode(__('config_js_btn_ok')) ?>,
+    menu_save_success_create: <?= json_encode(__('userGroup_menu_save_success_create')) ?>,
+    menu_save_success_update: <?= json_encode(__('userGroup_menu_save_success_update')) ?>
+  };
+  // Expose page translations for other script scopes (e.g. second IIFE / DataTable init)
+  window.GroupPageT = T;
+  window.GroupSwal = window.GroupSwal || {
+    fire(options) {
+      if (!window.Swal || typeof Swal.fire !== 'function') return Promise.resolve(null);
+      const opts = options && typeof options === 'object' ? options : {};
+      return Swal.fire(Object.assign({
+        confirmButtonText: T.btn_ok || 'OK',
+        buttonsStyling: false,
+        reverseButtons: true,
+        customClass: {
+          container: 'group-swal-container',
+          popup: 'group-swal-popup',
+          title: 'group-swal-title',
+          htmlContainer: 'group-swal-html',
+          confirmButton: 'group-swal-confirm',
+          cancelButton: 'group-swal-cancel',
+          actions: 'group-swal-actions',
+          icon: 'group-swal-icon'
+        }
+      }, opts));
+    }
+  };
+
+  // Initialize modules dan setup event handlers
+  function initializeModules() {
+    if (typeof ModuleAccess !== 'undefined') {
+      try { 
+        ModuleAccess.init(T); 
+      } catch(e) { 
+        console.error('ModuleAccess init error:', e); 
+      }
+    }
+    if (typeof MenuAccess !== 'undefined') {
+      try { 
+        MenuAccess.init(T); 
+      } catch(e) { 
+        console.error('MenuAccess init error:', e); 
+      }
+    }
+    if (typeof GroupPermissions !== 'undefined') {
+      try { 
+        GroupPermissions.init(); 
+      } catch(e) { 
+        console.error('GroupPermissions init error:', e); 
+      }
+    }
+    
+    // Setup event handlers after modules are initialized
+    setupEventHandlers();
+  }
+  
+  function setupEventHandlers() {
+    // Hook menu order dirty flag untuk extracted modules
+    (function hookModalClose() {
+      const aksesModalEl = document.getElementById('aksesModal');
+      aksesModalEl?.addEventListener('hidden.bs.modal', () => {
+        if (typeof GroupState !== 'undefined' && !GroupState.isMenuOrderDirty()) return;
+        if (typeof GroupState !== 'undefined') GroupState.setMenuOrderDirty(false);
+        if (typeof MenuRefresh !== 'undefined') MenuRefresh.refreshMainMenu().catch(console.warn);
+      });
+    })();
+
+    // View access button handler (delegated to ModuleAccess) - using event delegation
+    document.body.addEventListener('click', function(e) {
+      const btn = e.target.closest('.view-access');
+      if (btn && btn.classList.contains('view-access')) {
+        if (!canManageGroups) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (typeof ModuleAccess !== 'undefined' && typeof ModuleAccess.openAccess === 'function') {
+          ModuleAccess.openAccess(btn);
+    } else {
+          console.error('ModuleAccess.openAccess is not available');
+        }
+        return false;
+      }
+    }, true);
+
+    // View menu button handler (delegated to MenuAccess) - using event delegation
+    document.body.addEventListener('click', function(e) {
+      const btn = e.target.closest('.view-menu');
+      if (btn && btn.classList.contains('view-menu')) {
+        if (!canManageGroups) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (typeof MenuAccess !== 'undefined' && typeof MenuAccess.openMenuFromBtn === 'function') {
+          if (typeof GroupState !== 'undefined' && typeof GroupState.setLastMenuBtn === 'function') {
+            GroupState.setLastMenuBtn(btn);
+          }
+          MenuAccess.openMenuFromBtn(btn);
+        } else {
+          // fallback: try to show modal directly and call editor if available
+          try {
+            const el = document.getElementById('aksesMenuModal');
+            GroupState && typeof GroupState.setLastMenuBtn === 'function' && GroupState.setLastMenuBtn(btn);
+            if (el && window.bootstrap && bootstrap.Modal) {
+              GroupUtils.ensureInBody(el);
+              bootstrap.Modal.getOrCreateInstance(el, { backdrop: true, focus: true, keyboard: true }).show();
+            }
+            const gid = btn.getAttribute('data-group-id');
+            if (typeof MenuAccess !== 'undefined' && typeof MenuAccess.openMenuEditor === 'function') {
+              MenuAccess.openMenuEditor(gid);
+            }
+          } catch (e) {
+            console.error('Menu fallback failed', e);
+          }
+        }
+        return false;
+      }
+    }, true);
+
+    // View group perms button handler (delegated to GroupPermissions)
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.view-group-perms');
+      if (btn) {
+        if (!canManageGroups) return;
+        e.preventDefault();
+        if (typeof GroupPermissions !== 'undefined' && GroupPermissions.openGroupPermsFromBtn) {
+          GroupPermissions.openGroupPermsFromBtn(btn);
+        }
+      }
+    }, true);
+  }
+  
+  // Initialize immediately if DOM is ready, otherwise wait
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeModules);
+    } else {
+    // Use setTimeout to ensure all scripts are loaded
+    setTimeout(initializeModules, 100);
+  }
+
+  // Tooltip ringan
+  document.querySelectorAll('[title]').forEach(el => {
+    if (window.bootstrap && bootstrap.Tooltip) {
+      new bootstrap.Tooltip(el, { container: 'body' });
+    }
+  });
+})();
+
+// =========================================================
+// Priority 3: UX Improvements
+// =========================================================
+
+(function() {
+  'use strict';
+  const canManageGroups = <?= $canManageGroups ? 'true' : 'false' ?>;
+  const T = (window.GroupPageT && typeof window.GroupPageT === 'object') ? window.GroupPageT : {};
+
+  // =========================================================
+  // 1. Search/Filter untuk Group List (DataTable)
+  // =========================================================
+  let groupTableDT = null;
+  function initGroupTable() {
+    const table = document.getElementById('groupTable');
+    if (!table || !window.hasDT()) return;
+    
+    // Get translations from T object (defined in main script)
+    // Get translations from T object (defined in main script)
+    const dtLang = (typeof T !== 'undefined') ? {
+      searchPlaceholder: T.search_group_placeholder || "Search...",
+      lengthMenu: T.dt_length_menu || "Show _MENU_ entries",
+      info: T.dt_info || "Showing _START_ to _END_ of _TOTAL_ entries",
+      infoEmpty: T.dt_info_empty || "No entries",
+      infoFiltered: T.dt_info_filtered || "(filtered from _MAX_ total entries)",
+      paginate: {
+        first: T.dt_paginate_first || "First",
+        last: T.dt_paginate_last || "Last",
+        next: T.dt_paginate_next || "Next",
+        previous: T.dt_paginate_previous || "Previous"
+      }
+    } : {
+      searchPlaceholder: "Search...",
+      lengthMenu: "Show _MENU_ entries",
+      info: "Showing _START_ to _END_ of _TOTAL_ entries",
+      infoEmpty: "No entries",
+      infoFiltered: "(filtered from _MAX_ total entries)",
+      paginate: {
+        first: "First",
+        last: "Last",
+        next: "Next",
+        previous: "Previous"
+      }
+    };
+    // canManageGroups already defined in parent scope
+
+    const dtStandardOptions = (window.DataTableStandard && typeof window.DataTableStandard.options === 'function')
+      ? window.DataTableStandard.options({
+          order: [[2, 'asc']],
+          columnDefs: [
+            { targets: [0], orderable: false },
+            { targets: [3, 4, 5, 6], orderable: false, searchable: false }
+          ],
+          language: {
+            search: "",
+            searchPlaceholder: dtLang.searchPlaceholder,
+            lengthMenu: dtLang.lengthMenu,
+            info: dtLang.info,
+            infoEmpty: dtLang.infoEmpty,
+            infoFiltered: dtLang.infoFiltered,
+            paginate: dtLang.paginate
+          },
+          stateSave: false,
+          processing: false,
+          dom: '<"row mb-2"<"col-sm-12 col-md-6 dt-top-left"l><"col-sm-12 col-md-6 d-flex justify-content-md-end dt-top-right"f>>' +
+            't' +
+            '<"dt-bottom-row mt-2 d-flex justify-content-between align-items-center"<"dt-info-left"i><"dt-paging-right d-flex justify-content-end"p>>'
+        })
+      : {
+          pageLength: 10,
+          lengthChange: true,
+          ordering: true,
+          order: [[2, 'asc']],
+          columnDefs: [
+            { targets: [0], orderable: false },
+            { targets: [3, 4, 5, 6], orderable: false, searchable: false }
+          ],
+          language: {
+            search: "",
+            searchPlaceholder: dtLang.searchPlaceholder,
+            lengthMenu: dtLang.lengthMenu,
+            info: dtLang.info,
+            infoEmpty: dtLang.infoEmpty,
+            infoFiltered: dtLang.infoFiltered,
+            paginate: dtLang.paginate
+          },
+          stateSave: false,
+          processing: false,
+          dom: '<"row mb-2"<"col-sm-12 col-md-6 dt-top-left"l><"col-sm-12 col-md-6 d-flex justify-content-md-end dt-top-right"f>>' +
+            't' +
+            '<"dt-bottom-row mt-2 d-flex justify-content-between align-items-center"<"dt-info-left"i><"dt-paging-right d-flex justify-content-end"p>>'
+        };
+
+    dtStandardOptions.drawCallback = function(settings) {
+        try {
+          const api = this.api();
+          if (!api || typeof api.page !== 'function') return;
+          const pageInfo = api.page.info();
+          if (!pageInfo || typeof pageInfo.start === 'undefined') return;
+          
+          // Update nombor Bil untuk setiap row pada current page
+          let rowIndex = 0;
+          api.rows({page: 'current'}).every(function() {
+            const bilNumber = pageInfo.start + rowIndex + 1;
+            const $row = jQuery(this.node());
+            $row.find('td:first').text(bilNumber);
+            rowIndex++;
+            return true;
+          });
+        } catch (e) {
+          // Silent fail
+        }
+      };
+    dtStandardOptions.initComplete = function() {
+        if (window.DataTableStandard && typeof window.DataTableStandard.decorate === 'function') {
+          window.DataTableStandard.decorate('#groupTable', {
+            searchPlaceholder: dtLang.searchPlaceholder
+          });
+        }
+        const $topRightContainer = jQuery('#groupTable_wrapper .dt-top-right');
+        const $filterBlock = jQuery('#groupTable_filter');
+        if ($topRightContainer.length && $filterBlock.length) {
+          $filterBlock.appendTo($topRightContainer);
+        }
+        // Add "Tambah Kumpulan" (and page-level Tambah Menu) buttons beside controls
+        const $right = jQuery('#groupTable_wrapper .dt-top-right');
+        if ($right.length && canManageGroups) {
+          // Add "Tambah Menu" (page-level) and "Tambah Kumpulan" buttons
+          // Use full action labels for visible buttons
+          const fullMenuLabel = T.btn_menu_label || 'Menu';
+          const fullModuleLabel = T.btn_module_label || 'Modul';
+          const fullGroupLabel = T.btn_group_label || 'Kumpulan';
+
+          // Visible text shows full labels; also include title/aria-label for accessibility
+          const $btnMenu = jQuery('<button type="button" id="btnAddMenuPage" class="btn btn-sm btn-primary me-2" title="' + GroupUtils.esc(fullMenuLabel) + '" aria-label="' + GroupUtils.esc(fullMenuLabel) + '"><i class="ri-menu-2-line"></i> ' + GroupUtils.esc(fullMenuLabel) + '</button>');
+          const $btnModule = jQuery('<button type="button" id="btnAddModule" class="btn btn-sm btn-primary me-2" title="' + GroupUtils.esc(fullModuleLabel) + '" aria-label="' + GroupUtils.esc(fullModuleLabel) + '"><i class="ri-stack-line"></i> ' + GroupUtils.esc(fullModuleLabel) + '</button>');
+          const $btn = jQuery('<button type="button" id="btnAddGroup" class="btn btn-sm btn-primary" title="' + GroupUtils.esc(fullGroupLabel) + '" aria-label="' + GroupUtils.esc(fullGroupLabel) + '"><i class="ri-group-line"></i> ' + GroupUtils.esc(fullGroupLabel) + '</button>');
+
+          // Append in order: Menu, Modul, Group
+          $right.append($btnMenu).append($btnModule).append($btn);
+
+          // Page-level Add Menu handler: delegate to MenuAccess.handleAddMenu when available
+          $btnMenu.off('click').on('click', function(){
+            try {
+              if (window.MenuAccess && typeof MenuAccess.handleAddMenu === 'function') {
+                // Attempt to call handler which will resolve group context or show warnings
+                MenuAccess.handleAddMenu();
+                return;
+              }
+            } catch (e) { /* ignore and fallback */ }
+            // Fallback: show guidance (no modal) to avoid overlay-only state
+            if (window.Swal && typeof Swal.fire === 'function') {
+              (window.GroupSwal ? GroupSwal.fire({
+                icon: 'info',
+                title: T.info_title || 'Makluman',
+                text: T.info_select_group_first || 'Sila pilih kumpulan dahulu melalui butang Akses Menu.',
+                confirmButtonText: 'OK'
+              }) : Swal.fire({
+                icon: 'info',
+                title: T.info_title || 'Makluman',
+                text: T.info_select_group_first || 'Sila pilih kumpulan dahulu melalui butang Akses Menu.',
+                confirmButtonText: 'OK'
+              }));
+            } else {
+              alert(T.info_select_group_first || 'Sila pilih kumpulan dahulu melalui butang Akses Menu.');
+            }
+          });
+
+          $btnModule.off('click').on('click', function(){
+            const modal = new bootstrap.Modal(document.getElementById('moduleCreateModal'));
+            const modalEl = document.getElementById('moduleCreateModal');
+            if (modalEl) {
+              modalEl.classList.remove('modal-child-accent');
+              modalEl.classList.add('modal-add-accent');
+            }
+            const form = document.getElementById('moduleCreateForm');
+            if (form && !form.dataset.keepValues) {
+              form.reset();
+            }
+            if (form) delete form.dataset.keepValues;
+            modal.show();
+          });
+
+          // Existing Add Group handler
+          $btn.off('click').on('click', function(){
+            const modal = new bootstrap.Modal(document.getElementById('groupCreateModal'));
+            const groupModalEl = document.getElementById('groupCreateModal');
+            if (groupModalEl) {
+              groupModalEl.classList.remove('modal-child-accent');
+              groupModalEl.classList.add('modal-add-accent');
+            }
+            // reset form
+            document.getElementById('groupCreateTitle').innerHTML = '<i class="ri-add-line"></i> <span>' + String(T.modal_group_create_title || '') + '</span>';
+            const saveTxt = document.getElementById('groupCreateSaveBtnText');
+            if (saveTxt) saveTxt.textContent = String(T.btn_save || '');
+            document.getElementById('gc_groupID').value = '';
+            document.getElementById('gc_groupKod').value = '';
+            document.getElementById('gc_groupName').value = '';
+            document.getElementById('gc_categoryUser').value = 'STAF';
+            document.getElementById('gc_color_picker').value = '#50a4c1';
+            document.getElementById('gc_color').value = '#50a4c1';
+            document.getElementById('gc_priority').value = '0';
+            document.getElementById('gc_mod').value = '0';
+            if (window.MenuAccess && typeof window.MenuAccess.syncGroupPreview === 'function') {
+              window.MenuAccess.syncGroupPreview();
+            }
+            // populate modul/menu selects before showing
+            try { if (window.MenuAccess && typeof window.MenuAccess.populateCreateModal === 'function') window.MenuAccess.populateCreateModal().finally(()=>modal.show()); else modal.show(); } catch(e){ modal.show(); }
+          });
+        }
+      };
+
+    groupTableDT = jQuery('#groupTable').DataTable(dtStandardOptions);
+  }
+
+  // =========================================================
+  // 2. Loading Indicators untuk Button Clicks
+  // =========================================================
+  function setButtonLoading(btn, isLoading) {
+    if (!btn) return;
+    
+    // For icon-only buttons, just add/remove loading class without changing content
+    const isIconButton = btn.classList.contains('icon-btn') || 
+                         (btn.querySelector('i') && !btn.textContent.trim());
+    
+    if (isLoading) {
+      btn.classList.add('btn-loading');
+      btn.disabled = true;
+      
+      // Only modify content for buttons with text, not icon-only buttons
+      if (!isIconButton) {
+        const text = btn.querySelector('.btn-text') || btn.childNodes[0];
+        if (text && text.nodeType === 3) {
+          btn.dataset.originalText = text.textContent;
+          text.textContent = '';
+        } else if (text && btn.innerHTML) {
+          btn.dataset.originalText = btn.innerHTML;
+          btn.innerHTML = '<span class="btn-text" style="opacity:0">' + btn.innerHTML + '</span>';
+        }
+      }
+    } else {
+      btn.classList.remove('btn-loading');
+      btn.disabled = false;
+      
+      // Only restore content for buttons with text
+      if (!isIconButton && btn.dataset.originalText) {
+        btn.innerHTML = btn.dataset.originalText;
+        delete btn.dataset.originalText;
+      }
+    }
+  }
+
+  // Add loading to action buttons (skip icon-only buttons to preserve icons)
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.view-access, .view-menu, .view-group-perms, #menuEditSaveBtn');
+    if (btn && !btn.disabled) {
+      const isIconButton = btn.classList.contains('icon-btn');
+      
+      // Skip loading indicator for icon-only buttons to preserve icon appearance
+      if (isIconButton) {
+        // Just briefly disable to prevent double-clicks, no visual change
+        btn.disabled = true;
+        const reEnable = () => {
+          btn.disabled = false;
+        };
+        // Re-enable after modal opens or after timeout
+        const timeout = setTimeout(reEnable, 2000);
+        document.addEventListener('shown.bs.modal', () => {
+          clearTimeout(timeout);
+          reEnable();
+        }, { once: true });
+        return; // Don't apply loading indicator
+      }
+      
+      // For buttons with text, apply loading indicator
+      if (!btn.classList.contains('btn-loading')) {
+        const originalDisabled = btn.disabled;
+        setButtonLoading(btn, true);
+        
+        const cleanup = () => {
+          setButtonLoading(btn, false);
+          btn.disabled = originalDisabled;
+        };
+        
+        const timeout = setTimeout(cleanup, 3000);
+        document.addEventListener('shown.bs.modal', () => {
+          clearTimeout(timeout);
+          cleanup();
+        }, { once: true });
+      }
+    }
+    }, true);
+
+  // =========================================================
+  // 3. SweetAlert follow-up untuk Menu Delete
+  // =========================================================
+  if (typeof MenuAccess !== 'undefined') {
+    const originalDeleteMenu = MenuAccess.deleteMenu;
+    if (originalDeleteMenu) {
+      MenuAccess.deleteMenu = async function(menuID, tr) {
+        const menuData = {
+          id: menuID,
+          name: tr ? (tr.querySelector('td:nth-child(2) .fw-semibold')?.textContent || '') : '',
+        };
+
+        await originalDeleteMenu.call(this, menuID, tr);
+
+        const undoMsgTemplate = (typeof T !== 'undefined' && T.undo_message) ? T.undo_message : 'Menu "%s" has been deleted.';
+        const undoMsg = undoMsgTemplate.replace('%s', GroupUtils.esc(menuData.name));
+        const undoTitle = (typeof T !== 'undefined' && T.undo_title) ? T.undo_title : 'Cancel';
+        const undoInfo = (typeof T !== 'undefined' && T.undo_info) ? T.undo_info : 'Undo function requires server-side endpoint. Please contact admin.';
+
+        if (window.Swal && Swal.fire) {
+          await (window.GroupSwal ? GroupSwal.fire({
+            icon: 'info',
+            title: undoTitle,
+            text: `${undoMsg} ${undoInfo}`.trim(),
+            confirmButtonText: 'OK'
+          }) : Swal.fire({
+            icon: 'info',
+            title: undoTitle,
+            text: `${undoMsg} ${undoInfo}`.trim(),
+            confirmButtonText: 'OK'
+          }));
+        }
+      };
+    }
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initGroupTable, 100);
+    });
+      } else {
+    setTimeout(initGroupTable, 100);
+  }
+})();
+
+document.addEventListener('DOMContentLoaded', function(){
+  const saveBtn = document.getElementById('moduleCreateSaveBtn');
+  const form = document.getElementById('moduleCreateForm');
+  const modalEl = document.getElementById('moduleCreateModal');
+  const parentAccessModalEl = document.getElementById('aksesModal');
+  const iconInput = document.getElementById('mc_icon');
+  const iconPreview = document.getElementById('mc_iconPreview');
+  const iconGrid = document.getElementById('mc_iconGrid');
+  const actionInput = form ? form.querySelector('input[name="action"]') : null;
+  const moduleIdInput = document.getElementById('mc_moduleID');
+  const modalTitleText = document.getElementById('moduleCreateTitle')?.querySelector('span');
+  const panelTitleText = document.getElementById('moduleCreatePanelTitleText');
+  const saveBtnText = document.getElementById('moduleCreateSaveBtnText');
+  const orderInput = document.getElementById('mc_order');
+  const nameMsInput = document.getElementById('mc_modulNameMs');
+  const nameEnInput = document.getElementById('mc_modulNameEn');
+  const defaultOrderValue = <?= json_encode((string)$nextModuleOrder) ?>;
+  const defaultIconValue = <?= json_encode((string)$defaultModuleIcon) ?>;
+  let restoreParentAccessModal = false;
+
+  const syncModuleIconPreview = (iconClass) => {
+    if (!iconPreview) return;
+    const safeIcon = iconClass || 'ri-folder-fill';
+    iconPreview.innerHTML = '<i class="' + safeIcon.replace(/"/g, '&quot;') + '"></i>';
+  };
+
+  const syncModuleIconSelection = () => {
+    if (!iconInput) return;
+    const currentValue = (iconInput.value || '').trim();
+    if (iconGrid) {
+      iconGrid.querySelectorAll('.module-icon-option').forEach(btn => {
+        btn.classList.toggle('is-active', btn.getAttribute('data-icon') === currentValue);
+      });
+    }
+    syncModuleIconPreview(currentValue);
+  };
+
+  const setModuleFormMode = (mode, data = {}) => {
+    if (!form) return;
+    const isEdit = mode === 'edit';
+    form.dataset.mode = isEdit ? 'edit' : 'create';
+    if (actionInput) actionInput.value = isEdit ? 'update_module' : 'add_module';
+    if (moduleIdInput) moduleIdInput.value = isEdit ? String(data.moduleID || '') : '';
+    if (modalTitleText) modalTitleText.textContent = isEdit ? <?= json_encode((string)__('modul_kemaskini_title')) ?> : <?= json_encode((string)__('modul_tambah_title')) ?>;
+    if (panelTitleText) panelTitleText.textContent = isEdit ? <?= json_encode((string)__('modul_kemaskini_title')) ?> : <?= json_encode((string)__('modul_tambah_title')) ?>;
+    if (saveBtnText) saveBtnText.textContent = isEdit ? <?= json_encode((string)__('btn_update')) ?> : <?= json_encode((string)__('modul_simpan')) ?>;
+    if (nameMsInput) nameMsInput.value = isEdit ? (data.modulNameMs || '') : '';
+    if (nameEnInput) nameEnInput.value = isEdit ? (data.modulNameEn || '') : '';
+    if (orderInput) orderInput.value = isEdit ? String(data.order || '') : defaultOrderValue;
+    if (iconInput) iconInput.value = isEdit ? (data.icon || defaultIconValue) : defaultIconValue;
+    syncModuleIconSelection();
+  };
+
+  window.openModuleFormModal = function(data = {}) {
+    setModuleFormMode(data.mode || 'create', data);
+    if (modalEl && window.bootstrap && bootstrap.Modal) {
+      modalEl.classList.toggle('modal-add-accent', (data.mode || 'create') === 'create');
+      modalEl.classList.toggle('modal-child-accent', (data.mode || 'create') !== 'create');
+      const parentModal = parentAccessModalEl && bootstrap.Modal ? bootstrap.Modal.getOrCreateInstance(parentAccessModalEl) : null;
+      restoreParentAccessModal = !!(parentModal && parentAccessModalEl.classList.contains('show'));
+      if (restoreParentAccessModal) parentModal.hide();
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+  };
+
+  if (iconInput) {
+    iconInput.addEventListener('input', syncModuleIconSelection);
+    syncModuleIconSelection();
+  }
+
+  if (iconGrid && iconInput) {
+    iconGrid.addEventListener('click', function(e) {
+      const btn = e.target.closest('.module-icon-option');
+      if (!btn) return;
+      const iconClass = btn.getAttribute('data-icon') || 'ri-folder-fill';
+      iconInput.value = iconClass;
+      syncModuleIconSelection();
+      iconInput.focus();
+      iconInput.setSelectionRange(iconInput.value.length, iconInput.value.length);
+    });
+  }
+
+  if (saveBtn && form) {
+    saveBtn.addEventListener('click', async function(e){
+      e.preventDefault();
+      if ((form.dataset.mode || 'create') !== 'edit') {
+        form.submit();
+        return;
+      }
+
+      const payload = {
+        moduleID: moduleIdInput ? moduleIdInput.value : '',
+        modulNameMs: nameMsInput ? nameMsInput.value : '',
+        modulNameEn: nameEnInput ? nameEnInput.value : '',
+        icon: iconInput ? iconInput.value : '',
+      };
+
+      saveBtn.disabled = true;
+      const originalHtml = saveBtn.innerHTML;
+      saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> <?= h(__('updating')) ?>';
+
+      try {
+        const resp = await fetch(GroupUtils.apiUrl('module-update.php'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': GroupUtils.getCSRF()
+          },
+          body: JSON.stringify(payload)
+        }).then(async (response) => {
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data?.message || <?= json_encode((string)__('userGroup_error_unknown')) ?>);
+          }
+          return data;
+        });
+
+        if (modalEl && window.bootstrap && bootstrap.Modal) {
+          bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+        }
+        if (window.ModuleAccess && typeof ModuleAccess.reloadCurrentAccess === 'function') {
+          await ModuleAccess.reloadCurrentAccess();
+        }
+        if (window.MenuRefresh && typeof MenuRefresh.refreshMainMenu === 'function') {
+          await MenuRefresh.refreshMainMenu().catch(console.warn);
+        }
+
+        if (window.Swal && typeof Swal.fire === 'function') {
+          (window.GroupSwal ? GroupSwal.fire({
+            icon: 'success',
+            title: <?= json_encode((string)__('config_js_berjaya')) ?>,
+            text: resp.message || <?= json_encode((string)__('modul_kemaskini_msg')) ?>,
+            confirmButtonText: <?= json_encode((string)__('config_js_btn_ok')) ?>
+          }) : Swal.fire({
+            icon: 'success',
+            title: <?= json_encode((string)__('config_js_berjaya')) ?>,
+            text: resp.message || <?= json_encode((string)__('modul_kemaskini_msg')) ?>,
+            confirmButtonText: <?= json_encode((string)__('config_js_btn_ok')) ?>
+          }));
+        }
+      } catch (err) {
+        if (window.Swal && typeof Swal.fire === 'function') {
+          (window.GroupSwal ? GroupSwal.fire({
+            icon: 'error',
+            title: <?= json_encode((string)__('modul_ralat_title')) ?>,
+            text: err.message || <?= json_encode((string)__('userGroup_error_unknown')) ?>,
+            confirmButtonText: <?= json_encode((string)__('config_js_btn_ok')) ?>
+          }) : Swal.fire({
+            icon: 'error',
+            title: <?= json_encode((string)__('modul_ralat_title')) ?>,
+            text: err.message || <?= json_encode((string)__('userGroup_error_unknown')) ?>,
+            confirmButtonText: <?= json_encode((string)__('config_js_btn_ok')) ?>
+          }));
+        }
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalHtml;
+      }
+    });
+  }
+
+  <?php if (!empty($moduleSwal) && is_array($moduleSwal)): ?>
+  if (window.Swal && typeof Swal.fire === 'function') {
+    (window.GroupSwal ? GroupSwal.fire({
+      icon: <?= json_encode((string)($moduleSwal['icon'] ?? 'info')) ?>,
+      title: <?= json_encode((string)($moduleSwal['title'] ?? '')) ?>,
+      text: <?= json_encode((string)($moduleSwal['text'] ?? '')) ?>,
+      confirmButtonText: <?= json_encode((string)__('config_js_btn_ok')) ?>
+    }) : Swal.fire({
+      icon: <?= json_encode((string)($moduleSwal['icon'] ?? 'info')) ?>,
+      title: <?= json_encode((string)($moduleSwal['title'] ?? '')) ?>,
+      text: <?= json_encode((string)($moduleSwal['text'] ?? '')) ?>,
+      confirmButtonText: <?= json_encode((string)__('config_js_btn_ok')) ?>
+    }));
+  }
+  <?php endif; ?>
+
+  <?php if ($moduleFormOpen): ?>
+  if (modalEl && window.bootstrap && bootstrap.Modal) {
+    const formEl = document.getElementById('moduleCreateForm');
+    if (formEl) formEl.dataset.keepValues = '1';
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+  <?php endif; ?>
+
+  if (modalEl) {
+    modalEl.addEventListener('hidden.bs.modal', function() {
+      if ((form?.dataset.mode || 'create') === 'edit') {
+        setModuleFormMode('create');
+      }
+      if (restoreParentAccessModal && parentAccessModalEl && window.bootstrap && bootstrap.Modal) {
+        restoreParentAccessModal = false;
+        bootstrap.Modal.getOrCreateInstance(parentAccessModalEl).show();
+      } else {
+        restoreParentAccessModal = false;
+      }
+    });
+  }
+});
+</script>
+
+
+
+</body>
+</html>

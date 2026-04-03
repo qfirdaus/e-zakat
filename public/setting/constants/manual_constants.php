@@ -1,0 +1,49 @@
+<?php
+/**
+ * Constants and helpers for User Manual management flow.
+ *
+ * Scope:
+ * - Access checks for manual management pages and AJAX endpoints
+ * - Shared role-code source of truth for manual admin permissions
+ */
+
+if (defined('MANUAL_CONSTANTS_INCLUDED')) {
+    return;
+}
+define('MANUAL_CONSTANTS_INCLUDED', true);
+
+if (!defined('MANUAL_ROLE_KOD_ADM_SA')) {
+    $manualRoleSa = $_ENV['MANUAL_ROLE_KOD_ADM_SA'] ?? getenv('MANUAL_ROLE_KOD_ADM_SA');
+    define('MANUAL_ROLE_KOD_ADM_SA', (string)(is_string($manualRoleSa) && trim($manualRoleSa) !== '' ? trim($manualRoleSa) : 'ADM-SA'));
+}
+
+if (!defined('MANUAL_ROLE_KOD_ADM_PE')) {
+    $manualRolePe = $_ENV['MANUAL_ROLE_KOD_ADM_PE'] ?? getenv('MANUAL_ROLE_KOD_ADM_PE');
+    define('MANUAL_ROLE_KOD_ADM_PE', (string)(is_string($manualRolePe) && trim($manualRolePe) !== '' ? trim($manualRolePe) : 'ADM-PE'));
+}
+
+if (!defined('MANUAL_ALLOWED_ADMIN_ROLE_CODES')) {
+    define('MANUAL_ALLOWED_ADMIN_ROLE_CODES', [
+        MANUAL_ROLE_KOD_ADM_SA,
+        MANUAL_ROLE_KOD_ADM_PE,
+    ]);
+}
+
+if (!function_exists('manual_allowed_admin_roles')) {
+    function manual_allowed_admin_roles(): array
+    {
+        return array_values(array_filter(array_map('strval', MANUAL_ALLOWED_ADMIN_ROLE_CODES)));
+    }
+}
+
+if (!function_exists('manual_is_admin_role')) {
+    function manual_is_admin_role(?string $roleKod): bool
+    {
+        $roleKod = trim((string)$roleKod);
+        if ($roleKod === '') {
+            return false;
+        }
+
+        return in_array($roleKod, manual_allowed_admin_roles(), true);
+    }
+}

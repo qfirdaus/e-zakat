@@ -1,0 +1,202 @@
+<head>
+<?php
+  // Core init & settings
+  require_once __DIR__ . '/init.php';
+  $defaultHome = trim((string)app_config('site.default_home', 'pages/dashboard.php'));
+  $metaAuthor = trim((string)app_config('system.meta_author', 'Base System'));
+  $siteTitle = trim((string)app_config('site.title', 'Base System'));
+  $faviconPath = trim((string)app_config('site.favicon', 'assets/images/favicon.ico'));
+  $pageTitle = isset($PAGE_TITLE) ? trim((string)$PAGE_TITLE) : '';
+  $metaDescription = isset($PAGE_META_DESCRIPTION) ? trim((string)$PAGE_META_DESCRIPTION) : '';
+  $browserTitle = $pageTitle !== '' ? ($pageTitle . ' | ' . $siteTitle) : $siteTitle;
+  if ($metaDescription === '') {
+    $metaDescription = $pageTitle !== '' ? ($pageTitle . ' | ' . $siteTitle) : $siteTitle;
+  }
+
+  // Theme defaults
+  $_SESSION['theme.layout'] = $_SESSION['theme.layout'] ?? 'light';
+  $_SESSION['theme.topbar'] = $_SESSION['theme.topbar'] ?? 'light';
+  $_SESSION['theme.menu']   = $_SESSION['theme.menu']   ?? 'light';
+
+  // Per-page asset flags (fallback jika page tak set)
+  $NEED_DATERANGE   = $NEED_DATERANGE   ?? false;
+  $NEED_VECTORMAP   = $NEED_VECTORMAP   ?? false;
+  $NEED_DATATABLES  = $NEED_DATATABLES  ?? false;
+  $NEED_SELECT2     = $NEED_SELECT2     ?? false;
+  $INCLUDE_I18N_PRESTASI = $INCLUDE_I18N_PRESTASI ?? false;
+?>
+  <meta charset="utf-8" />
+  <title><?= htmlspecialchars($browserTitle, ENT_QUOTES, 'UTF-8') ?></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>" name="description" />
+  <meta content="<?= htmlspecialchars($metaAuthor, ENT_QUOTES, 'UTF-8') ?>" name="author" />
+
+  <!-- ⬇️ Tambah SATU blok ni di sini -->
+  <?php if (function_exists('inject_base_meta')) {
+        inject_base_meta();
+     } else { // fallback kalau helper tak tersedia
+        $bp = htmlspecialchars(base_path(), ENT_QUOTES, 'UTF-8');
+        $bu = htmlspecialchars(base_url(),  ENT_QUOTES, 'UTF-8'); ?>
+        <meta name="base-path" content="<?= $bp ?>">
+        <meta name="base-url"  content="<?= $bu ?>">
+  <?php } ?>
+  <!-- ⬆️ Tamat meta base-path/base-url -->
+
+  <!-- Canonical & favicon -->
+  <link rel="canonical" href="<?= base_url($defaultHome) ?>" />
+  <link rel="shortcut icon" href="<?= base_url($faviconPath) ?>" />
+
+  <style>
+    #global-loader{
+      position:fixed; inset:0; z-index:9999;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(255,255,255,.9);
+      opacity:1; visibility:visible;
+      transition:opacity .35s ease, visibility .35s ease;
+      backdrop-filter:blur(2px);
+    }
+    html[data-bs-theme="dark"] #global-loader{ background:rgba(0,0,0,.6); }
+    #global-loader.loader-hidden{ opacity:0; visibility:hidden; }
+    #global-loader .spinner{
+      width:48px; height:48px; border:4px solid currentColor;
+      border-bottom-color:transparent; border-radius:50%;
+      display:inline-block; box-sizing:border-box;
+      animation:loader-rotate .9s linear infinite;
+    }
+    @keyframes loader-rotate{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+  </style>
+
+  <!-- NProgress (top bar) -->
+  <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css">
+  <style>
+    #nprogress .bar{height:3px} #nprogress .peg{box-shadow:none}
+    /* Overlay (optional, hanya aktif bila page minta) */
+    .loader-overlay{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;
+      background:rgba(255,255,255,.6);backdrop-filter:blur(1px)}
+    .loader-overlay.show{display:flex}
+  </style>
+
+
+  <!-- App CSS (asas) -->
+  <link rel="stylesheet" href="<?= base_url('assets/css/icons.min.css') ?>?v=<?= time(); ?>" />
+  <link id="app-style" rel="stylesheet" href="<?= base_url('assets/css/app.css') ?>?v=<?= time(); ?>" />
+
+  <!-- Plugin CSS (ikut keperluan page) -->
+  <?php if ($NEED_DATERANGE): ?>
+    <link rel="stylesheet" href="<?= base_url('assets/vendor/daterangepicker/daterangepicker.css') ?>" />
+  <?php endif; ?>
+
+  <?php if ($NEED_VECTORMAP): ?>
+    <link rel="stylesheet" href="<?= base_url('assets/vendor/admin-resources/jquery.vectormap/jquery-jvectormap-1.2.2.css') ?>" />
+  <?php endif; ?>
+
+  <?php if ($NEED_DATATABLES): ?>
+    <link href="<?= base_url('assets/vendor/datatables.net-bs5/css/dataTables.bootstrap5.min.css') ?>" rel="stylesheet" />
+    <link href="<?= base_url('assets/vendor/datatables.net-responsive-bs5/css/responsive.bootstrap5.min.css') ?>" rel="stylesheet" />
+    <link href="<?= base_url('assets/vendor/datatables.net-fixedcolumns-bs5/css/fixedColumns.bootstrap5.min.css') ?>" rel="stylesheet" />
+    <link href="<?= base_url('assets/vendor/datatables.net-fixedheader-bs5/css/fixedHeader.bootstrap5.min.css') ?>" rel="stylesheet" />
+    <link href="<?= base_url('assets/vendor/datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css') ?>" rel="stylesheet" />
+    <link href="<?= base_url('assets/vendor/datatables.net-select-bs5/css/select.bootstrap5.min.css') ?>" rel="stylesheet" />
+  <?php endif; ?>
+
+  <?php if ($NEED_SELECT2): ?>
+    <link rel="stylesheet" href="<?= base_url('assets/vendor/select2/css/select2.min.css') ?>?v=<?= time(); ?>">
+  <?php endif; ?>
+
+  <!-- i18n: fungsi senyap (tiada console.warn) -->
+  <script>
+    (function () {
+      var w = window;
+      // Map terjemahan dari PHP (jika ada)
+      w.__translations = <?= json_encode($translations_js ?? [], JSON_UNESCAPED_UNICODE) ?>;
+      // Helper i18n senyap
+      w.__ = function (key, fallback) {
+        var dict = w.__translations || {};
+        if (Object.prototype.hasOwnProperty.call(dict, key)) return dict[key] || '';
+        return (fallback !== undefined ? fallback : (key || ''));
+      };
+    })();
+  </script>
+
+  <!-- i18n khusus Prestasi (opsyenal – hanya jika page minta) -->
+  <?php if (!isset($INCLUDE_I18N_PRESTASI)) { $INCLUDE_I18N_PRESTASI = true; } ?>
+  <?php if (!empty($INCLUDE_I18N_PRESTASI)): ?>
+  <script>
+    window.I18N_PRESTASI = {
+      table_empty:             "<?= h(__('prestasi_js_table_empty')) ?>",
+      year_selected_title:     "<?= h(__('prestasi_js_year_selected_title')) ?>",
+      year_selected_text:      "<?= h(__('prestasi_js_year_selected_text')) ?>",
+      ok:                      "<?= h(__('prestasi_js_ok')) ?>",
+      cancel:                  "<?= h(__('prestasi_js_cancel')) ?>",
+      saving:                  "<?= h(__('prestasi_js_saving')) ?>",
+      success_title:           "<?= h(__('prestasi_js_success_title')) ?>",
+      error_title:             "<?= h(__('prestasi_js_error_title')) ?>",
+      non_json_prefix:         "<?= h(__('prestasi_js_non_json_prefix')) ?>",
+      reminder_confirm_title:  "<?= h(__('prestasi_js_reminder_confirm_title')) ?>",
+      email_missing_title:     "<?= h(__('prestasi_js_email_missing_title')) ?>",
+      email_missing_text:      "<?= h(__('prestasi_js_email_missing_text')) ?>",
+      reminder_sent_title:     "<?= h(__('prestasi_js_reminder_sent_title')) ?>",
+      reminder_sent_text:      "<?= h(__('prestasi_js_reminder_sent_text')) ?>",
+      reminder_failed_default: "<?= h(__('prestasi_js_reminder_failed_default')) ?>",
+      server_error_prefix:     "<?= h(__('prestasi_js_server_error_prefix')) ?>",
+      reminder_intro:          "<?= h(__('prestasi_js_reminder_intro')) ?>",
+      reminder_footer:         "<?= h(__('prestasi_js_reminder_footer')) ?>",
+      reminder_btn_send:       "<?= h(__('prestasi_js_reminder_btn_send')) ?>"
+    };
+  </script>
+  <?php endif; ?>
+
+
+
+
+
+  <!-- Safe Storage Shim: prevent errors when storage is blocked -->
+  <script>
+    (function(){
+      function makeSafeStorage(){
+        let store = {};
+        return {
+          getItem: (k)=> (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+          setItem: (k,v)=>{ store[k] = String(v); },
+          removeItem: (k)=>{ delete store[k]; },
+          clear: ()=>{ store = {}; },
+          key: (i)=> Object.keys(store)[i] || null,
+          get length(){ return Object.keys(store).length; }
+        };
+      }
+      function safeStorageAccessor(type){
+        try {
+          const s = window[type];
+          const testKey = '__storage_test__';
+          s.setItem(testKey, '1');
+          s.removeItem(testKey);
+          return s;
+        } catch(e) {
+          try {
+            const safe = makeSafeStorage();
+            Object.defineProperty(window, type, { value: safe, writable: false, configurable: true });
+            return safe;
+          } catch(_) {
+            return makeSafeStorage();
+          }
+        }
+      }
+      window.safeStorage = window.safeStorage || {
+        local: safeStorageAccessor('localStorage'),
+        session: safeStorageAccessor('sessionStorage'),
+        get: (k)=> { try { return window.localStorage.getItem(k); } catch(e){ return null; } },
+        set: (k,v)=> { try { window.localStorage.setItem(k,v); return true; } catch(e){ return false; } }
+      };
+    })();
+  </script>
+
+  <!-- Config Script -->
+  <script src="<?= base_url('assets/js/config.js') ?>" defer></script>
+
+  <!-- Prefill theme ke <html> (elak FOUC) -->
+  <script>
+    document.documentElement.setAttribute('data-bs-theme',  '<?= $_SESSION['theme.layout'] ?>');
+    document.documentElement.setAttribute('data-menu-color', '<?= $_SESSION['theme.menu'] ?>');
+    document.documentElement.setAttribute('data-topbar-color','<?= $_SESSION['theme.topbar'] ?>');
+  </script>
+</head>
