@@ -1,19 +1,28 @@
 services:
   web:
     build: .
-    container_name: ebase_web
+    container_name: iqs-framework-web
     env_file:
       - ./.env
     ports:
       - "80:80"
       - "443:443"
     volumes:
+      # ✅ public jadi root dalam Apache
       - ./public:/var/www/html
-      - ./docker/apache/ebase.dev.conf:/etc/apache2/sites-enabled/000-default.conf
+
+      # Apache config
+      - ./docker/apache/iqs-framework.dev.conf:/etc/apache2/sites-enabled/000-default.conf
       - ./docker/apache/servername.conf:/etc/apache2/conf-enabled/servername.conf
+
+      # SSL
       - ./docker/ssl:/etc/apache2/ssl
+
+      # PHP config
       - ./docker/php.ini:/usr/local/etc/php/conf.d/custom.ini
+
     environment:
       IS_DOCKER: "1"
+
     extra_hosts:
       - "oneid-dev.upnm.edu.my:172.16.0.14"
