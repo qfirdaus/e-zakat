@@ -1,0 +1,18 @@
+{
+    "km": 62.28,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.6728946,
+        "lon": 101.9808367,
+        "display_name": "Jalan SJ 4/6, Seremban, Negeri Sembilan, 70990, Malaysia",
+        "matched_query": "Jalan Sj 4/4, Seremban, 70450, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:23:19+00:00"
+}

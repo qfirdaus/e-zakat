@@ -1,0 +1,18 @@
+{
+    "km": 42.24,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0813072,
+        "lon": 101.4814315,
+        "display_name": "Jalan Pegaga U12/10, Desa Alam, Seksyen U12, Shah Alam, Petaling, Selangor, 40000, Malaysia",
+        "matched_query": "88, Jalan Pegaga U12/10, Desa Alam, Seksyen U12, 40170, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:19:46+00:00"
+}

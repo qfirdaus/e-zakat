@@ -1,0 +1,18 @@
+{
+    "km": 93.38,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.738649,
+        "lon": 102.2470576,
+        "display_name": "Kuala Pilah, Negeri Sembilan, 72000, Malaysia",
+        "matched_query": "Kuala Pilah, 72000, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:26:50+00:00"
+}

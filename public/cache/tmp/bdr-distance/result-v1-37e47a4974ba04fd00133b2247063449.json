@@ -1,0 +1,18 @@
+{
+    "km": 18.79,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1395089,
+        "lon": 101.6937972,
+        "display_name": "Kuala Lumpur, Jalan Tun Sambanthan, Kampung Attap, Kuala Lumpur, 50000, Malaysia",
+        "matched_query": "Kuala Lumpur, 57000, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:53:00+00:00"
+}

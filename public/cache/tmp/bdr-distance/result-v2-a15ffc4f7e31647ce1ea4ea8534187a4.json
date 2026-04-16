@@ -1,0 +1,19 @@
+{
+    "km": 70.52,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.5932885,
+        "lon": 101.9614591,
+        "display_name": "Rantau, Seremban, Negeri Sembilan, 71200, Malaysia",
+        "matched_query": "Rantau, 71200, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "match_quality": "OK",
+    "cached_at": "2026-04-04T02:40:21+00:00"
+}

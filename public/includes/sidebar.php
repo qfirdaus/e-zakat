@@ -165,7 +165,9 @@ if (!$isProfileEmpty) {
 }
 
 // Get theme settings
-$sidebarColor = $_SESSION['theme.sidebar'] ?? SystemConfigConstants::DEFAULT_THEME_SIDEBAR;
+$sidebarColor = $_SESSION['theme.menu']
+    ?? $_SESSION['theme.sidebar']
+    ?? SystemConfigConstants::DEFAULT_THEME_SIDEBAR;
 
 // Get notification count (optional - hide badge if null)
 $notificationCount = $sidebarController->getNotificationCount();
@@ -245,7 +247,7 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
 /* Sidebar Chart Icon (Dashboard) */
 .side-nav .sidebar-chart-icon {
     position: absolute;
-    right: calc(var(--ct-menu-item-padding-x) * 1.5);
+    right: 16px;
     top: 50%;
     transform: translateY(-50%);
     font-size: calc(var(--ct-menu-item-font-size) * 1.1);
@@ -258,7 +260,7 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
 }
 .side-nav .sidebar-manual-icon {
     position: absolute;
-    right: calc(var(--ct-menu-item-padding-x) * 1.5);
+    right: 16px;
     top: 50%;
     transform: translateY(-50%);
     font-size: calc(var(--ct-menu-item-font-size) * 1.1);
@@ -272,7 +274,7 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
 /* Sidebar Logout Icon */
 .side-nav .sidebar-logout-icon {
     position: absolute;
-    right: calc(var(--ct-menu-item-padding-x) * 1.5);
+    right: 16px;
     top: 50%;
     transform: translateY(-50%);
     font-size: calc(var(--ct-menu-item-font-size) * 1.1);
@@ -282,6 +284,63 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
 }
 .side-nav .sidebar-logout-icon:hover {
     opacity: 1;
+}
+.side-nav .side-nav-toggle-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: calc(100% - 12px);
+    margin: 0 6px;
+    padding: var(--ct-menu-item-padding-y) calc(var(--ct-menu-item-padding-x) * 3) var(--ct-menu-item-padding-y) var(--ct-menu-item-padding-x);
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ct-menu-item-color);
+    text-align: left;
+    box-shadow: none;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+}
+.side-nav .side-nav-toggle-btn > i:first-child {
+    flex: 0 0 auto;
+}
+.side-nav .side-nav-toggle-btn > span {
+    flex: 1 1 auto;
+    padding-right: calc(var(--ct-menu-item-padding-x) * 0.6);
+}
+.side-nav .sidebar-parent-arrow {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    text-align: center;
+    font-size: calc(var(--ct-menu-item-font-size) * 1.1);
+    color: inherit;
+    opacity: 0.72;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.side-nav .side-nav-toggle-btn:hover .sidebar-parent-arrow,
+.side-nav .side-nav-toggle-btn:focus-visible .sidebar-parent-arrow {
+    opacity: 1;
+}
+.side-nav .side-nav-item > .side-nav-toggle-btn[aria-expanded="true"] > .sidebar-parent-arrow {
+    transform: translateY(-50%) rotate(90deg);
+    opacity: 1;
+}
+.side-nav .side-nav-toggle-btn:hover,
+.side-nav .side-nav-toggle-btn:focus-visible {
+    color: var(--ct-menu-item-hover-color);
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.side-nav .side-nav-toggle-btn:focus {
+    outline: none;
+    box-shadow: none;
+}
+.side-nav .side-nav-item > .side-nav-toggle-btn[aria-expanded="true"] {
+    color: var(--ct-menu-item-active-color);
+    background-color: rgba(255, 255, 255, 0.06);
 }
 </style>
 <div class="sidebar-loading-overlay">
@@ -388,15 +447,16 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
                 $ariaExpanded = $isActive ? 'true' : 'false';
             ?>
                 <li class="side-nav-item">
-                    <a data-bs-toggle="collapse"
-                       href="#<?= $modulId ?>"
-                       class="<?= $linkCls ?>"
+                    <button type="button"
+                       data-sidebar-toggle="true"
+                       data-sidebar-target="#<?= $modulId ?>"
+                       class="<?= $linkCls ?> side-nav-toggle-btn"
                        aria-expanded="<?= $ariaExpanded ?>"
                        aria-controls="<?= $modulId ?>">
                         <i class="<?= htmlspecialchars($icon, ENT_QUOTES, 'UTF-8') ?>"></i>
                         <span><?= $nama ?></span>
-                        <span class="menu-arrow"></span>
-                    </a>
+                        <i class="ri-arrow-right-s-line sidebar-parent-arrow" aria-hidden="true"></i>
+                    </button>
                     <div class="<?= $collapseCls ?>" id="<?= $modulId ?>">
                         <ul class="side-nav-second-level">
                             <?php foreach ($childs as $menu): 
@@ -436,3 +496,73 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
     </div>
 </div>
 <!-- ========== Left Sidebar End ========== -->
+<script>
+(function () {
+    if (window.__SidebarCollapseFixInitialized) {
+        return;
+    }
+    window.__SidebarCollapseFixInitialized = true;
+
+    function syncSidebarToggleState(toggleEl, panelEl, isExpanded) {
+        if (!toggleEl || !panelEl) {
+            return;
+        }
+
+        toggleEl.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+        toggleEl.classList.toggle('collapsed', !isExpanded);
+        panelEl.classList.toggle('show', !!isExpanded);
+    }
+
+    function bindSidebarCollapseFix() {
+        var sidebar = document.getElementById('leftside-menu');
+        if (!sidebar) {
+            return;
+        }
+
+        sidebar.addEventListener('click', function (event) {
+            var toggleEl = event.target.closest(".side-nav li [data-sidebar-toggle='true']");
+            if (!toggleEl || !sidebar.contains(toggleEl)) {
+                return;
+            }
+
+            var targetSelector = toggleEl.getAttribute('data-sidebar-target') || '';
+            if (!targetSelector || targetSelector.charAt(0) !== '#') {
+                return;
+            }
+
+            var panelEl = document.querySelector(targetSelector);
+            if (!panelEl) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            var isExpanded = panelEl.classList.contains('show');
+
+            if (isExpanded) {
+                syncSidebarToggleState(toggleEl, panelEl, false);
+                return;
+            }
+
+            var openPanels = sidebar.querySelectorAll('.side-nav .collapse.show');
+            openPanels.forEach(function (openPanelEl) {
+                if (openPanelEl === panelEl) {
+                    return;
+                }
+
+                var openToggleEl = sidebar.querySelector(".side-nav li [data-sidebar-toggle='true'][data-sidebar-target='#" + openPanelEl.id + "']");
+                syncSidebarToggleState(openToggleEl, openPanelEl, false);
+            });
+
+            syncSidebarToggleState(toggleEl, panelEl, true);
+        }, true);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindSidebarCollapseFix, { once: true });
+    } else {
+        bindSidebarCollapseFix();
+    }
+})();
+</script>

@@ -1,0 +1,18 @@
+{
+    "km": 18.15,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9461096,
+        "lon": 101.7245217,
+        "display_name": "Pejabat Daerah Pertahanan Awam Wilayah Persekutuan Putrajaya, Jalan Kedah, Presint Diplomatik, Putrajaya, 62050, Malaysia",
+        "matched_query": "Putrajaya, 62200, Kedah, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:43:05+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 42.39,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.052449,
+        "lon": 101.4678288,
+        "display_name": "Jalan Kuda 2/KU1, Taman Ros, Bandaraya Klang, Klang, Selangor, 41300, Malaysia",
+        "matched_query": "Jalan Kuda 2/Ku1, Klang, 41300, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:04:08+00:00"
+}

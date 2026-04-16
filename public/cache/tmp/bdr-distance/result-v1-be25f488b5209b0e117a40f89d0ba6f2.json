@@ -1,0 +1,18 @@
+{
+    "km": 82.73,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.5344427,
+        "lon": 101.8081354,
+        "display_name": "71000, Port Dickson, Negeri Sembilan, Malaysia",
+        "matched_query": "71000, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:46:16+00:00"
+}

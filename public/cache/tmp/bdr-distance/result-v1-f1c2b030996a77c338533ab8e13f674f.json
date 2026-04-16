@@ -1,0 +1,18 @@
+{
+    "km": 323.42,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 1.4581986,
+        "lon": 103.7649059,
+        "display_name": "Johor Bahru, Johor, 80730, Malaysia",
+        "matched_query": "43300, Johor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-04T00:15:55+00:00"
+}

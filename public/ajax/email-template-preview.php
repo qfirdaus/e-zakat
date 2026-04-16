@@ -30,9 +30,10 @@ function emailTemplatePreviewPayload(): array
     $sampleInput = normalizeEmailTemplateJsonInput((string)($_POST['sample_variables'] ?? '{}'));
     if ($sampleInput !== '') {
         $decoded = json_decode($sampleInput, true);
-        if (is_array($decoded)) {
-            $sampleVariables = $decoded;
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+            throw new InvalidArgumentException((string)(__('emailTemplate_error_sample_json_invalid') ?: 'Sample variables mesti dalam format JSON yang sah.'));
         }
+        $sampleVariables = $decoded;
     }
 
     return [

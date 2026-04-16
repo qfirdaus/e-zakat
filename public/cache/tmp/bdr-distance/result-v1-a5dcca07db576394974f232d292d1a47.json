@@ -1,0 +1,18 @@
+{
+    "km": 14.38,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0268461,
+        "lon": 101.7842497,
+        "display_name": "Jalan Tropicana Cheras 10, Taman Sekamat, Cheras, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43200, Malaysia",
+        "matched_query": "39, Jalan 10, Taman Sekamat, Kajang, 43000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:05:06+00:00"
+}

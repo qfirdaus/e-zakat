@@ -1,0 +1,18 @@
+{
+    "km": 43.53,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.8632513,
+        "lon": 101.8356349,
+        "display_name": "Lebuhraya Kajang-Seremban, Seremban, Negeri Sembilan, 71700, Malaysia",
+        "matched_query": "43000 Kajang, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:03:58+00:00"
+}

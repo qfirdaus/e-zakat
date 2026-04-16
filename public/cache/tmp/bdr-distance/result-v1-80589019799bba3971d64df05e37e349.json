@@ -1,0 +1,18 @@
+{
+    "km": 61.34,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.3125705,
+        "lon": 101.4175252,
+        "display_name": "Lorong 1 Bukit Robinson, Taman Ijok Jaya Seksyen 2, Ijok, Kuala Selangor, Selangor, 48100, Malaysia",
+        "matched_query": "Lorong Harmoni 11/3, Taman Harmoni, 43500, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:51:57+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 18.38,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.146734,
+        "lon": 101.6989272,
+        "display_name": "Ampang and Sri Petaling Lines, Jalan Tun Perak, Bukit Bintang, Kuala Lumpur, 50000, Malaysia",
+        "matched_query": "Ampang, 68000, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:07:11+00:00"
+}

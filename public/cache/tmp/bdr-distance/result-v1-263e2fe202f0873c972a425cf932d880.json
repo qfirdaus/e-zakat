@@ -1,0 +1,18 @@
+{
+    "km": 17.13,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.965035,
+        "lon": 101.75621,
+        "display_name": "Jalan 8/13, Seksyen 8, Bandar Baru Bangi, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43650, Malaysia",
+        "matched_query": "No 45, Jalan 8/13, Seksyen 8, Bandar Baru Bangi, 43650, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:07:36+00:00"
+}

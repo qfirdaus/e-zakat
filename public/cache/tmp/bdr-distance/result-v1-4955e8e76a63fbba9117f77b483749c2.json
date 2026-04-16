@@ -1,0 +1,18 @@
+{
+    "km": 27.12,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.92339,
+        "lon": 101.8010131,
+        "display_name": "Jalan Puisi, Setia Alamsari, Bangi Lama, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43600, Malaysia",
+        "matched_query": "Jalan Puisi 1/9, 43000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:08:54+00:00"
+}

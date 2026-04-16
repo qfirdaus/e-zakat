@@ -1,0 +1,18 @@
+{
+    "km": 39.87,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0965872,
+        "lon": 101.4896859,
+        "display_name": "Jalan Gunung Nuang U11/36A, Nuang Hills, Seksyen U11, Shah Alam, Petaling, Selangor, 40170, Malaysia",
+        "matched_query": "Jalan Gunung Nuang U11/44, Bukit Bandaraya, Seksyen U11, 40170 Shah Alam, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:12:36+00:00"
+}

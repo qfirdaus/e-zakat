@@ -1,0 +1,18 @@
+{
+    "km": 247.01,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.7387466,
+        "lon": 103.2116174,
+        "display_name": "Kampung Jaya Gading, Kuantan, Pahang, 26070, Malaysia",
+        "matched_query": "Gading, Kuantan, 26070, Pahang, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T20:53:28+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 11.51,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.073076,
+        "lon": 101.7626851,
+        "display_name": "Cheras, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43200, Malaysia",
+        "matched_query": "Cheras, 56000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:40:15+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 449.47,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 6.108165,
+        "lon": 100.3405406,
+        "display_name": "Taman Sri Ampang, Taman Cemara, Alor Setar, Kota Setar, Kedah, Malaysia",
+        "matched_query": "Ampang, 68000, Kedah, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:51:13+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 7.57,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0682996,
+        "lon": 101.7378919,
+        "display_name": "Jalan Damai Kasih 7, Cheras, Kuala Lumpur, 56000, Malaysia",
+        "matched_query": "Jalan 7/154 D Alam Damai Cheras, 56000, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:08:33+00:00"
+}

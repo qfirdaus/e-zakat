@@ -1,0 +1,18 @@
+{
+    "km": 278.64,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 4.9025395,
+        "lon": 102.0134703,
+        "display_name": "18300, ڬوا موسڠ / Gua Musang, Kelantan, Malaysia",
+        "matched_query": "18300 Gua Musang, Kelantan, Kelantan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-04T00:04:31+00:00"
+}

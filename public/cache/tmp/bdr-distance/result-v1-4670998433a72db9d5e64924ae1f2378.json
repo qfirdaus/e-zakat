@@ -1,0 +1,18 @@
+{
+    "km": 39.66,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9790564,
+        "lon": 101.5158981,
+        "display_name": "Jalan Tanjung Balai 30/194, Seksyen 30, Shah Alam, Klang, Selangor, 40460, Malaysia",
+        "matched_query": "Jalan Tanjung Balai 30/194, 40460, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:55:14+00:00"
+}

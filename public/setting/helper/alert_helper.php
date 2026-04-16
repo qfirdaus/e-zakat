@@ -43,9 +43,11 @@ function set_alert(array $options = []): void {
         'title'               => $options['title'] ?? 'config_js_berjaya',
         'text'                => $options['text']  ?? '',
         'icon'                => $options['icon']  ?? 'info',
-        'timer'               => $options['timer'] ?? 3000,
+        'timer'               => $options['timer'] ?? 0,
         'position'            => $options['position'] ?? 'center',
-        'confirm'             => $options['confirm'] ?? false,
+        'confirm'             => $options['confirm'] ?? true,
+        'close_on_confirm'    => $options['close_on_confirm'] ?? false,
+        'close_fallback_url'  => $options['close_fallback_url'] ?? '',
         // flags (default anggap key supaya tak ulang isu sebelum ni)
         'is_key'              => $options['is_key']              ?? true,
         'title_is_key'        => $options['title_is_key']        ?? ($options['is_key'] ?? true),
@@ -114,11 +116,13 @@ function render_alert(): void {
     $textRaw     = (string)($a['text']  ?? '');
     $icon        = (string)($a['icon']  ?? 'info');
     $position    = (string)($a['position'] ?? ($type === 'toast' ? 'top-end' : 'center'));
-    $confirm     = !empty($a['confirm']);
-    $timer       = (int)($a['timer'] ?? 3000);
+    $confirm     = array_key_exists('confirm', $a) ? (bool)$a['confirm'] : true;
+    $timer       = (int)($a['timer'] ?? 0);
     $isToast     = ($type === 'toast');
 
     $redirect       = (string)($a['redirect']    ?? '');
+    $closeOnConfirm = (bool)($a['close_on_confirm'] ?? false);
+    $closeFallbackUrl = (string)($a['close_fallback_url'] ?? '');
     $defaultConfirmTextKey = $redirect !== '' ? 'config_js_btn_ya_simpan' : 'config_js_btn_ok';
     $confirmTextRaw = (string)($a['confirmText'] ?? $defaultConfirmTextKey);
     $cancelTextRaw  = (string)($a['cancelText']  ?? 'config_js_btn_cancel');
@@ -144,6 +148,8 @@ function render_alert(): void {
         'showCancelButton'   => $redirect !== '',
         'timer'              => $timer,
         'redirect'           => $redirect,
+        'closeOnConfirm'     => $closeOnConfirm,
+        'closeFallbackUrl'   => $closeFallbackUrl,
         // nilai raw (key atau teks asal)
         'titleRaw'           => $titleRaw,
         'textRaw'            => $textRaw,
@@ -195,13 +201,27 @@ document.addEventListener("DOMContentLoaded", function(){
         cancelButtonText:  pick(cfg.cancelTextServer,  cfg.cancelTranslated,  cfg.cancelTextRaw),
     };
 
-    // Only auto-close when there's no redirect AND no explicit confirm button
-    if (!cfg.redirect && !cfg.showConfirmButton) {
+    if (cfg.isToast && cfg.timer > 0) {
         swalOpts.timer = cfg.timer;
         swalOpts.timerProgressBar = true;
     }
 
+    // SweetAlert biasa tidak auto-close: pastikan ada tindakan klik untuk tutup.
+    if (!swalOpts.showConfirmButton && !swalOpts.showCancelButton) {
+        swalOpts.showConfirmButton = true;
+    }
+
     Swal.fire(swalOpts).then((result) => {
+        if (result.isConfirmed && cfg.closeOnConfirm) {
+            window.open('', '_self');
+            window.close();
+            setTimeout(function(){
+                if (!document.hidden) {
+                    window.location.href = cfg.closeFallbackUrl || 'index.php';
+                }
+            }, 350);
+            return;
+        }
         if (result.isConfirmed && cfg.redirect) {
             window.location.href = cfg.redirect;
         }

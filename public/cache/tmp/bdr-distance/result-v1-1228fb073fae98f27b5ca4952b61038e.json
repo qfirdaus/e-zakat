@@ -1,0 +1,18 @@
+{
+    "km": 1.89,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0660191,
+        "lon": 101.7184242,
+        "display_name": "Kem Perdana Sungai Besi, Jalan 4/118C, Cheras, Kuala Lumpur, 56000, Malaysia",
+        "matched_query": "Kem Perdana Sungai Besi, 57000, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:35:00+00:00"
+}

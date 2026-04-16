@@ -1,0 +1,18 @@
+{
+    "km": 111.7,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.3257544,
+        "lon": 102.0768197,
+        "display_name": "Pengkalan Balak, Alor Gajah, Melaka, 78300, Malaysia",
+        "matched_query": "Pengkalan Balak, 78300, Melaka, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T20:53:27+00:00"
+}

@@ -8,7 +8,7 @@ require_login();
 /* ================= Session / UI ================= */
 $_SESSION['csrf_token'] = $_SESSION['csrf_token'] ?? bin2hex(random_bytes(16));
 $lang         = $_SESSION['lang']          ?? 'ms';
-$sidebarTheme = $_SESSION['theme.sidebar'] ?? 'dark';
+$sidebarTheme = $_SESSION['theme.menu'] ?? $_SESSION['theme.sidebar'] ?? 'dark';
 $version      = (string)($_ENV['APP_ASSET_VER'] ?? date('ymdHis'));
 
 /* GET page biasa — boleh lepaskan lock */

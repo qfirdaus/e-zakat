@@ -171,6 +171,7 @@ try {
     $_SESSION['theme.menu']   = $themeSetting['sidebarColor'] ?? $themeData['sidebarColor'];
     $_SESSION['theme.topbar'] = $themeSetting['topbarColor'] ?? $themeData['topbarColor'];
     $_SESSION['theme.layout'] = $themeSetting['layoutMode'] ?? $themeData['layoutMode'];
+    $_SESSION['theme.sidebar'] = $_SESSION['theme.menu'];
 
     echo json_encode([
         'success' => true,

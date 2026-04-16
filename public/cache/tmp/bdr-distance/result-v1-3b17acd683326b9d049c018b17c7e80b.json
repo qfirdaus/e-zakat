@@ -1,0 +1,18 @@
+{
+    "km": 32.22,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.8797483,
+        "lon": 101.6497159,
+        "display_name": "Jalan KH 7, KITA Harmoni, KITA @ Cybersouth, Bandar Cybersouth, Dengkil, Sepang, Selangor, 62200, Malaysia",
+        "matched_query": "No 64 Jalan Kh 7, Kita Harmoni, Cybersouth, Dengkil, 43800, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:28:34+00:00"
+}

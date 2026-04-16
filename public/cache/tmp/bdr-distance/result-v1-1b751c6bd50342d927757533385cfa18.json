@@ -1,0 +1,18 @@
+{
+    "km": 453.42,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 6.1044353,
+        "lon": 102.262539,
+        "display_name": "Kampung Lundang, Kota Bharu, Kelantan, 15200, Malaysia",
+        "matched_query": "Lundang, Kota Bharu, 15150, Kelantan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:06:23+00:00"
+}

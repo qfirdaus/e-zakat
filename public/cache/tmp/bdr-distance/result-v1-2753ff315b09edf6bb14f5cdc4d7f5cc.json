@@ -1,0 +1,18 @@
+{
+    "km": 22.73,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1502556,
+        "lon": 101.7602101,
+        "display_name": "AG18 Ampang, Lebuhraya Bertingkat Sungai Besi–Ulu Klang, Taman Dagang, Kampung Indah Permai, Kampung Tasik Permai, Ampang, Majlis Perbandaran Ampang Jaya, Hulu Langat, Selangor, 68000, Malaysia",
+        "matched_query": "Ampang, 68000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:53:35+00:00"
+}

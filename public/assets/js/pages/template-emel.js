@@ -106,8 +106,7 @@
 
         var decoded = safeJsonParse(normalized);
         if (!decoded || typeof decoded !== 'object' || Array.isArray(decoded)) {
-            normalized = normalizeJsonInput(fallbackJson || '{}') || '{}';
-            decoded = safeJsonParse(normalized) || {};
+            throw new Error((window.EmailTemplatePageData || {}).invalidJsonText || 'Sample variables mesti dalam format JSON yang sah.');
         }
 
         field.value = JSON.stringify(decoded, null, 2);
@@ -395,7 +394,12 @@
 
         if (previewButton) {
             previewButton.addEventListener('click', function () {
-                syncSampleVariablesField(sampleVariablesField, pageData.defaultSampleVariablesJson);
+                try {
+                    syncSampleVariablesField(sampleVariablesField, pageData.defaultSampleVariablesJson);
+                } catch (error) {
+                    showAlert('error', pageData.previewFailedTitle || 'Preview Gagal', error.message || pageData.invalidJsonText);
+                    return;
+                }
 
                 setButtonLoading(previewButton, true, 'Preview...');
                 fetch(pageData.previewUrl || '', {
@@ -430,7 +434,12 @@
 
         if (testSendButton) {
             testSendButton.addEventListener('click', function () {
-                syncSampleVariablesField(sampleVariablesField, pageData.defaultSampleVariablesJson);
+                try {
+                    syncSampleVariablesField(sampleVariablesField, pageData.defaultSampleVariablesJson);
+                } catch (error) {
+                    showAlert('error', pageData.testSendFailedTitle || 'Emel Ujian Gagal', error.message || pageData.invalidJsonText);
+                    return;
+                }
 
                 var emailValue = testEmailField ? String(testEmailField.value || '').trim() : '';
                 if (!emailValue) {
@@ -472,7 +481,13 @@
         }
 
         if (pageData.shouldOpenModal && modal) {
-            syncSampleVariablesField(sampleVariablesField, pageData.defaultSampleVariablesJson);
+            try {
+                syncSampleVariablesField(sampleVariablesField, pageData.defaultSampleVariablesJson);
+            } catch (error) {
+                if (sampleVariablesField) {
+                    sampleVariablesField.value = normalizeJsonInput(pageData.defaultSampleVariablesJson || '{}') || '{}';
+                }
+            }
             activateModalTab('editor');
             modal.show();
         }

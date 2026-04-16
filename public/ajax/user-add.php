@@ -94,9 +94,12 @@ try {
     };
 
     $ensureUserNotExists = static function (PDO $pdo, string $nopekerja): void {
-        $checkSql = "SELECT f_userID FROM tbl_m_user WHERE f_stafID = :identifier OR TRIM(COALESCE(f_loginID, '')) = :identifier LIMIT 1";
+        $checkSql = "SELECT f_userID FROM tbl_m_user WHERE f_stafID = :staff_identifier OR TRIM(COALESCE(f_loginID, '')) = :login_identifier LIMIT 1";
         $checkStmt = $pdo->prepare($checkSql);
-        $checkStmt->execute([':identifier' => $nopekerja]);
+        $checkStmt->execute([
+            ':staff_identifier' => $nopekerja,
+            ':login_identifier' => $nopekerja,
+        ]);
         if ($checkStmt->fetch()) {
             jsonErrorResponse('Pengguna dengan no. pekerja ini sudah wujud dalam sistem.', 409);
         }

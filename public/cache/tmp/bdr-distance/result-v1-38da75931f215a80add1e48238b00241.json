@@ -1,0 +1,18 @@
+{
+    "km": 15.75,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0895667,
+        "lon": 101.6898797,
+        "display_name": "Raub Curry & Cafe, Jalan Kuchai Maju, Kuchai Entrepreneurs Park, Kuchai Lama, Kuala Lumpur, 58100, Malaysia",
+        "matched_query": "Raub, 27600, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:00:32+00:00"
+}

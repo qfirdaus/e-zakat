@@ -1,0 +1,18 @@
+{
+    "km": 28.8,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.8837204,
+        "lon": 101.7981552,
+        "display_name": "Residensi PR1MA Bandar Bukit Mahkota, Bukit Mahkota, Bangi Lama, Majlis Perbandaran Kajang, Hulu Langat, Selangor, Malaysia",
+        "matched_query": "Bandar Bukit Mahkota, Bangi, Kajang, 43000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-04T00:08:55+00:00"
+}

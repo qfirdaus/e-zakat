@@ -1,0 +1,18 @@
+{
+    "km": 268.9,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.8567819,
+        "lon": 103.3587093,
+        "display_name": "Lorong Kampung Darat Sekolah 17, Kampung Darat Sekolah, Kuantan, Pahang, 25300, Malaysia",
+        "matched_query": "Lorong Kampung Darat Sekolah 17, Kuantan, 26100, Pahang, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:56:58+00:00"
+}

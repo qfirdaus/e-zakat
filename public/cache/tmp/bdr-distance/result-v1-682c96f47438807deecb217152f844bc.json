@@ -1,0 +1,18 @@
+{
+    "km": 31.82,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.2546593,
+        "lon": 101.6773346,
+        "display_name": "Jalan Kekwa, Kampung Sungai Tua Baharu, Batu Caves, Majlis Perbandaran Selayang, Gombak, Selangor, 68100, Malaysia",
+        "matched_query": "139, Jalan Kekwa, Kampung Sungai Tua Baharu, 68100, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T20:58:56+00:00"
+}

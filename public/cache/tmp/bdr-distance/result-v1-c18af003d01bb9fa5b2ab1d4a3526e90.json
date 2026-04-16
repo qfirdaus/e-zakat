@@ -1,0 +1,18 @@
+{
+    "km": 17.28,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1480123,
+        "lon": 101.7373339,
+        "display_name": "Sentrio Pandan, Jalan 3/76D, Desa Pandan, Kampung Pandan, Kuala Lumpur, 50600, Malaysia",
+        "matched_query": "Sentrio Pandan, Desa Pandan, 55100, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:03:51+00:00"
+}

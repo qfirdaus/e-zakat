@@ -1,0 +1,18 @@
+{
+    "km": 30.25,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9241147,
+        "lon": 101.8518335,
+        "display_name": "Jalan Ecohill 1/3E, Setia EcoHill, Semenyih, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43700, Malaysia",
+        "matched_query": "11, Jalan Ecohill 1/3E, Setia Ecohill, 43500, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:25:24+00:00"
+}

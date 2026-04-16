@@ -1,0 +1,18 @@
+{
+    "km": 35.04,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.244183,
+        "lon": 101.7052194,
+        "display_name": "Jalan Sri Gombak 7/14, Taman Sri Gombak, Gombak, Majlis Perbandaran Selayang, Gombak, Selangor, 68100, Malaysia",
+        "matched_query": "Jalan Fasa 14, Batu Caves, 68100 Selangor, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:00:29+00:00"
+}

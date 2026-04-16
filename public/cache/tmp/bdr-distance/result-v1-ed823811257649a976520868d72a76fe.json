@@ -1,0 +1,18 @@
+{
+    "km": 204.26,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.9027514,
+        "lon": 102.4527038,
+        "display_name": "Jalan Pulau Tawar-Durian Hijau, Kampung Pulau Tawar Baru, Jerantut, Pahang, Malaysia",
+        "matched_query": "Lot 140 Jalan Durian, 26500, Pahang, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:16:40+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 220.85,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 4.4631792,
+        "lon": 101.0022707,
+        "display_name": "Murata Electronics (Malaysia) Sdn.Bhd., Plot 15, Lorong Bemban, Kawasan Perindustrian Bemban 3, Siputeh, Kinta, Perak, 31000, Malaysia",
+        "matched_query": "31560 Siputeh, Perak, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T20:55:37+00:00"
+}

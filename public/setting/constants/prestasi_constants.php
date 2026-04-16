@@ -134,6 +134,14 @@ if (!defined('PRESTASI_ROLE_KOD_ADM_SA')) {
     define('PRESTASI_ROLE_KOD_ADM_SA', (string)(is_string($roleKodSa) && trim($roleKodSa) !== '' ? trim($roleKodSa) : PRESTASI_ROLE_ADM_SA));
 }
 
+/**
+ * Protected staff IDs that cannot be deleted from user management.
+ * Keep values in display format for readability; helper logic normalizes them.
+ */
+if (!defined('PRESTASI_PROTECTED_STAFF_IDS')) {
+    define('PRESTASI_PROTECTED_STAFF_IDS', ['0530-09']);
+}
+
 
 
 // ============================================================================
@@ -203,7 +211,6 @@ define('PRESTASI_CACHE_KEY_DEPT', 'dept');
 
 /** Cache key component: lang */
 define('PRESTASI_CACHE_KEY_LANG', 'lang');
-
 
 
 

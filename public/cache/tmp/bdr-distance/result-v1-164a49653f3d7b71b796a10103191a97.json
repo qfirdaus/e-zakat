@@ -1,0 +1,18 @@
+{
+    "km": 15.18,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0187225,
+        "lon": 101.7884553,
+        "display_name": "Jalan Impian Makmur 2/4, Taman Sekamat Jaya, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43000, Malaysia",
+        "matched_query": "Jalan Impian Jaya 4, Taman Impian Jaya, Saujana Impian, Kajang, 43000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-04T00:03:22+00:00"
+}

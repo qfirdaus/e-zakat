@@ -5,8 +5,12 @@ header('Content-Type: text/plain; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 
-$host = 'oneid-dev.upnm.edu.my';
-$url = 'https://' . $host . '/api.php';
+require_once __DIR__ . '/includes/sso-config.php';
+
+$ssoConfig = function_exists('sso_shared_config') ? sso_shared_config() : [];
+$idpDomain = (string)($ssoConfig['idp_domain'] ?? 'https://oneid.upnm.edu.my/');
+$host = (string)(parse_url($idpDomain, PHP_URL_HOST) ?: 'oneid.upnm.edu.my');
+$url = rtrim($idpDomain, '/') . '/api.php';
 
 function out(string $label, $value): void
 {
@@ -85,4 +89,3 @@ out('namelookup_time', $namelookupTime);
 out('connect_time', $connectTime);
 out('total_time', $totalTime);
 out('body_preview', is_string($body) ? mb_substr($body, 0, 500) : $body);
-

@@ -1,0 +1,18 @@
+{
+    "km": 47.25,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.3189044,
+        "lon": 101.5750187,
+        "display_name": "KA10 Rawang, Lebuhraya Rawang, Pekan Lama Rawang, Kampung Melayu Pekan Rawang, Rawang, Majlis Perbandaran Selayang, Gombak, Selangor, 48000, Malaysia",
+        "matched_query": "Rawang, 48050, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:32:13+00:00"
+}

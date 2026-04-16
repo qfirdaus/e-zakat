@@ -1,0 +1,18 @@
+{
+    "km": 25.56,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9280297,
+        "lon": 101.7980058,
+        "display_name": "Jalan Sari Ilham 1/5, Ilham, Bangi Lama, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43600, Malaysia",
+        "matched_query": "Jalan Sari Ilham 1/5, 43600, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:12:09+00:00"
+}

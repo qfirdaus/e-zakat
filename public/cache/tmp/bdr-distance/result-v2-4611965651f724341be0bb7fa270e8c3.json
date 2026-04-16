@@ -1,0 +1,19 @@
+{
+    "km": 29.97,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.2377959,
+        "lon": 101.6813757,
+        "display_name": "KC05 Batu Caves, Jalan Station, Taman Batu Caves, Kampung Indian Settlement Batu Caves, Batu Caves, Majlis Perbandaran Selayang, Gombak, Selangor, 68100, Malaysia",
+        "matched_query": "Batu Caves, 68100, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "match_quality": "OK",
+    "cached_at": "2026-04-04T02:28:21+00:00"
+}

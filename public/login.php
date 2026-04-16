@@ -91,19 +91,6 @@ function log_login_event(string $status, string $id): void {
     @file_put_contents($log_path, "[$time] [$normalizedStatus] $id - $ip\n", FILE_APPEND);
 }
 
-function log_sso_debug(string $message, array $context = []): void {
-    $dir = __DIR__ . '/log';
-    if (!is_dir($dir)) {
-        @mkdir($dir, 0777, true);
-    }
-    $line = '[' . date('Y-m-d H:i:s') . '] ' . $message;
-    if ($context !== []) {
-        $line .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    }
-    $line .= PHP_EOL;
-    @file_put_contents($dir . '/sso-debug.log', $line, FILE_APPEND);
-}
-
 function login_guardrail_scope(bool $loginIdLocked, bool $identifierIpLocked, bool $ipLocked): string {
     if ($ipLocked) {
         return 'IP';
@@ -207,6 +194,70 @@ function validate_sso_auth_handoff($handoff, int $now, int $ttlSeconds): array {
     ];
 }
 
+function login_sanitize_redirect_target(string $target): string {
+    $target = trim($target);
+    if ($target === '' || preg_match('/[\r\n]/', $target)) {
+        return '';
+    }
+
+    if (preg_match('~^(?:https?:)?//~i', $target)) {
+        $targetHost = strtolower((string)(parse_url($target, PHP_URL_HOST) ?? ''));
+        $currentHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        if ($targetHost === '' || $currentHost === '' || $targetHost !== $currentHost) {
+            return '';
+        }
+        return $target;
+    }
+
+    if (str_starts_with($target, '/')) {
+        return $target;
+    }
+
+    return ltrim($target, '/');
+}
+
+function consume_post_login_redirect(): string {
+    $target = trim((string)($_SESSION['auth_post_login_redirect'] ?? ''));
+    unset($_SESSION['auth_post_login_redirect']);
+
+    return login_sanitize_redirect_target($target);
+}
+
+function validate_bdr_self_confirm_sso_context($context, int $now, int $ttlSeconds = 600): array {
+    if (!is_array($context) || empty($context['active'])) {
+        return ['ok' => false, 'reason' => 'missing'];
+    }
+
+    $token = trim((string)($context['token'] ?? ''));
+    $returnPath = login_sanitize_redirect_target((string)($context['return_path'] ?? ''));
+    $issuedAt = (int)($context['issued_at'] ?? 0);
+    if ($token === '' || $returnPath === '' || $issuedAt <= 0) {
+        return ['ok' => false, 'reason' => 'invalid'];
+    }
+
+    $returnPathOnly = (string)(parse_url($returnPath, PHP_URL_PATH) ?: '');
+    if (!str_ends_with($returnPathOnly, '/pages/bdr-notification-confirm.php')) {
+        return ['ok' => false, 'reason' => 'invalid_return_path'];
+    }
+
+    $returnQuery = [];
+    parse_str((string)(parse_url($returnPath, PHP_URL_QUERY) ?: ''), $returnQuery);
+    if (trim((string)($returnQuery['token'] ?? '')) !== $token) {
+        return ['ok' => false, 'reason' => 'token_mismatch'];
+    }
+
+    if (($now - $issuedAt) > $ttlSeconds) {
+        return ['ok' => false, 'reason' => 'expired'];
+    }
+
+    return [
+        'ok' => true,
+        'reason' => 'ok',
+        'token' => $token,
+        'return_path' => $returnPath,
+    ];
+}
+
 // 📥 Input
 $f_loginID  = sanitize_string($_POST['f_loginID'] ?? ($_POST['f_stafID'] ?? ''));
 $f_password = $_POST['f_password'] ?? '';
@@ -222,14 +273,6 @@ if (!$ssoHandoffValidation['ok'] && $ssoHandoffValidation['reason'] !== 'missing
 }
 $ssoHandoff = is_array($rawSsoHandoff) ? $rawSsoHandoff : [];
 $isSsoAttempt = $requestMethod !== 'POST' && !empty($ssoHandoff['valid_token']);
-log_sso_debug('LOGIN_ENTRY', [
-    'request_method' => $requestMethod,
-    'session_id' => session_id(),
-    'is_sso_attempt' => $isSsoAttempt,
-    'handoff_login_id' => $ssoHandoff['resolved_login_id'] ?? null,
-    'handoff_source' => $ssoHandoff['resolved_source'] ?? null,
-    'handoff_status' => $ssoHandoffValidation['reason'] ?? 'missing',
-]);
 
 if ($isSsoAttempt) {
     $f_loginID = sanitize_string((string)($ssoHandoff['resolved_login_id'] ?? ''));
@@ -289,6 +332,23 @@ if ($isSsoAttempt && $f_loginID === '') {
     log_login_event("SSO_HANDOFF_INVALID", 'sso');
     redirect('index.php');
     exit;
+}
+
+if ($isSsoAttempt) {
+    $selfConfirmContext = validate_bdr_self_confirm_sso_context($_SESSION['bdr_self_confirm_sso'] ?? null, $now);
+    if (!empty($selfConfirmContext['ok'])) {
+        $_SESSION['bdr_self_confirm_sso_identity'] = [
+            'staff_no' => $f_loginID,
+            'source' => trim((string)($ssoHandoffValidation['source'] ?? '')),
+            'token' => (string)$selfConfirmContext['token'],
+            'verified_at' => date('c'),
+        ];
+        unset($_SESSION['auth_post_login_redirect']);
+        clear_sso_auth_handoff();
+        log_login_event('SSO_SELF_CONFIRM_VERIFIED', $f_loginID);
+        redirect((string)$selfConfirmContext['return_path']);
+        exit;
+    }
 }
 
 // ❌ Empty input
@@ -406,17 +466,7 @@ $loginOk = false;
 try {
     $loginController = new LoginController();
     $loginOk = $loginController->authenticate($f_loginID, $isSsoAttempt ? null : $f_password);
-    log_sso_debug('LOGIN_AUTH_RESULT', [
-        'is_sso_attempt' => $isSsoAttempt,
-        'login_id' => $f_loginID,
-        'login_ok' => $loginOk,
-    ]);
 } catch (Throwable $e) {
-    log_sso_debug('LOGIN_AUTH_EXCEPTION', [
-        'is_sso_attempt' => $isSsoAttempt,
-        'login_id' => $f_loginID,
-        'message' => $e->getMessage(),
-    ]);
     clear_sso_auth_handoff();
 
     // Check jika exception adalah untuk access blocked
@@ -518,15 +568,99 @@ try {
         exit;
     }
 
+    if ($e->getMessage() === 'SSO_FIRST_LOGIN_REQUIRED') {
+        set_alert([
+            'type'  => 'sweet',
+            'title' => 'login_sso_first_login_required_title',
+            'text'  => 'login_sso_first_login_required_msg',
+            'icon'  => 'info',
+            'confirm' => true,
+            'close_on_confirm' => true,
+        ]);
+        log_login_event("SSO_FIRST_LOGIN_REQUIRED", $f_loginID);
+        redirect('index.php');
+        exit;
+    }
+
+    if ($e->getMessage() === 'MANUAL_ACCOUNT_NOT_READY') {
+        set_alert([
+            'type'  => 'sweet',
+            'title' => 'login_manual_account_not_ready_title',
+            'text'  => 'login_manual_account_not_ready_msg',
+            'icon'  => 'warning',
+            'confirm' => true
+        ]);
+        log_login_event("MANUAL_ACCOUNT_NOT_READY", $f_loginID);
+        redirect('index.php');
+        exit;
+    }
+
     if ($e->getMessage() === 'SSO_LOGIN_NOT_ALLOWED') {
         set_alert([
             'type'  => 'sweet',
             'title' => 'login_sso_not_allowed_title',
             'text'  => 'login_sso_not_allowed_msg',
             'icon'  => 'info',
-            'confirm' => true
+            'confirm' => true,
+            'close_on_confirm' => true,
         ]);
         log_login_event("SSO_NOT_ALLOWED", $f_loginID);
+        redirect('index.php');
+        exit;
+    }
+
+    if ($e->getMessage() === 'SSO_ACCOUNT_NOT_PROVISIONED') {
+        set_alert([
+            'type'  => 'sweet',
+            'title' => 'login_sso_account_not_provisioned_title',
+            'text'  => 'login_sso_account_not_provisioned_msg',
+            'icon'  => 'warning',
+            'confirm' => true,
+            'close_on_confirm' => true,
+        ]);
+        log_login_event("SSO_ACCOUNT_NOT_PROVISIONED", $f_loginID);
+        redirect('index.php');
+        exit;
+    }
+
+    if ($e->getMessage() === 'SSO_DEFAULT_GROUP_INVALID') {
+        set_alert([
+            'type'  => 'sweet',
+            'title' => 'login_sso_default_group_invalid_title',
+            'text'  => 'login_sso_default_group_invalid_msg',
+            'icon'  => 'error',
+            'confirm' => true,
+            'close_on_confirm' => true,
+        ]);
+        log_login_event("SSO_DEFAULT_GROUP_INVALID", $f_loginID);
+        redirect('index.php');
+        exit;
+    }
+
+    if ($e->getMessage() === 'SSO_SOURCE_UNAVAILABLE') {
+        set_alert([
+            'type'  => 'sweet',
+            'title' => 'login_sso_source_unavailable_title',
+            'text'  => 'login_sso_source_unavailable_msg',
+            'icon'  => 'warning',
+            'confirm' => true,
+            'close_on_confirm' => true,
+        ]);
+        log_login_event("SSO_SOURCE_UNAVAILABLE", $f_loginID);
+        redirect('index.php');
+        exit;
+    }
+
+    if ($e->getMessage() === 'SSO_AUTO_PROVISION_FAILED') {
+        set_alert([
+            'type'  => 'sweet',
+            'title' => 'login_sso_auto_provision_failed_title',
+            'text'  => 'login_sso_auto_provision_failed_msg',
+            'icon'  => 'error',
+            'confirm' => true,
+            'close_on_confirm' => true,
+        ]);
+        log_login_event("SSO_AUTO_PROVISION_FAILED", $f_loginID);
         redirect('index.php');
         exit;
     }
@@ -616,6 +750,11 @@ if ($loginOk) {
         $separator = str_contains($defaultHome, '?') ? '&' : '?';
         $defaultHome .= $separator . 'first=1';
     }
+    $postLoginRedirect = consume_post_login_redirect();
+    if ($postLoginRedirect !== '') {
+        redirect($postLoginRedirect);
+        exit;
+    }
     redirect($defaultHome);
     exit;
 
@@ -629,7 +768,8 @@ if ($loginOk) {
             'title' => 'login_sso_user_not_found_title',
             'text'  => 'login_sso_user_not_found_msg',
             'icon'  => 'warning',
-            'confirm' => true
+            'confirm' => true,
+            'close_on_confirm' => true,
         ]);
         log_login_event("SSO_USER_NOT_FOUND", $f_loginID);
         redirect('index.php');

@@ -1,0 +1,18 @@
+{
+    "km": 122.7,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.3106585,
+        "lon": 102.3204162,
+        "display_name": "Universiti Teknikal Malaysia Melaka (UTeM) Main Campus, Lebuhraya Utara–Selatan, Jasin, Majlis Perbandaran Hang Tuah Jaya, Alor Gajah, Melaka, 76100, Malaysia",
+        "matched_query": "Alor Gajah Melaka, 78000, Melaka, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:38:38+00:00"
+}

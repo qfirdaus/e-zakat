@@ -1,0 +1,18 @@
+{
+    "km": 0.67,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0483291,
+        "lon": 101.724045,
+        "display_name": "Universiti Pertahanan Nasional Malaysia, Sungai Besi, Kuala Lumpur, 57100, Malaysia",
+        "matched_query": "Universiti Pertahanan Nasional Malaysia, 57000 Kuala Lumpur, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:20:51+00:00"
+}

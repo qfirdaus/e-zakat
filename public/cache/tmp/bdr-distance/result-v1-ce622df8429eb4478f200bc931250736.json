@@ -1,0 +1,18 @@
+{
+    "km": 11.53,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0567713,
+        "lon": 101.7824973,
+        "display_name": "Pangsapuri Angsana, Cheras, Majlis Perbandaran Kajang, Hulu Langat, Selangor, Malaysia",
+        "matched_query": "Pangsapuri Angsana, Bandar Mahkota Cheras, 43200, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:06:50+00:00"
+}

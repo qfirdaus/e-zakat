@@ -244,6 +244,15 @@ final class EmailTemplate extends BaseModel
             return false;
         }
 
+        $record = $this->findById($id);
+        if (!$record) {
+            return false;
+        }
+
+        if ((int)($record['f_isDefault'] ?? 0) === 1) {
+            throw new RuntimeException('Default email template cannot be archived until another template is set as default.');
+        }
+
         return $this->execute(
             "UPDATE {$this->table}
              SET f_status = 'ARCHIVED',
@@ -266,9 +275,22 @@ final class EmailTemplate extends BaseModel
         }
 
         $baseCode = strtoupper(trim((string)($record['f_templateCode'] ?? '')));
-        $copyCode = $baseCode . '_COPY_' . date('YmdHis');
-        if (strlen($copyCode) > 100) {
-            $copyCode = substr($copyCode, 0, 100);
+        $copyCode = '';
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $suffix = '_COPY_' . date('YmdHis') . '_' . strtoupper(substr(bin2hex(random_bytes(2)), 0, 4));
+            $candidate = $baseCode . $suffix;
+            if (strlen($candidate) > 100) {
+                $candidate = substr($candidate, 0, 100);
+            }
+
+            if (!$this->existsByCode($candidate)) {
+                $copyCode = $candidate;
+                break;
+            }
+        }
+
+        if ($copyCode === '') {
+            throw new RuntimeException('Unable to generate a unique duplicate template code.');
         }
 
         return $this->create([

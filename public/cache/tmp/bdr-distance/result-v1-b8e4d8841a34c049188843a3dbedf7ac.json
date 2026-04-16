@@ -1,0 +1,18 @@
+{
+    "km": 33.63,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0776369,
+        "lon": 101.5347616,
+        "display_name": "Jalan Opu Daeng Chelak 9/2A, Seksyen 9, Shah Alam, Petaling, Selangor, 40100, Malaysia",
+        "matched_query": "Jalan 9/6A, Seksyen 9, Shah Alam, 40100, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:35:30+00:00"
+}

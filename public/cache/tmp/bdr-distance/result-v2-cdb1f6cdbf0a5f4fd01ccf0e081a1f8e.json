@@ -1,0 +1,19 @@
+{
+    "km": 20.86,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1086831,
+        "lon": 101.6421438,
+        "display_name": "Perbadanan Kemajuan Filem Nasional Malaysia, Seksyen 52, Petaling Jaya, Petaling, Selangor, Malaysia",
+        "matched_query": "Selangor Darul Ehsan, 47301 Petaling Jaya, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "match_quality": "OK",
+    "cached_at": "2026-04-04T02:34:28+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 28.65,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9463271,
+        "lon": 101.8667174,
+        "display_name": "Jalan TTS 2/4A, Taman Tasik Semenyih, Semenyih, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43500, Malaysia",
+        "matched_query": "No 8, Jalan Tts 2/4A, Taman Tasik Semenyih, Semenyih, 43500, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:45:06+00:00"
+}

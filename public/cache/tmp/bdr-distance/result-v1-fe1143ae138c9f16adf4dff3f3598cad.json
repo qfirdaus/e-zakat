@@ -1,0 +1,18 @@
+{
+    "km": 13.15,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0488972,
+        "lon": 101.6739264,
+        "display_name": "Lebuhraya Bukit Jalil, Bukit Jalil, Kuala Lumpur, 57000, Malaysia",
+        "matched_query": "Lebuhraya Bukit Jalil, Bukit Jalil, 57000, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:05:27+00:00"
+}

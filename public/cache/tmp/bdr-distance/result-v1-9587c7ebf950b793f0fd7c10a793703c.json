@@ -1,0 +1,18 @@
+{
+    "km": 12.33,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0842891,
+        "lon": 101.7472347,
+        "display_name": "Lebuhraya Bertingkat Sungai Besi–Ulu Klang, Cheras, Ampang, Majlis Perbandaran Ampang Jaya, Hulu Langat, Selangor, 56000, Malaysia",
+        "matched_query": "Sungai Besi, 57100, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-04T00:12:21+00:00"
+}

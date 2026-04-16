@@ -1,0 +1,18 @@
+{
+    "km": 50.59,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.3147517,
+        "lon": 101.5350883,
+        "display_name": "Aeon Anggun Rawang, Jalan Batu Arang, Jalan Batu Arang, Taman Anggun 2, Sungai Bakau, Majlis Perbandaran Selayang, Gombak, Selangor, 48000, Malaysia",
+        "matched_query": "Anggun, Kota Emerald, 48000 Rawang, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:36:32+00:00"
+}

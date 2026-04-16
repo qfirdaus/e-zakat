@@ -1,0 +1,18 @@
+{
+    "km": 32.44,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.8632795,
+        "lon": 101.6764075,
+        "display_name": "4, Jalan Kristal 3, Taman Baiduri, Kampung Cemperai, Dengkil, Sepang, Selangor, 43800, Malaysia",
+        "matched_query": "Jalan Putra Dengkil 4, Taman Putra Dengkil, 43800 Dengkil, Selangor, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:41:52+00:00"
+}

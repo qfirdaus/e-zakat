@@ -91,7 +91,8 @@ if (!function_exists('detect_base_path')) {
     function detect_base_path(): string {
         $scriptName = $_SERVER['SCRIPT_NAME'] ?? '/';
         $scriptName = str_replace('\\', '/', $scriptName);
-        $dir        = rtrim(dirname($scriptName), '/');
+        $dir        = str_replace('\\', '/', dirname($scriptName));
+        $dir        = rtrim($dir, '/');
         // Buang segmen /pages* atau /ajax* di hujung directory
         $basePath = preg_replace('#/(pages|ajax)(/.*)?$#', '', $dir);
         // Normalisasi: '/' → '' (empty = root)
@@ -112,17 +113,16 @@ if (!function_exists('base_url')) {
         $basePath = detect_base_path();           // '' atau '/subfolder'
         $origin   = $scheme . '://' . $host;      // e.g. http://localhost:8000
 
-        // Root path (sentiasa diakhiri '/')
-        $rootPath = ($basePath === '' ? '/' : rtrim($basePath, '/') . '/');
+        $rootPath = $basePath === '' ? '' : rtrim($basePath, '/');
 
         if ($path === '') {
             // Pulangkan tanpa trailing slash
-            return rtrim($origin . $rootPath, '/');
+            return $origin . $rootPath;
         }
 
         // Pastikan gabung dengan tepat satu '/'
         $rel = ltrim($path, '/');
-        return $origin . $rootPath . $rel;
+        return $origin . $rootPath . '/' . $rel;
     }
 }
 
@@ -135,9 +135,9 @@ if (!function_exists('base_path')) {
      */
     function base_path(string $path = ''): string {
         $basePath = detect_base_path();                   // '' atau '/subfolder'
-        $rootPath = ($basePath === '' ? '/' : rtrim($basePath, '/') . '/');
-        if ($path === '') return rtrim($rootPath, '/');  // tanpa trailing slash
-        return $rootPath . ltrim($path, '/');
+        $rootPath = ($basePath === '' ? '' : rtrim($basePath, '/'));
+        if ($path === '') return $rootPath === '' ? '/' : $rootPath;  // root atau subfolder tanpa trailing slash
+        return $rootPath . '/' . ltrim($path, '/');
     }
 }
 

@@ -1,0 +1,18 @@
+{
+    "km": 24.25,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9049904,
+        "lon": 101.7617689,
+        "display_name": "Jalan Avens 3, Southville City, Sepang, Selangor, 43600, Malaysia",
+        "matched_query": "Jalan Avens 3, Southville City, 43800, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:14:44+00:00"
+}

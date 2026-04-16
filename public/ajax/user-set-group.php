@@ -22,14 +22,14 @@ try {
     
     // Rate limiting: max 30 requests per 60 seconds
     if (!checkRateLimit('user_set_group', 30, 60)) {
-        json_fail('Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.', 429);
+        json_fail((string)__('userList_ajax_rate_limited'), 429);
     }
 
     $permDb = Database::getInstance('mysql')->getConnection();
     ensureAjaxGroupManagePermission($permDb);
 } catch (Throwable $initError) {
     error_log('[user-set-group] Init Error: '.$initError->getMessage().' in '.$initError->getFile().':'.$initError->getLine());
-    jsonErrorResponse('Ralat sistem. Sila hubungi pentadbir sistem.', 500);
+    jsonErrorResponse((string)__('userList_ajax_system_error'), 500);
 }
 
 function json_fail(string $msg, int $code = 400, array $extra = []): never {
@@ -63,11 +63,11 @@ function readUserSetGroupPayload(): array {
     error_log("[user-set-group] PARSED VALUES: userID=$userID, groupID=$groupID, hasFlag=" . ($hasFlag ? 'true' : 'false') . ", flag=" . ($flag !== null ? $flag : 'null') . ", hasPassword=" . ($password !== '' ? 'true' : 'false'));
 
     if ($userID <= 0) {
-        json_fail('Parameter tidak lengkap (userID diperlukan).', 422);
+        json_fail((string)__('userList_ajax_incomplete_params_userid'), 422);
     }
 
     if (!$hasGroup && !$hasFlag) {
-        json_fail('Parameter tidak lengkap (groupID atau flag diperlukan).', 422);
+        json_fail((string)__('userList_ajax_incomplete_params_group_or_flag'), 422);
     }
 
     return [
@@ -97,7 +97,7 @@ function getUserGroupSchemaFlags(PDO $db): array {
     $hasGroupKod = userTableHasColumn($db, 'tbl_m_user', 'f_groupKod');
 
     if (!$hasGroupID && !$hasGroupKod) {
-        json_fail('Skema pengguna tiada f_groupID atau f_groupKod.', 500);
+        json_fail((string)__('userList_ajax_user_schema_invalid'), 500);
     }
 
     return [
@@ -130,7 +130,7 @@ function fetchUserGroupContext(PDO $db, int $userID, bool $hasGroupID, bool $has
     $stmtU->execute([':uid' => $userID]);
     $user = $stmtU->fetch(PDO::FETCH_ASSOC);
     if (!$user) {
-        json_fail('Pengguna tidak ditemui.', 404);
+        json_fail((string)__('userList_ajax_user_not_found'), 404);
     }
 
     return [
@@ -152,7 +152,7 @@ function resolveTargetGroup(PDO $db, bool $hasGroup, int $groupID, int $oldID, s
     $stmt->execute([':gid' => $groupID]);
     $grp = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$grp) {
-        json_fail('Kumpulan tidak ditemui.', 404);
+        json_fail((string)__('userList_ajax_group_not_found'), 404);
     }
 
     return [
@@ -302,7 +302,7 @@ function buildUserUpdateStatement(
 
     if (empty($setParts)) {
         error_log("[user-set-group] ERROR: setParts is empty! hasGroup=" . ($hasGroup ? 'true' : 'false') . ", hasFlag=" . ($hasFlag ? 'true' : 'false'));
-        json_fail('Tiada field untuk dikemas kini.', 422);
+        json_fail((string)__('userList_ajax_no_fields_update'), 422);
     }
 
     error_log("[user-set-group] Final setParts: " . json_encode($setParts) . ", params keys: " . json_encode(array_keys($params)));
@@ -330,7 +330,7 @@ function executeUserUpdate(PDO $db, string $sql, array $params, int $userID): vo
         if (!$result) {
             $errorInfo = $upd->errorInfo();
             error_log("[user-set-group] PDO Error: " . json_encode($errorInfo));
-            json_fail('Gagal kemas kini rekod pengguna: ' . ($errorInfo[2] ?? 'Unknown error'), 500);
+            json_fail((string)__('userList_ajax_update_record_failed'), 500);
         }
 
         if ($rowsAffected === 0) {
@@ -341,7 +341,7 @@ function executeUserUpdate(PDO $db, string $sql, array $params, int $userID): vo
             error_log("[user-set-group] User check: " . json_encode($checkUser));
 
             if (!$checkUser) {
-                json_fail('Pengguna tidak ditemui dalam database.', 404);
+                json_fail((string)__('userList_ajax_user_not_found_db'), 404);
             }
 
             error_log("[user-set-group] User exists but no rows affected - possible no-op (value already set)");
@@ -350,7 +350,7 @@ function executeUserUpdate(PDO $db, string $sql, array $params, int $userID): vo
         error_log("[user-set-group] PDO Exception: " . $e->getMessage());
         error_log("[user-set-group] SQL: $sql");
         error_log("[user-set-group] Params: " . json_encode($params));
-        json_fail('Database error: ' . $e->getMessage(), 500);
+        json_fail((string)__('userList_ajax_system_error'), 500);
     }
 }
 
@@ -474,10 +474,10 @@ try {
     $hasPassword = ($password !== '');
 
     if ($password !== '' && strlen($password) < 6) {
-        json_fail('Kata laluan mesti sekurang-kurangnya 6 aksara.', 422);
+        json_fail((string)__('userList_ajax_password_min'), 422);
     }
     if (($password !== '' || $passwordConfirm !== '') && $password !== $passwordConfirm) {
-        json_fail('Pengesahan kata laluan tidak sepadan.', 422);
+        json_fail((string)__('userList_ajax_password_confirm_mismatch'), 422);
     }
 
     /** @var PDO $db */
@@ -493,6 +493,31 @@ try {
         json_fail((string)__('studentSearch_mode_disabled'), 403);
     }
     $user = $userContext['user'];
+    $targetProtectedStaffId = (string)($user['f_stafID'] ?? '');
+    if (isProtectedStaffAccount($targetProtectedStaffId) && !canSelfManageProtectedStaffAccount($targetProtectedStaffId)) {
+        try {
+            audit_event([
+                'event_type' => 'UPDATE',
+                'severity' => 'WARN',
+                'outcome' => 'DENIED',
+                'target_type' => 'user',
+                'target_id' => (string)$userID,
+                'target_label' => (string)($user['f_nama'] ?? $user['f_stafID'] ?? 'Protected User'),
+                'message' => 'UPDATE_USER_ACCESS blocked (protected account)',
+                'meta' => [
+                    'reason' => 'protected_staff_account',
+                    'protected_stafID' => (string)($user['f_stafID'] ?? ''),
+                    'attempt_groupID' => $groupID,
+                    'attempt_flag' => $flag,
+                    'performed_by' => (string)($_SESSION['f_stafID'] ?? ''),
+                ],
+            ]);
+        } catch (Throwable $e) {
+            error_log('[user-set-group] Protected account audit failed: ' . $e->getMessage());
+        }
+
+        json_fail((string)__('userList_protected_self_manage_only'), 403);
+    }
     $oldID = $userContext['oldID'];
     $oldKod = $userContext['oldKod'];
     $oldName = $userContext['oldName'];
@@ -525,8 +550,8 @@ try {
         );
 
         $noopMessage = $hasGroup 
-            ? 'Tiada perubahan — kumpulan kekal sama.'
-            : 'Tiada perubahan — akses kekal sama.';
+            ? (string)__('userList_ajax_no_change_group')
+            : (string)__('userList_ajax_no_change_access');
         
         json_ok([
             'message' => $noopMessage,
@@ -578,7 +603,7 @@ try {
     }
 
     json_ok([
-        'message' => 'Kumpulan dan akses berjaya dikemas kini.',
+        'message' => (string)__('userList_success_update_group'),
         'group'   => ['id'=>$gid, 'kod'=>$gkod, 'nama'=>$gnam],
         'groupName' => $gnam, // ✅ Add groupName at top level for easier access
         'flag'    => $hasFlag ? $flag : null,
@@ -594,7 +619,7 @@ try {
         }
     }
     error_log('[user-set-group] Error: '.$e->getMessage().' | File: '.$e->getFile().' | Line: '.$e->getLine().' | Trace: '.$e->getTraceAsString());
-    $errorMsg = 'Ralat server. Sila hubungi pentadbir sistem.';
+    $errorMsg = (string)__('userList_ajax_system_error');
     if (defined('APP_DEBUG') && APP_DEBUG) {
         $errorMsg = 'Ralat server: '.$e->getMessage().' (File: '.basename($e->getFile()).', Line: '.$e->getLine().')';
     }

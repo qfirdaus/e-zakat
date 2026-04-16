@@ -1,0 +1,18 @@
+{
+    "km": 10.09,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0269271,
+        "lon": 101.6937581,
+        "display_name": "Jalan BS 5/7, Taman Bukit Serdang Seksyen 5, Bukit Serdang, Seri Kembangan, Majlis Bandaraya Subang Jaya, Petaling, Selangor, 43300, Malaysia",
+        "matched_query": "No 27 Jalan Bs 5/7 Seksyen 5, Taman Bukit Serdang, 43300 Seri Kembangan, Selangor, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T20:57:07+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 17.51,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9906898,
+        "lon": 101.7895994,
+        "display_name": "Lot 90, Kampung Sungai Jernih, Majlis Perbandaran Kajang, Hulu Langat, Selangor, Malaysia",
+        "matched_query": "Lot, 43000 Kajang, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:12:59+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 32.35,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.2545487,
+        "lon": 101.6751557,
+        "display_name": "Jalan Kenanga, Taman Jasa, Batu Caves, Majlis Perbandaran Selayang, Gombak, Selangor, 68100, Malaysia",
+        "matched_query": "Jalan Kenanga, Batu Caves, 68100, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:21:02+00:00"
+}

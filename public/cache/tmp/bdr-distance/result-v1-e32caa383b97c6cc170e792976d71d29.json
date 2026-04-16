@@ -1,0 +1,18 @@
+{
+    "km": 45.48,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.3069759,
+        "lon": 101.5795647,
+        "display_name": "Jalan Bersatu 17, Taman Bersatu, Rawang, Majlis Perbandaran Selayang, Gombak, Selangor, 48000, Malaysia",
+        "matched_query": "No 67, Jalan Bersatu 17, Taman Bersatu, Selangor Darul Ehsan, 48000 Rawang, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:52:09+00:00"
+}

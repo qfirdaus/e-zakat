@@ -1,0 +1,18 @@
+{
+    "km": 4.16,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0267143,
+        "lon": 101.7313882,
+        "display_name": "Jalan Harmoni 5, Taman Harmoni, Cheras, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43300, Malaysia",
+        "matched_query": "Jalan Harmoni 5, Taman Harmoni, 43300, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:22:32+00:00"
+}

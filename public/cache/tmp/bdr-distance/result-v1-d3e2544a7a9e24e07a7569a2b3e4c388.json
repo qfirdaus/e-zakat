@@ -1,0 +1,18 @@
+{
+    "km": 33.87,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0356648,
+        "lon": 101.5357532,
+        "display_name": "Glorious Fight Club Malaysia, Jalan Tekun 25/43, Seksyen 25, Taman Sri Muda, Shah Alam, Klang, Selangor, 40300, Malaysia",
+        "matched_query": "Taman Sri Muda Shah Alam, 40400, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:41:11+00:00"
+}

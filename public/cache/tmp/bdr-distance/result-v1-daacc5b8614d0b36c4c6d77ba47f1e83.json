@@ -1,0 +1,18 @@
+{
+    "km": 12.36,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0707851,
+        "lon": 101.7076195,
+        "display_name": "Anyaman Residence, Sungai Besi, Kuala Lumpur, Malaysia",
+        "matched_query": "Anyaman Residence, 57100, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:55:58+00:00"
+}

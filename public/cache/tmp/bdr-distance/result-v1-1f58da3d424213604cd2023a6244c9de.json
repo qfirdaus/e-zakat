@@ -1,0 +1,18 @@
+{
+    "km": 17.36,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0128353,
+        "lon": 101.7902483,
+        "display_name": "Jalan Impian Indah 7, Saujana Impian, Sungai Kantan, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43000, Malaysia",
+        "matched_query": "15, Jalan Impian Indah, Saujana Impian, 43000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:05:15+00:00"
+}

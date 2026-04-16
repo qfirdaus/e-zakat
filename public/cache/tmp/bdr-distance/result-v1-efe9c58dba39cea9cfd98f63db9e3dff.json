@@ -1,0 +1,18 @@
+{
+    "km": 43.42,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.8175574,
+        "lon": 101.6256229,
+        "display_name": "Jalan Utama Labohan Dagang, Bukit Changgang, Kuala Langat, Selangor, Malaysia",
+        "matched_query": "Jalan 3/F3, Bukit Changgang, 42700, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-04T00:13:46+00:00"
+}

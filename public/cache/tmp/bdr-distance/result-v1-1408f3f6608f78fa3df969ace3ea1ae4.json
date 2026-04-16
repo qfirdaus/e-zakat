@@ -1,0 +1,18 @@
+{
+    "km": 10.05,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0096101,
+        "lon": 101.6943588,
+        "display_name": "Jalan Putra Permai, Seri Kembangan, Majlis Bandaraya Subang Jaya, Petaling, Selangor, 43300, Malaysia",
+        "matched_query": "Jalan Putra Permai 2, Seri Kembangan, 43300, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:06:51+00:00"
+}

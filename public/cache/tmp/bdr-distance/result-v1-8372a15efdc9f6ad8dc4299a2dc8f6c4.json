@@ -1,0 +1,18 @@
+{
+    "km": 177.69,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.272831,
+        "lon": 102.4522698,
+        "display_name": "Bandar Bera, Bera, Pahang, Malaysia",
+        "matched_query": "28200 Bandar Bera, Pahang, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:31:02+00:00"
+}

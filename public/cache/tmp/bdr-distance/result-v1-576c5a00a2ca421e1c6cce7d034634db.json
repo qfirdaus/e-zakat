@@ -1,0 +1,18 @@
+{
+    "km": 358.7,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 5.3712759,
+        "lon": 100.5613193,
+        "display_name": "Hotel Seri Malaysia, Taman Tasik Putra, Taman Kenari Zon 1, Kulim, Kedah, 09000, Malaysia",
+        "matched_query": "14300, Kedah, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T20:15:29+00:00"
+}

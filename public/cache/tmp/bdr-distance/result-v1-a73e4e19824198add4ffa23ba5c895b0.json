@@ -1,0 +1,18 @@
+{
+    "km": 23.92,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9037861,
+        "lon": 101.7745313,
+        "display_name": "Kampung Bahagia, Bangi Lama, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43600, Malaysia",
+        "matched_query": "Kampung Bahagia, 43000 Bangi, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:07:57+00:00"
+}

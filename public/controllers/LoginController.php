@@ -15,6 +15,8 @@ class LoginController
     private PDO $pdo;
     /** @var array<string,bool> */
     private array $auditColumnExistsCache = [];
+    /** @var array<string,bool> */
+    private array $groupColumnExistsCache = [];
 
     public function __construct()
     {
@@ -71,8 +73,24 @@ class LoginController
 
         // Cari user
         $user = $this->userModel->findByLoginID($loginID);
+        if (!$user && $attemptedMethod === 'SSO') {
+            $user = $this->attemptSsoAutoProvision($loginID);
+        }
         if (!$user) {
             $this->auditLoginFail($loginID, 'user_not_found', null, $attemptedMethod);
+            if ($attemptedMethod === 'MANUAL') {
+                $category = $this->normalizeLoginCategory(null, $loginID);
+                $policy = function_exists('get_auth_policy_config') ? get_auth_policy_config() : [];
+                if (in_array($category, ['STAF', 'PELAJAR'], true) && is_array($policy) && $policy !== []) {
+                    if ($this->isLoginCategoryEnabled($policy, $category)) {
+                        $allowedMethod = $this->resolveAllowedLoginMethod($policy, $category);
+                        if ($allowedMethod === 'SSO') {
+                            throw new \RuntimeException('SSO_FIRST_LOGIN_REQUIRED');
+                        }
+                        throw new \RuntimeException('MANUAL_ACCOUNT_NOT_READY');
+                    }
+                }
+            }
             return false;
         }
 
@@ -178,6 +196,7 @@ class LoginController
                     $_SESSION['theme.menu']   = $theme['sidebarColor'] ?? ($_SESSION['theme.menu'] ?? 'light');
                     $_SESSION['theme.topbar'] = $theme['topbarColor']  ?? ($_SESSION['theme.topbar'] ?? 'light');
                     $_SESSION['theme.layout'] = $theme['layoutMode']   ?? ($_SESSION['theme.layout'] ?? 'light');
+                    $_SESSION['theme.sidebar'] = $_SESSION['theme.menu'];
                 }
             }
             $config = new Config($this->pdo);
@@ -521,6 +540,525 @@ class LoginController
     private function normalizeAuthLoginMethod(?string $method): string
     {
         return strtoupper(trim((string)$method)) === 'SSO' ? 'SSO' : 'MANUAL';
+    }
+
+    private function groupTableHasColumn(string $column): bool
+    {
+        $cacheKey = strtolower('tbl_m_group.' . $column);
+        if (array_key_exists($cacheKey, $this->groupColumnExistsCache)) {
+            return $this->groupColumnExistsCache[$cacheKey];
+        }
+
+        try {
+            $stmt = $this->pdo->prepare(
+                'SELECT COUNT(*)
+                 FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = :table
+                   AND COLUMN_NAME = :column'
+            );
+            $stmt->execute([
+                ':table' => 'tbl_m_group',
+                ':column' => $column,
+            ]);
+            $this->groupColumnExistsCache[$cacheKey] = ((int)$stmt->fetchColumn()) > 0;
+        } catch (\Throwable $e) {
+            $this->groupColumnExistsCache[$cacheKey] = false;
+        }
+
+        return $this->groupColumnExistsCache[$cacheKey];
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    private function attemptSsoAutoProvision(string $loginID): ?array
+    {
+        $handoff = is_array($_SESSION['sso_auth_handoff'] ?? null) ? $_SESSION['sso_auth_handoff'] : [];
+        if (empty($handoff['valid_token'])) {
+            return null;
+        }
+
+        $resolvedLoginId = trim((string)($handoff['resolved_login_id'] ?? ''));
+        if ($resolvedLoginId === '' || $resolvedLoginId !== trim($loginID)) {
+            return null;
+        }
+
+        $category = $this->resolveSsoProvisionCategory($handoff, $resolvedLoginId);
+        if (!in_array($category, ['STAF', 'PELAJAR'], true)) {
+            return null;
+        }
+
+        try {
+            $policy = function_exists('get_auth_policy_config') ? get_auth_policy_config() : [];
+            if (!$this->isLoginCategoryEnabled($policy, $category)) {
+                $this->auditAutoProvisionBlocked($resolvedLoginId, $category, 'category_disabled');
+                throw new \RuntimeException('SSO_ACCOUNT_NOT_PROVISIONED');
+            }
+
+            $allowedMethod = $this->resolveAllowedLoginMethod($policy, $category);
+            if ($allowedMethod !== 'SSO') {
+                $this->auditAutoProvisionBlocked($resolvedLoginId, $category, 'sso_route_not_allowed');
+                throw new \RuntimeException('SSO_ACCOUNT_NOT_PROVISIONED');
+            }
+
+            if (!$this->isSsoAutoProvisionEnabled($policy, $category)) {
+                $this->auditAutoProvisionBlocked($resolvedLoginId, $category, 'auto_provision_disabled');
+                throw new \RuntimeException('SSO_ACCOUNT_NOT_PROVISIONED');
+            }
+
+            $existingUser = $this->findProvisionableUserByIdentifier($resolvedLoginId);
+            if ($existingUser) {
+                return $existingUser;
+            }
+
+            $defaultGroup = $this->resolveDefaultProvisionGroup($policy, $category);
+            if (!$defaultGroup) {
+                $this->auditAutoProvisionBlocked($resolvedLoginId, $category, 'default_group_invalid');
+                throw new \RuntimeException('SSO_DEFAULT_GROUP_INVALID');
+            }
+
+            try {
+                $sourceRecord = $category === 'PELAJAR'
+                    ? $this->fetchStudentProvisioningRecord($resolvedLoginId)
+                    : $this->fetchStaffProvisioningRecord($resolvedLoginId);
+            } catch (\Throwable $e) {
+                $this->auditAutoProvisionBlocked($resolvedLoginId, $category, 'source_unavailable');
+                throw new \RuntimeException('SSO_SOURCE_UNAVAILABLE');
+            }
+
+            if (!$sourceRecord) {
+                $this->auditAutoProvisionBlocked($resolvedLoginId, $category, 'source_record_not_found');
+                throw new \RuntimeException('SSO_ACCOUNT_NOT_PROVISIONED');
+            }
+
+            $this->pdo->beginTransaction();
+
+            $recheckUser = $this->findProvisionableUserByIdentifier($resolvedLoginId);
+            if ($recheckUser) {
+                $this->pdo->commit();
+                return $recheckUser;
+            }
+
+            $payload = $category === 'PELAJAR'
+                ? $this->buildStudentProvisionPayload($resolvedLoginId, $sourceRecord, $defaultGroup)
+                : $this->buildStaffProvisionPayload($resolvedLoginId, $sourceRecord, $defaultGroup);
+
+            $newUserId = $this->insertProvisionedUser($payload);
+            $this->pdo->commit();
+
+            $this->auditAutoProvisionSuccess($resolvedLoginId, $category, $newUserId, (string)($defaultGroup['f_groupKod'] ?? ''));
+
+            return $this->userModel->findByLoginID($resolvedLoginId);
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('[LoginController] SSO auto provision failed: ' . $e->getMessage());
+            if ($e instanceof \RuntimeException && in_array($e->getMessage(), ['SSO_ACCOUNT_NOT_PROVISIONED', 'SSO_AUTO_PROVISION_FAILED', 'SSO_DEFAULT_GROUP_INVALID', 'SSO_SOURCE_UNAVAILABLE'], true)) {
+                throw $e;
+            }
+            $this->auditAutoProvisionBlocked($resolvedLoginId, $category, 'provision_insert_failed');
+            throw new \RuntimeException('SSO_AUTO_PROVISION_FAILED');
+        }
+    }
+
+    private function resolveSsoProvisionCategory(array $handoff, string $loginID): string
+    {
+        $source = strtolower(trim((string)($handoff['resolved_source'] ?? '')));
+        if ($source === 'data3' || !empty($handoff['data3_valid'])) {
+            return 'STAF';
+        }
+        if ($source === 'data4' || !empty($handoff['data4_valid'])) {
+            return 'PELAJAR';
+        }
+
+        return $this->normalizeLoginCategory(null, $loginID);
+    }
+
+    private function isSsoAutoProvisionEnabled(array $policy, string $category): bool
+    {
+        $provisioning = is_array($policy['provisioning'] ?? null) ? $policy['provisioning'] : [];
+        return match ($category) {
+            'PELAJAR' => !empty($provisioning['pelajar_sso_enabled']),
+            default => !empty($provisioning['staf_sso_enabled']),
+        };
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    private function resolveDefaultProvisionGroup(array $policy, string $category): ?array
+    {
+        $provisioning = is_array($policy['provisioning'] ?? null) ? $policy['provisioning'] : [];
+        $defaults = function_exists('get_auth_policy_defaults') ? get_auth_policy_defaults() : [];
+        $groupCode = $category === 'PELAJAR'
+            ? auth_normalize_group_code($provisioning['default_group_student_code'] ?? null, (string)($defaults['default_group_student_code'] ?? 'ADM-STUDENT'))
+            : auth_normalize_group_code($provisioning['default_group_staff_code'] ?? null, (string)($defaults['default_group_staff_code'] ?? 'ADM-STAF'));
+
+        if ($groupCode === '') {
+            return null;
+        }
+
+        $selectColumns = ['f_groupID', 'f_groupKod', 'f_groupName'];
+        if ($this->groupTableHasColumn('f_categoryUser')) {
+            $selectColumns[] = 'f_categoryUser';
+        }
+        $sql = "SELECT " . implode(', ', $selectColumns) . " FROM tbl_m_group WHERE TRIM(COALESCE(f_groupKod, '')) = :groupKod LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':groupKod' => $groupCode]);
+        $group = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        if (!$group) {
+            return null;
+        }
+
+        $groupCategory = strtoupper(trim((string)($group['f_categoryUser'] ?? '')));
+        if ($groupCategory !== '' && $groupCategory !== $category) {
+            return null;
+        }
+
+        return $group;
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    private function fetchStaffProvisioningRecord(string $staffId): ?array
+    {
+        $pdoSybase = Database::pdoSybaseStaff();
+        $sql = "
+            SELECT
+                nopekerja,
+                idpekerja,
+                gelar_nama,
+                nama,
+                nokp,
+                email,
+                handphone,
+                kdjwtsemasa,
+                jawatansemasa,
+                kdjenis,
+                jenis,
+                kdjbtnsemasa,
+                jabatansemasa,
+                kumpjwt,
+                kodstatus,
+                status
+            FROM v630staf_service_skim_all
+            WHERE nopekerja = :nopekerja
+              AND CONVERT(INT, kodstatus) = 1
+        ";
+        $stmt = $pdoSybase->prepare($sql);
+        $stmt->execute([':nopekerja' => $staffId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    private function fetchStudentProvisioningRecord(string $matrik): ?array
+    {
+        if (function_exists('is_student_mode_enabled') && !is_student_mode_enabled()) {
+            return null;
+        }
+
+        $pdoSybase = Database::pdoSybaseStudent();
+        if (!$pdoSybase) {
+            return null;
+        }
+
+        $sql = "
+            SELECT
+                matrik,
+                nama,
+                nokp,
+                email,
+                hpno,
+                telno,
+                telno_terkini,
+                notel_terkini,
+                kdprogram,
+                program,
+                kdfakulti,
+                fakulti,
+                kdtahap,
+                tahap_pengajian,
+                kadet,
+                kategori_kadet,
+                status,
+                statusketerangan,
+                statuskategori
+            FROM v210
+            WHERE convert(varchar(50), matrik) = :matrik
+              AND upper(convert(varchar(20), statuskategori)) = 'AKTIF'
+        ";
+        $stmt = $pdoSybase->prepare($sql);
+        $stmt->execute([':matrik' => $matrik]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * @param array<string,mixed> $sourceRecord
+     * @param array<string,mixed> $group
+     * @return array<string,mixed>
+     */
+    private function buildStaffProvisionPayload(string $staffId, array $sourceRecord, array $group): array
+    {
+        $nokp = trim((string)($sourceRecord['nokp'] ?? ''));
+        return [
+            'f_loginID' => $staffId,
+            'f_stafID' => $staffId,
+            'f_categoryUser' => 'STAF',
+            'f_nopekerja' => trim((string)($sourceRecord['idpekerja'] ?? '')) ?: null,
+            'f_nama' => trim((string)($sourceRecord['gelar_nama'] ?? '')) ?: null,
+            'f_nickname' => trim((string)($sourceRecord['nama'] ?? '')) ?: null,
+            'f_nokp' => $nokp !== '' ? $nokp : null,
+            'f_password' => $nokp !== '' ? password_hash($nokp, PASSWORD_DEFAULT) : '',
+            'f_email' => trim((string)($sourceRecord['email'] ?? '')) ?: null,
+            'f_handphone' => trim((string)($sourceRecord['handphone'] ?? '')) ?: null,
+            'f_jawatanKod' => trim((string)($sourceRecord['kdjwtsemasa'] ?? '')) ?: null,
+            'f_jawatan' => trim((string)($sourceRecord['jawatansemasa'] ?? '')) ?: null,
+            'f_jenisID' => trim((string)($sourceRecord['kdjenis'] ?? '')) !== '' ? (int)$sourceRecord['kdjenis'] : null,
+            'f_jenis' => trim((string)($sourceRecord['jenis'] ?? '')) ?: null,
+            'f_jabatanKod' => trim((string)($sourceRecord['kdjbtnsemasa'] ?? '')) ?: null,
+            'f_namajabatan' => trim((string)($sourceRecord['jabatansemasa'] ?? '')) ?: null,
+            'f_kumpjawatan' => trim((string)($sourceRecord['kumpjwt'] ?? '')) ?: null,
+            'f_verified_at' => date('Y-m-d H:i:s'),
+            'f_must_change_password' => 1,
+            'f_password_changed_at' => null,
+            'f_password_expires_at' => null,
+            'f_statusID' => trim((string)($sourceRecord['kodstatus'] ?? '')) !== '' ? (int)$sourceRecord['kodstatus'] : null,
+            'f_status' => trim((string)($sourceRecord['status'] ?? '')) ?: null,
+            'f_groupID' => (int)($group['f_groupID'] ?? 0),
+            'f_groupKod' => trim((string)($group['f_groupKod'] ?? '')) ?: null,
+            'f_flag' => 1,
+            'f_updateby' => 'SSO-AUTO',
+            'f_remarks' => 'Auto provisioned via SSO (v630staf_service_skim_all)',
+            'f_isAutoProvisioned' => 1,
+            'f_identitySource' => 'SSO',
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $sourceRecord
+     * @param array<string,mixed> $group
+     * @return array<string,mixed>
+     */
+    private function buildStudentProvisionPayload(string $matrik, array $sourceRecord, array $group): array
+    {
+        $nokp = trim((string)($sourceRecord['nokp'] ?? ''));
+        $phoneCandidates = [
+            trim((string)($sourceRecord['notel_terkini'] ?? '')),
+            trim((string)($sourceRecord['hpno'] ?? '')),
+            trim((string)($sourceRecord['telno_terkini'] ?? '')),
+            trim((string)($sourceRecord['telno'] ?? '')),
+        ];
+        $resolvedPhone = null;
+        foreach ($phoneCandidates as $candidate) {
+            if ($candidate !== '') {
+                $resolvedPhone = $candidate;
+                break;
+            }
+        }
+
+        return [
+            'f_loginID' => $matrik,
+            'f_stafID' => $matrik,
+            'f_categoryUser' => 'PELAJAR',
+            'f_nopekerja' => null,
+            'f_nama' => trim((string)($sourceRecord['nama'] ?? '')) ?: null,
+            'f_nickname' => trim((string)($sourceRecord['nama'] ?? '')) ?: null,
+            'f_nokp' => $nokp !== '' ? $nokp : null,
+            'f_password' => $nokp !== '' ? password_hash($nokp, PASSWORD_DEFAULT) : '',
+            'f_email' => trim((string)($sourceRecord['email'] ?? '')) ?: null,
+            'f_handphone' => $resolvedPhone,
+            'f_jawatanKod' => trim((string)($sourceRecord['kdprogram'] ?? '')) ?: null,
+            'f_jawatan' => trim((string)($sourceRecord['program'] ?? '')) ?: null,
+            'f_jenisID' => trim((string)($sourceRecord['kdtahap'] ?? '')) !== '' ? (int)$sourceRecord['kdtahap'] : null,
+            'f_jenis' => trim((string)($sourceRecord['tahap_pengajian'] ?? '')) ?: null,
+            'f_jabatanKod' => trim((string)($sourceRecord['kdfakulti'] ?? '')) ?: null,
+            'f_namajabatan' => trim((string)($sourceRecord['fakulti'] ?? '')) ?: null,
+            'f_kumpjawatan' => trim((string)($sourceRecord['kadet'] ?? '')) ?: null,
+            'f_verified_at' => date('Y-m-d H:i:s'),
+            'f_must_change_password' => 1,
+            'f_password_changed_at' => null,
+            'f_password_expires_at' => null,
+            'f_statusID' => null,
+            'f_status' => trim((string)($sourceRecord['statuskategori'] ?? '')) ?: null,
+            'f_groupID' => (int)($group['f_groupID'] ?? 0),
+            'f_groupKod' => trim((string)($group['f_groupKod'] ?? '')) ?: null,
+            'f_flag' => 1,
+            'f_updateby' => 'SSO-AUTO',
+            'f_remarks' => 'Auto provisioned via SSO (v210)',
+            'f_isAutoProvisioned' => 1,
+            'f_identitySource' => 'SSO',
+        ];
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     */
+    private function insertProvisionedUser(array $payload): int
+    {
+        $columns = [];
+        $placeholders = [];
+        $params = [];
+        $allowedColumns = [
+            'f_loginID',
+            'f_stafID',
+            'f_categoryUser',
+            'f_nopekerja',
+            'f_nama',
+            'f_nickname',
+            'f_nokp',
+            'f_password',
+            'f_email',
+            'f_handphone',
+            'f_jawatanKod',
+            'f_jawatan',
+            'f_jenisID',
+            'f_jenis',
+            'f_jabatanKod',
+            'f_namajabatan',
+            'f_kumpjawatan',
+            'f_verified_at',
+            'f_must_change_password',
+            'f_password_changed_at',
+            'f_password_expires_at',
+            'f_statusID',
+            'f_status',
+            'f_groupID',
+            'f_groupKod',
+            'f_flag',
+            'f_updateby',
+            'f_remarks',
+            'f_isAutoProvisioned',
+            'f_identitySource',
+        ];
+
+        foreach ($allowedColumns as $column) {
+            if (!array_key_exists($column, $payload)) {
+                continue;
+            }
+            if (!$this->tableHasColumn('tbl_m_user', $column)) {
+                continue;
+            }
+            $columns[] = $column;
+            $placeholders[] = ':' . $column;
+            $params[':' . $column] = $payload[$column];
+        }
+
+        if ($this->tableHasColumn('tbl_m_user', 'f_insertdt')) {
+            $columns[] = 'f_insertdt';
+            $placeholders[] = 'NOW()';
+        }
+        if ($this->tableHasColumn('tbl_m_user', 'f_updatedt')) {
+            $columns[] = 'f_updatedt';
+            $placeholders[] = 'NOW()';
+        }
+
+        if ($columns === []) {
+            throw new \RuntimeException('No insertable columns available for auto provision.');
+        }
+
+        $sql = 'INSERT INTO tbl_m_user (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    /**
+     * @return array<string,mixed>|null
+     */
+    private function findProvisionableUserByIdentifier(string $identifier): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT f_userID, TRIM(COALESCE(f_loginID, '')) AS f_loginID, TRIM(COALESCE(f_stafID, '')) AS f_stafID
+             FROM tbl_m_user
+             WHERE TRIM(COALESCE(f_loginID, '')) = :login_identifier
+                OR TRIM(COALESCE(f_stafID, '')) = :staff_identifier
+             LIMIT 1"
+        );
+        $stmt->execute([
+            ':login_identifier' => trim($identifier),
+            ':staff_identifier' => trim($identifier),
+        ]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        if (!$row) {
+            return null;
+        }
+
+        $resolvedLoginId = trim((string)($row['f_loginID'] ?? ''));
+        if ($resolvedLoginId === '') {
+            $resolvedLoginId = trim((string)($row['f_stafID'] ?? ''));
+        }
+
+        return $resolvedLoginId !== '' ? $this->userModel->findByLoginID($resolvedLoginId) : null;
+    }
+
+    private function auditAutoProvisionSuccess(string $loginID, string $category, int $userId, string $groupCode): void
+    {
+        try {
+            if (!function_exists('audit_event')) {
+                return;
+            }
+
+            audit_event([
+                'event_type' => 'CREATE',
+                'severity' => 'INFO',
+                'outcome' => 'SUCCESS',
+                'target_type' => 'user',
+                'target_id' => $loginID,
+                'target_label' => 'Auto Provisioned User: ' . $loginID,
+                'message' => 'User auto provisioned via SSO',
+                'request_id' => $GLOBALS['__AUDIT_REQUEST_ID'] ?? null,
+                'session_id' => session_id() ?: null,
+                'login_id' => $loginID,
+                'actor_label' => $loginID,
+                'meta' => [
+                    'category' => $category,
+                    'auth_method' => 'SSO',
+                    'auth_flow' => 'sso_auto_provision',
+                    'user_id' => $userId,
+                    'group_code' => $groupCode,
+                    'identity_source' => 'SSO',
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            error_log('[LoginController] auditAutoProvisionSuccess failed: ' . $e->getMessage());
+        }
+    }
+
+    private function auditAutoProvisionBlocked(string $loginID, string $category, string $reason): void
+    {
+        try {
+            if (!function_exists('audit_event')) {
+                return;
+            }
+
+            audit_event([
+                'event_type' => 'LOGIN',
+                'severity' => 'SECURITY',
+                'outcome' => 'FAIL',
+                'target_type' => 'auth',
+                'target_id' => 'login',
+                'message' => 'SSO auto provision request denied',
+                'request_id' => $GLOBALS['__AUDIT_REQUEST_ID'] ?? null,
+                'session_id' => session_id() ?: null,
+                'login_id' => $loginID,
+                'actor_label' => $loginID,
+                'meta' => [
+                    'category' => $category,
+                    'auth_method' => 'SSO',
+                    'auth_flow' => 'sso_auto_provision',
+                    'reason' => $reason,
+                    'reason_code' => $reason,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            error_log('[LoginController] auditAutoProvisionBlocked failed: ' . $e->getMessage());
+        }
     }
 
     private function auditLoginFail(string $loginID, string $reason, ?array $user = null, ?string $authMethod = null): void

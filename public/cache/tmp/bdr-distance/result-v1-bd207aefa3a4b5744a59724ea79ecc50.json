@@ -1,0 +1,18 @@
+{
+    "km": 62.04,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.4057877,
+        "lon": 101.595531,
+        "display_name": "Jalan Telipot 1A/2, Taman Bakawali, Bandar Bukit Sentosa Fasa 3, Bukit Sentosa, Hulu Selangor, Selangor, 48200, Malaysia",
+        "matched_query": "Jalan Telipot 1A/2, Bukit Sentosa, 48300, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:39:38+00:00"
+}

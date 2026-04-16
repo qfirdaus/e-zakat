@@ -1,0 +1,18 @@
+{
+    "km": 26.53,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1379825,
+        "lon": 101.6207778,
+        "display_name": "SS 21, Damansara Utama, Petaling Jaya, Petaling, Selangor, Malaysia",
+        "matched_query": "Ss 21/1, Damansara Utama, Petaling Jaya, 47400, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:33:32+00:00"
+}

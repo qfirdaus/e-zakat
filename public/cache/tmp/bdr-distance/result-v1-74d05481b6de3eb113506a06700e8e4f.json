@@ -1,0 +1,18 @@
+{
+    "km": 138.21,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.6777145,
+        "lon": 100.9880263,
+        "display_name": "Sungai Besar, Sabak Bernam, Selangor, 45300, Malaysia",
+        "matched_query": "Sungai Besar, 45300, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:24:22+00:00"
+}

@@ -7,12 +7,13 @@ if ($idleTimeoutMinutes <= 0) {
 }
 ?>
 
-<!-- ========== Core: jQuery & Bootstrap (NO defer) ========== -->
+<!-- ========== Core: jQuery (NO defer) ========== -->
 <!-- Pastikan vendor.min.js TIDAK bundle jQuery. Kita nak hanya satu sumber jQuery -->
 <script src="<?= base_url('assets/vendor/jquery/jquery.min.js') ?>"></script>
-<script src="<?= base_url('assets/vendor/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
 
 <!-- ========== Vendor & Plugin JS (OK untuk defer) ========== -->
+<!-- Bootstrap perlu dimuat secara eksplisit kerana banyak page bergantung pada window.bootstrap.* -->
+<script src="<?= base_url('assets/vendor/bootstrap/js/bootstrap.bundle.min.js') ?>?v=<?= $version ?>" defer></script>
 <script src="<?= base_url('assets/js/vendor.min.js') ?>?v=<?= $version ?>" defer></script>
 <script src="<?= base_url('assets/vendor/daterangepicker/moment.min.js') ?>?v=<?= $version ?>" defer></script>
 <script src="<?= base_url('assets/vendor/daterangepicker/daterangepicker.js') ?>?v=<?= $version ?>" defer></script>

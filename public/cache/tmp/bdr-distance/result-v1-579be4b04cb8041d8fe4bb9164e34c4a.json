@@ -1,0 +1,18 @@
+{
+    "km": 15.8,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9761205,
+        "lon": 101.7587886,
+        "display_name": "Persiaran Teratai 1, Kampung Sungai Ramal Dalam, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43000, Malaysia",
+        "matched_query": "43000 Persiaran Teratai 1, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:28:19+00:00"
+}

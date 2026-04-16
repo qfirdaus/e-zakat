@@ -1,0 +1,18 @@
+{
+    "km": 125.65,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.897376,
+        "lon": 102.4059228,
+        "display_name": "Bandar Seri Jempol, Jempol, Negeri Sembilan, Malaysia",
+        "matched_query": "Bandar Seri Jempol, 72120, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:36:21+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 24.89,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1880562,
+        "lon": 101.757273,
+        "display_name": "Jalan 6/56, Setiawangsa, Kuala Lumpur, 54200, Malaysia",
+        "matched_query": "Jalan 6/56, Kuala Lumpur, 54200, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:05:06+00:00"
+}

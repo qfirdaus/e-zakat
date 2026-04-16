@@ -1,0 +1,18 @@
+{
+    "km": 62.21,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.235432,
+        "lon": 101.4070553,
+        "display_name": "Taman Alam Suria, Bandar Puncak Alam, Kuala Selangor, Selangor, 42300, Malaysia",
+        "matched_query": "Alam Suria 16/2, 42300 Bandar Puncak Alam, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:18:10+00:00"
+}

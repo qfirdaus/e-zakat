@@ -52,6 +52,20 @@
         var detailModalEl = document.getElementById('templateDetailModal');
         var createForm = document.getElementById('templateGeneratorForm');
         var createModal = createModalEl && window.bootstrap ? bootstrap.Modal.getOrCreateInstance(createModalEl) : null;
+        var accessTabTriggerEl = document.getElementById('template-generator-access-tab');
+
+        function showAccessModeTabIfNeeded() {
+            if (!accessTabTriggerEl || !window.bootstrap) {
+                return;
+            }
+
+            var hasAccessModeError = !!document.querySelector('#template-generator-access-pane .text-danger');
+            if (!hasAccessModeError) {
+                return;
+            }
+
+            bootstrap.Tab.getOrCreateInstance(accessTabTriggerEl).show();
+        }
 
         if (createForm) {
             createForm.addEventListener('submit', function (event) {
@@ -76,6 +90,7 @@
                     '[data-detail-template-type]': payload.template_type || '-',
                     '[data-detail-page-slug]': payload.page_slug || '-',
                     '[data-detail-controller-class]': payload.controller_class || '-',
+                    '[data-detail-access-mode]': ((window.TemplateGeneratorPageData || {}).accessModeLabels || {})[payload.access_mode] || payload.access_mode || '-',
                     '[data-detail-status]': payload.status || '-',
                     '[data-detail-updated-at]': payload.updated_at || '-',
                     '[data-detail-page-path]': payload.page_path || '-',
@@ -124,6 +139,7 @@
         var pageData = window.TemplateGeneratorPageData || {};
         if (pageData.shouldOpenCreateModal && createModal) {
             createModal.show();
+            showAccessModeTabIfNeeded();
         }
 
         if (pageData.hasSuccess && window.Swal) {

@@ -1,0 +1,18 @@
+{
+    "km": 319.42,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 5.1110509,
+        "lon": 100.4857745,
+        "display_name": "Jalan Bunga Kekwa, Taman Kerian Tambahan 5 & 6, Taman Kerian, Pekan Baru, Mukim Parit Buntar, Kerian, Perak, 34200, Malaysia",
+        "matched_query": "Jalan Bunga Kekwa, 2/12, 40000, Kedah, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:44:48+00:00"
+}

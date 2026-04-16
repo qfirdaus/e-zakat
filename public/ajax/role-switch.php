@@ -13,6 +13,23 @@ while (ob_get_level() > 0) {
 
 header('Content-Type: application/json; charset=utf-8');
 
+if (!function_exists('role_switch_trace_log')) {
+    function role_switch_trace_log(string $message): void
+    {
+        $enabled = $_ENV['ACCESS_TRACE_LOG_ENABLED'] ?? getenv('ACCESS_TRACE_LOG_ENABLED');
+        if (!is_string($enabled) || !in_array(strtolower(trim($enabled)), ['1', 'true', 'yes', 'on'], true)) {
+            return;
+        }
+
+        $logDir = realpath(__DIR__ . '/../log') ?: (__DIR__ . '/../log');
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0777, true);
+        }
+        $traceFile = rtrim($logDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'access-trace.log';
+        @file_put_contents($traceFile, '[' . date('Y-m-d H:i:s') . '] ' . trim($message) . PHP_EOL, FILE_APPEND | LOCK_EX);
+    }
+}
+
 try {
     require_once __DIR__ . '/../includes/init.php';
     require_login();
@@ -35,6 +52,15 @@ try {
     }
 
     $groupID = (int)($data['groupID'] ?? 0);
+    role_switch_trace_log(sprintf(
+        '[role_switch] request group_id=%d session_active_before=%s session_default=%s login_id=%s staf_id=%s',
+        $groupID,
+        (string)($_SESSION['group_active_id'] ?? ''),
+        (string)($_SESSION['group_default_id'] ?? ''),
+        (string)($_SESSION['f_loginID'] ?? ''),
+        (string)($_SESSION['f_stafID'] ?? '')
+    ));
+
     if ($groupID <= 0) {
         http_response_code(422);
         echo json_encode(['error' => true, 'message' => 'Peranan tidak sah.'], JSON_UNESCAPED_UNICODE);
@@ -94,6 +120,7 @@ try {
         $stmt->execute([':uid' => $userID, ':uid_zero' => $userID, ':staf' => $stafRaw, ':staf_norm' => $stafNorm, ':gid' => $groupID]);
         $ok = $stmt->fetchColumn();
         if (!$ok) {
+            role_switch_trace_log(sprintf('[role_switch] denied requested_group=%d user_id=%d staf_id=%s', $groupID, $userID, $stafRaw));
             http_response_code(403);
             echo json_encode(['error' => true, 'message' => 'Peranan tidak dibenarkan untuk pengguna ini.'], JSON_UNESCAPED_UNICODE);
             exit;
@@ -103,6 +130,13 @@ try {
 
     // SECURITY CRITICAL – DO NOT MODIFY: session active role drives access decisions
     $_SESSION['group_active_id'] = $groupID;
+    role_switch_trace_log(sprintf(
+        '[role_switch] applied old_group=%d new_group=%d session_active_after=%s default_group=%d',
+        $oldGroupId,
+        $groupID,
+        (string)($_SESSION['group_active_id'] ?? ''),
+        $defaultGroupId
+    ));
 
     // Store flash for UI message after reload
     try {
@@ -184,6 +218,7 @@ try {
 
     echo json_encode(['error' => false, 'message' => 'Peranan berjaya dikemas kini.'], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
+    role_switch_trace_log('[role_switch] exception ' . $e->getMessage());
     error_log('[role-switch] Error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => true, 'message' => 'Ralat sistem semasa menukar peranan.'], JSON_UNESCAPED_UNICODE);

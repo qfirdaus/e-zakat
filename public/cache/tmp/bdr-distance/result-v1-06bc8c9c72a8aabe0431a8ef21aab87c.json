@@ -1,0 +1,18 @@
+{
+    "km": 399.6,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 5.7112021,
+        "lon": 100.5416168,
+        "display_name": "Jalan Seri Bayu 2, Taman Seri Bayu 1, Ambangan Height, Sungai Lalang, Kuala Muda, Kedah, Malaysia",
+        "matched_query": "Jalan Seri Bayu 2/3, Sungai Lalang, 08000, Kedah, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:33:16+00:00"
+}

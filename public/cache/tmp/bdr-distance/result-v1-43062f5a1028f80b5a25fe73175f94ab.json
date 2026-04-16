@@ -1,0 +1,18 @@
+{
+    "km": 38.62,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.8029227,
+        "lon": 101.8001051,
+        "display_name": "KB10 Nilai, N28, Taman Nilai Perdana, Kampung Momo, Nilai, Seremban, Negeri Sembilan, 71800, Malaysia",
+        "matched_query": "Nilai, 71800 Nilai Negeri Sembilan, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:29:02+00:00"
+}

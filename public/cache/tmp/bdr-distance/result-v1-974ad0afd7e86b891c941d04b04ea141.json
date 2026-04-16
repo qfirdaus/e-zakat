@@ -1,0 +1,18 @@
+{
+    "km": 21.21,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1669415,
+        "lon": 101.7034328,
+        "display_name": "Plaza RAH, 111, Jalan Raja Abdullah, Kampung Hujung Pasir, Kampung Bharu, Kuala Lumpur, 50300, Malaysia",
+        "matched_query": "Plaza Rah, 111 Jalan Raja Abdullah, Kuala Lumpur, 50300 Kampung Baru, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:22:00+00:00"
+}

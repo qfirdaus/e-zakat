@@ -21,7 +21,7 @@ try {
     ensureAjaxGroupManagePermission($pdo);
 
     if (!checkRateLimit('user_update_public', 30, 60)) {
-        jsonErrorResponse('Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.', 429);
+        jsonErrorResponse((string)__('userList_ajax_rate_limited'), 429);
     }
 
     $csrfHeader = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
@@ -32,7 +32,7 @@ try {
     $rawInput = file_get_contents('php://input');
     $data = json_decode($rawInput, true);
     if (!is_array($data)) {
-        jsonErrorResponse('Data tidak sah.', 400);
+        jsonErrorResponse((string)__('userList_ajax_invalid_data'), 400);
     }
 
     $userID = (int)($data['userID'] ?? 0);
@@ -48,22 +48,22 @@ try {
     $passwordConfirm = (string)($data['password_confirm'] ?? '');
 
     if ($userID <= 0) {
-        jsonErrorResponse('Parameter pengguna tidak sah.', 422);
+        jsonErrorResponse((string)__('userList_ajax_invalid_user_param'), 422);
     }
     if ($name === '') {
-        jsonErrorResponse('Nama tidak boleh kosong.', 400);
+        jsonErrorResponse((string)__('userList_ajax_name_required'), 400);
     }
     if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        jsonErrorResponse('Alamat emel tidak sah.', 400);
+        jsonErrorResponse((string)__('userList_ajax_invalid_email'), 400);
     }
     if (!in_array($flag, [0, 1], true)) {
         $flag = 1;
     }
     if ($password !== '' && strlen($password) < 6) {
-        jsonErrorResponse('Kata laluan mesti sekurang-kurangnya 6 aksara.', 400);
+        jsonErrorResponse((string)__('userList_ajax_password_min'), 400);
     }
     if (($password !== '' || $passwordConfirm !== '') && $password !== $passwordConfirm) {
-        jsonErrorResponse('Pengesahan kata laluan tidak sepadan.', 400);
+        jsonErrorResponse((string)__('userList_ajax_password_confirm_mismatch'), 400);
     }
 
     $stmtUser = $pdo->prepare("
@@ -75,10 +75,37 @@ try {
     $stmtUser->execute([':userID' => $userID]);
     $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
     if (!$userRow) {
-        jsonErrorResponse('Pengguna tidak ditemui.', 404);
+        jsonErrorResponse((string)__('userList_ajax_user_not_found'), 404);
+    }
+    $targetProtectedStaffId = (string)($userRow['f_stafID'] ?? '');
+    if (isProtectedStaffAccount($targetProtectedStaffId) && !canSelfManageProtectedStaffAccount($targetProtectedStaffId)) {
+        try {
+            audit_event([
+                'event_type' => 'UPDATE',
+                'severity' => 'WARN',
+                'outcome' => 'DENIED',
+                'target_type' => 'user',
+                'target_id' => (string)$userID,
+                'target_label' => (string)($userRow['f_loginID'] ?? $userRow['f_stafID'] ?? 'Protected User'),
+                'message' => 'UPDATE_PUBLIC_USER blocked (protected account)',
+                'request_id' => $GLOBALS['__AUDIT_REQUEST_ID'] ?? null,
+                'session_id' => session_id() ?: null,
+                'user_id' => !empty($_SESSION['f_userID']) && is_numeric($_SESSION['f_userID']) ? (int)$_SESSION['f_userID'] : null,
+                'actor_label' => ($_SESSION['user']['f_nama'] ?? $_SESSION['f_nama'] ?? null),
+                'meta' => [
+                    'reason' => 'protected_staff_account',
+                    'protected_stafID' => (string)($userRow['f_stafID'] ?? ''),
+                    'performed_by' => (string)($_SESSION['f_stafID'] ?? ''),
+                ],
+            ]);
+        } catch (Throwable $auditError) {
+            error_log('[user-update-public] Protected account audit logging failed: ' . $auditError->getMessage());
+        }
+
+    jsonErrorResponse((string)__('userList_protected_self_manage_only'), 403);
     }
     if (strtoupper(trim((string)($userRow['f_categoryUser'] ?? ''))) !== 'UMUM') {
-        jsonErrorResponse('Hanya pengguna umum boleh dikemas kini melalui flow ini.', 400);
+        jsonErrorResponse((string)__('userList_ajax_public_only'), 400);
     }
 
     $stmtGroup = $pdo->prepare("
@@ -90,10 +117,10 @@ try {
     $stmtGroup->execute([':groupID' => $groupID]);
     $groupRow = $stmtGroup->fetch(PDO::FETCH_ASSOC);
     if (!$groupRow) {
-        jsonErrorResponse('Kumpulan pengguna tidak sah atau tidak wujud dalam sistem.', 400);
+        jsonErrorResponse((string)__('userList_ajax_invalid_group'), 400);
     }
     if (strtoupper(trim((string)($groupRow['f_categoryUser'] ?? ''))) !== 'UMUM') {
-        jsonErrorResponse('Kumpulan yang dipilih tidak sah untuk akses umum.', 400);
+        jsonErrorResponse((string)__('userList_ajax_invalid_public_group'), 400);
     }
 
     $stmtDup = $pdo->prepare("
@@ -112,7 +139,7 @@ try {
         ':email' => $email,
     ]);
     if ($stmtDup->fetch(PDO::FETCH_ASSOC)) {
-        jsonErrorResponse('Pengguna dengan alamat emel ini sudah wujud dalam sistem.', 409);
+        jsonErrorResponse((string)__('userList_ajax_email_exists'), 409);
     }
 
     $setParts = [
@@ -199,7 +226,7 @@ try {
     }
 
     jsonSuccessResponse([
-        'message' => 'Maklumat pengguna umum berjaya dikemas kini.',
+        'message' => (string)__('userList_success_update_public'),
         'group' => [
             'id' => (int)$groupRow['f_groupID'],
             'kod' => (string)$groupRow['f_groupKod'],
@@ -218,8 +245,8 @@ try {
     ]);
 } catch (PDOException $e) {
     error_log('[user-update-public] PDO Error: ' . $e->getMessage());
-    jsonErrorResponse('Ralat database: ' . $e->getMessage(), 500);
+    jsonErrorResponse((string)__('userList_ajax_system_error'), 500);
 } catch (Throwable $e) {
     error_log('[user-update-public] Error: ' . $e->getMessage());
-    jsonErrorResponse('Ralat sistem. Sila hubungi pentadbir sistem.', 500);
+    jsonErrorResponse((string)__('userList_ajax_system_error'), 500);
 }

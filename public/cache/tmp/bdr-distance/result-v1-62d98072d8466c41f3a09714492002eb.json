@@ -1,0 +1,18 @@
+{
+    "km": 12.52,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.077518,
+        "lon": 101.7048014,
+        "display_name": "Kampung Malaysia Tambahan, Lebuhraya Sungai Besi, Salak Selatan, Kuala Lumpur, 57100, Malaysia",
+        "matched_query": "Lebuhraya Besraya, Salak Selatan, 57000, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:03:36+00:00"
+}

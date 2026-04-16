@@ -1,0 +1,18 @@
+{
+    "km": 18.14,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9826748,
+        "lon": 101.7905301,
+        "display_name": "KB06 Kajang, Jalan Bukit, Taman Hijau, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43000, Malaysia",
+        "matched_query": "Kajang, 43000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:06:11+00:00"
+}

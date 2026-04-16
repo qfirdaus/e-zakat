@@ -1,0 +1,18 @@
+{
+    "km": 12.79,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0984026,
+        "lon": 101.7116619,
+        "display_name": "Jalan Sri Permaisuri 1, Bandar Sri Permaisuri, Cheras, Kuala Lumpur, 51020, Malaysia",
+        "matched_query": "Jalan Sri Permaisuri 1, Cheras, 56000, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:15:34+00:00"
+}

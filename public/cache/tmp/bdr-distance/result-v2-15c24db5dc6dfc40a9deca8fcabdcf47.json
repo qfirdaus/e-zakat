@@ -1,0 +1,19 @@
+{
+    "km": 80.99,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.5930239,
+        "lon": 102.0946335,
+        "display_name": "KB16 Rembau, Jalan Kg Mulia, Rembau, Negeri Sembilan, 71300, Malaysia",
+        "matched_query": "Rembau, 71300, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "match_quality": "OK",
+    "cached_at": "2026-04-04T02:36:24+00:00"
+}

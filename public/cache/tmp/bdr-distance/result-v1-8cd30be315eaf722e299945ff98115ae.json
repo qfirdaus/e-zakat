@@ -1,0 +1,18 @@
+{
+    "km": 33.78,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.2442509,
+        "lon": 101.6421328,
+        "display_name": "Jalan Bidara 2/1, Taman Bidara, Majlis Perbandaran Selayang, Gombak, Selangor, 52100, Malaysia",
+        "matched_query": "No 27, Jalan Bidara 2/1, Taman Bidara, Selayang, 68100, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:31:25+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 22.94,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1511043,
+        "lon": 101.7627918,
+        "display_name": "Jalan Jati, Ampang, Majlis Perbandaran Ampang Jaya, Hulu Langat, Selangor, 68000, Malaysia",
+        "matched_query": "Jalan Jati, 68000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-04T00:14:49+00:00"
+}

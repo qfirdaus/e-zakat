@@ -1,5 +1,10 @@
 <?php
 $__ssoDebugLog = static function (string $message, array $context = []): void {
+    $enabled = $_ENV['SSO_DEBUG_LOG_ENABLED'] ?? getenv('SSO_DEBUG_LOG_ENABLED');
+    if (!is_string($enabled) || !in_array(strtolower(trim($enabled)), ['1', 'true', 'yes', 'on'], true)) {
+        return;
+    }
+
     $dir = __DIR__ . '/log';
     if (!is_dir($dir)) {
         @mkdir($dir, 0777, true);
@@ -9,7 +14,7 @@ $__ssoDebugLog = static function (string $message, array $context = []): void {
         $line .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
     $line .= PHP_EOL;
-    @file_put_contents($dir . '/sso-debug.log', $line, FILE_APPEND);
+    @file_put_contents($dir . '/sso-debug.log', $line, FILE_APPEND | LOCK_EX);
 };
 
 $hasIncomingSsoToken = isset($_GET['new_sso_cre']) && trim((string)$_GET['new_sso_cre']) !== '';
@@ -59,23 +64,90 @@ if ($ssoEnabled) {
     }
 }
 $ssoConfig = function_exists('sso_shared_config') ? sso_shared_config() : [
-    'idp_host' => 'oneid-dev.upnm.edu.my',
-    'launcher_url' => 'https://oneid-dev.upnm.edu.my/?site_id=V8LN57YMGZ',
+    'idp_host' => 'oneid.upnm.edu.my',
+    'launcher_url' => 'https://oneid.upnm.edu.my/?site_id=V8LN57YMGZ',
 ];
 $oneIdLauncherUrl = (string)($ssoConfig['launcher_url'] ?? '');
-$oneIdLoginUrl = base_path('sso_sp_client.php');
+$oneIdLoginUrl = base_url('sso_sp_client.php');
 $referer = trim((string)($_SERVER['HTTP_REFERER'] ?? ''));
 $refererHost = strtolower((string)(parse_url($referer, PHP_URL_HOST) ?? ''));
 $isOneIdReferer = $refererHost !== '' && $refererHost === strtolower((string)($ssoConfig['idp_host'] ?? ''));
 $showOneIdButton = $hasActiveSsoRoute && $oneIdLoginUrl !== '';
 
-if ($showOneIdButton && $isOneIdReferer && empty($_SESSION['f_stafID'])) {
+$loginManualCategories = [];
+$authCategories = is_array($authPolicy['categories'] ?? null) ? $authPolicy['categories'] : [];
+$isManualLoginEnabledForCategory = static function (string $category) use ($authCategories, $ssoEnabled, $ssoMode, $ssoHybrid): bool {
+    if (empty($authCategories[$category])) {
+        return false;
+    }
+
+    if (!$ssoEnabled) {
+        return true;
+    }
+
+    if ($ssoMode === 'ALL') {
+        return $category === 'umum';
+    }
+
+    if ($ssoMode === 'HYBRID') {
+        return strtoupper(trim((string)($ssoHybrid[$category] ?? 'MANUAL'))) === 'MANUAL';
+    }
+
+    return true;
+};
+
+foreach (['staf', 'pelajar', 'umum'] as $loginCategory) {
+    if ($isManualLoginEnabledForCategory($loginCategory)) {
+        $loginManualCategories[] = $loginCategory;
+    }
+}
+
+$loginPlaceholderParts = [];
+foreach ($loginManualCategories as $loginCategory) {
+    if ($loginCategory === 'staf') {
+        $loginPlaceholderParts[] = (string)__('login_userid_placeholder_staff');
+        continue;
+    }
+    if ($loginCategory === 'pelajar') {
+        $loginPlaceholderParts[] = (string)__('login_userid_placeholder_student');
+        continue;
+    }
+    if ($loginCategory === 'umum') {
+        $loginPlaceholderParts[] = (string)__('login_userid_placeholder_public');
+    }
+}
+
+$loginPlaceholderList = '';
+$loginPlaceholderCount = count($loginPlaceholderParts);
+if ($loginPlaceholderCount === 1) {
+    $loginPlaceholderList = $loginPlaceholderParts[0];
+} elseif ($loginPlaceholderCount === 2) {
+    $loginPlaceholderList = $loginPlaceholderParts[0] . (string)__('login_userid_placeholder_joiner_last') . $loginPlaceholderParts[1];
+} elseif ($loginPlaceholderCount > 2) {
+    $lastPart = array_pop($loginPlaceholderParts);
+    $loginPlaceholderList = implode((string)__('login_userid_placeholder_joiner'), $loginPlaceholderParts)
+        . (string)__('login_userid_placeholder_joiner_last')
+        . $lastPart;
+}
+
+$loginIdPlaceholder = $loginPlaceholderList !== ''
+    ? sprintf((string)__('login_userid_placeholder_format'), $loginPlaceholderList)
+    : (string)__('login_userid_placeholder_unavailable');
+
+$hasPendingLoginAlert = !empty($_SESSION['alert']);
+if ($showOneIdButton && $isOneIdReferer && empty($_SESSION['f_stafID']) && !$hasPendingLoginAlert) {
     $__ssoDebugLog('INDEX_ONEID_REFERER_HANDOFF', [
         'referer' => $referer,
         'session_id' => session_id(),
         'target' => $oneIdLoginUrl,
     ]);
     redirect('sso_sp_client.php');
+}
+if ($showOneIdButton && $isOneIdReferer && empty($_SESSION['f_stafID']) && $hasPendingLoginAlert) {
+    $__ssoDebugLog('INDEX_ONEID_REFERER_KEEP_ALERT', [
+        'referer' => $referer,
+        'session_id' => session_id(),
+    ]);
 }
 
 // ✅ Language Detection
@@ -852,13 +924,13 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
         </div>
       </div>
 
-      <form method="POST" action="<?= base_path('login.php') ?>" autocomplete="off" class="login-form">
+      <form method="POST" action="<?= base_url('login.php') ?>" autocomplete="off" class="login-form">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
 
         <div class="login-field">
           <label for="f_loginID"><?= h((__('login_userid_label') ?: 'Login ID')) ?></label>
           <input id="f_loginID" name="f_loginID" type="text" required
-                 placeholder="<?= __('login_userid_placeholder') ?>"
+                 placeholder="<?= htmlspecialchars($loginIdPlaceholder, ENT_QUOTES, 'UTF-8') ?>"
                  autocomplete="username">
         </div>
 
@@ -870,7 +942,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
         </div>
 
         <div class="login-inline-meta">
-          <a href="<?= h(base_path('forgot-password.php')) ?>"><?= __('login_forgot') ?></a>
+          <a href="<?= h(base_url('forgot-password.php')) ?>"><?= __('login_forgot') ?></a>
         </div>
 
         <button type="submit" class="login-submit-btn">

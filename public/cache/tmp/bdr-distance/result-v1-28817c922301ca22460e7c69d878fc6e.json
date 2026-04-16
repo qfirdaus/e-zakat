@@ -1,0 +1,18 @@
+{
+    "km": 30.25,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9997489,
+        "lon": 101.5701955,
+        "display_name": "Jalan Putra Bahagia 8/4C, Putra Heights, Majlis Bandaraya Subang Jaya, Petaling, Selangor, 47650, Malaysia",
+        "matched_query": "No 8 Jalan Putra Bahagia 8/4C, Putra Heights, Subang Jaya, 47650, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:59:25+00:00"
+}

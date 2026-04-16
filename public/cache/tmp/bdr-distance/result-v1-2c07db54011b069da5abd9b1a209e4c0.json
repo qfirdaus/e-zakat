@@ -1,0 +1,18 @@
+{
+    "km": 224.32,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 4.6211353,
+        "lon": 101.0713806,
+        "display_name": "Jalan Juara, Kampung Dato' Ahmad Said (Sg. Kati), Manjoi, Majlis Bandaraya Ipoh, Kinta, Perak, 30100, Malaysia",
+        "matched_query": "Jalan Juara, 43300, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:50:23+00:00"
+}

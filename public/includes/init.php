@@ -102,11 +102,6 @@ audit_safe(function() use (&$__REQUEST_ID, $__routeName) {
     }
 });
 
-// 5) MySQL + User
-$pdo_mysql = Database::getInstance('mysql')->getConnection();
-$user      = new User($pdo_mysql);
-$config    = new Config($pdo_mysql);
-
 if (!function_exists('request_is_ajax_like')) {
     function request_is_ajax_like(): bool {
         $requestedWith = strtolower(trim((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')));
@@ -119,9 +114,69 @@ if (!function_exists('request_is_ajax_like')) {
     }
 }
 
+if (!function_exists('render_bootstrap_db_failure_response')) {
+    function render_bootstrap_db_failure_response(string $publicMessage = ''): never
+    {
+        $lang = strtolower(trim((string)($_SESSION['lang'] ?? 'ms')));
+        $title = $lang === 'en' ? 'Service Temporarily Unavailable' : 'Perkhidmatan Tidak Tersedia Buat Sementara';
+        $message = trim($publicMessage);
+        if ($message === '') {
+            $message = $lang === 'en'
+                ? 'The system is temporarily unavailable. Please try again again in a moment.'
+                : 'Sistem tidak dapat diakses buat sementara waktu. Sila cuba semula sebentar lagi.';
+        }
+
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+
+        http_response_code(503);
+        if (!headers_sent()) {
+            header('Retry-After: 60');
+        }
+
+        if (request_is_ajax_like()) {
+            if (!headers_sent()) {
+                header('Content-Type: application/json; charset=utf-8');
+            }
+            echo json_encode([
+                'success' => false,
+                'error' => true,
+                'message' => $message,
+                'service_unavailable' => true,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        if (!headers_sent()) {
+            header('Content-Type: text/html; charset=utf-8');
+        }
+
+        $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+        $safeMessage = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+        echo '<!doctype html><html lang="' . htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' . $safeTitle . '</title><style>body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;color:#0f172a;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}.panel{max-width:560px;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px;box-shadow:0 12px 40px rgba(15,23,42,.08)}h1{margin:0 0 12px;font-size:1.4rem}p{margin:0;color:#475569;line-height:1.6}</style></head><body><main class="panel"><h1>' . $safeTitle . '</h1><p>' . $safeMessage . '</p></main></body></html>';
+        exit;
+    }
+}
+
+// 5) MySQL + User
+try {
+    $pdo_mysql = Database::getInstance('mysql')->getConnection();
+    $user      = new User($pdo_mysql);
+    $config    = new Config($pdo_mysql);
+} catch (Throwable $e) {
+    error_log('[init] bootstrap database failure: ' . $e->getMessage());
+    render_bootstrap_db_failure_response();
+}
+
 if (!function_exists('tetapan_sistem_ajax_debug_log')) {
     function tetapan_sistem_ajax_debug_log(string $stage, array $context = []): void
     {
+        $enabled = $_ENV['TETAPAN_AJAX_DEBUG_LOG_ENABLED'] ?? getenv('TETAPAN_AJAX_DEBUG_LOG_ENABLED');
+        if (!is_string($enabled) || !in_array(strtolower(trim($enabled)), ['1', 'true', 'yes', 'on'], true)) {
+            return;
+        }
+
         $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
         if (
             stripos($uri, '/pages/tetapan-sistem.php') === false &&
@@ -147,7 +202,7 @@ if (!function_exists('tetapan_sistem_ajax_debug_log')) {
         @file_put_contents(
             $logPath,
             json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL,
-            FILE_APPEND
+            FILE_APPEND | LOCK_EX
         );
     }
 }
@@ -168,7 +223,7 @@ if (!function_exists('terminated_session_login_url')) {
 }
 
 if (!function_exists('force_end_terminated_session')) {
-    function force_end_terminated_session(PDO $pdo): void {
+    function force_end_terminated_session(PDO $pdo, bool $redirectOnEndedSession = true): void {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return;
         }
@@ -225,6 +280,13 @@ if (!function_exists('force_end_terminated_session')) {
 
         session_destroy();
 
+        if (!$redirectOnEndedSession) {
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                session_start();
+            }
+            return;
+        }
+
         $title = (string)(__('session_terminated_title') ?: 'Sesi Ditamatkan');
         $text = (string)(__('session_terminated_text') ?: 'Sesi anda telah ditamatkan oleh pentadbir. Sila log masuk semula.');
         $redirect = terminated_session_login_url();
@@ -265,7 +327,7 @@ if (!function_exists('force_end_terminated_session')) {
     }
 }
 
-force_end_terminated_session($pdo_mysql);
+force_end_terminated_session($pdo_mysql, !defined('BDR_NOTIFICATION_CONFIRM_PUBLIC_PAGE'));
 
 $f_loginID = $_SESSION['f_loginID'] ?? null;
 $f_stafID  = $_SESSION['f_stafID'] ?? null;
@@ -324,6 +386,15 @@ if ($userIdToBind !== null) {
 // Pastikan route juga direkod (kalau belum)
 if (!empty($__routeName)) {
     audit_request_set_route($__routeName, $__REQUEST_ID ?? null);
+}
+
+// Enforce centralized authorization for pages and selected ajax/actions.
+if (
+    PHP_SAPI !== 'cli'
+    && function_exists('ensure_current_request_access')
+    && !defined('BDR_NOTIFICATION_CONFIRM_PUBLIC_PAGE')
+) {
+    ensure_current_request_access($profile, $pdo_mysql);
 }
 
 if (defined('AUDIT_DEBUG') && AUDIT_DEBUG) {
@@ -458,6 +529,7 @@ if (!$themeSetting) {
 $_SESSION['theme.menu']   = $themeSetting['sidebarColor'] ?? 'light';
 $_SESSION['theme.topbar'] = $themeSetting['topbarColor']  ?? 'light';
 $_SESSION['theme.layout'] = $themeSetting['layoutMode']   ?? 'light';
+$_SESSION['theme.sidebar'] = $_SESSION['theme.menu'];
 
 // 11) Compatibility flags derived from environment.
 $GLOBALS['sybase_active'] = ['ehrmdb'=>false,'ehrmdb_dev'=>false];

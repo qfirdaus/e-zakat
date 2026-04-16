@@ -1,0 +1,18 @@
+{
+    "km": 47.17,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.028332,
+        "lon": 101.4237096,
+        "display_name": "Jalan Kurau 1D/KS1, Taman Gembira, Teluk Pulai, Bandaraya Klang, Klang, Selangor, 41250, Malaysia",
+        "matched_query": "Jalan Kurau 1D/Ks1, 41250 Klang, Selangor, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T20:53:35+00:00"
+}

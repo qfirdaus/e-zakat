@@ -1,0 +1,18 @@
+{
+    "km": 394.6,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 5.6786095,
+        "lon": 100.4981525,
+        "display_name": "Lorong Enggang 4, Taman Desa Enggang, Bandar Laguna Merbok, Sungai Petani, Kuala Muda, Kedah, 08100, Malaysia",
+        "matched_query": "Lorong Enggang 5, Taman Desa, Enggang, 08000, Kedah, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:30:43+00:00"
+}

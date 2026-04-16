@@ -40,6 +40,20 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf = $_SESSION['csrf_token'];
 
+$menuModalModuleOptions = [];
+try {
+  $modStmt = $pdoPerm->query("
+    SELECT
+      f_modulID AS id,
+      COALESCE(NULLIF(f_modulName_ms,''), NULLIF(f_modulName_en,''), CONCAT('Modul ', f_modulID)) AS nama
+    FROM tbl_m_modul
+    ORDER BY COALESCE(f_order, 99999), f_modulID ASC
+  ");
+  $menuModalModuleOptions = $modStmt ? ($modStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
+} catch (Throwable $e) {
+  $menuModalModuleOptions = [];
+}
+
 // Default order for new module: max(f_order) + 1
 $nextModuleOrder = 1;
 try {
@@ -2389,7 +2403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') ==
         <button class="btn btn-secondary" data-bs-dismiss="modal">
           <i class="ri-close-line me-1"></i> <?= h(__('userGroup_btn_close')) ?>
         </button>
-        <button class="btn btn-primary" id="menuEditSaveBtn" <?= $permDisabledAttr ?>>
+        <button type="button" class="btn btn-primary" id="menuEditSaveBtn" <?= $permDisabledAttr ?>>
           <i class="ri-save-3-line me-1"></i> <span id="menuEditSaveBtnText"><?= h(__('userGroup_btn_save')) ?></span>
         </button>
       </div>
@@ -2672,17 +2686,21 @@ window.hasDT = function() {
   // =========================================================
   //const AJAX_BASE = '/ajax/'; // <-- UBAH jika perlu
   // Base path projek yang betul di semua environment (dev subfolder / production root)
-  const __BASE_PATH =
+  const __RAW_BASE_PATH =
     document.querySelector('meta[name="base-path"]')?.getAttribute('content') ||
     // fallback kalau meta tak wujud: buang /pages atau /ajax dari pathname
     (location.pathname.replace(/\/(pages|ajax)(\/.*)?$/, '') || '');
 
+  const __BASE_PATH = String(__RAW_BASE_PATH || '').replace(/\/+$/, '') === '/'
+    ? ''
+    : String(__RAW_BASE_PATH || '').replace(/\/+$/, '');
   const AJAX_BASE = (__BASE_PATH || '') + '/ajax/';
 
 
   const CSRF  = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
   const hasDT = window.hasDT; // Use global function
   const esc = (s)=> (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  window.GroupModuleOptions = <?= json_encode($menuModalModuleOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 
   // Utility untuk bina URL endpoint di bawah AJAX_BASE
   function apiUrl(file, params){
@@ -2698,7 +2716,14 @@ window.hasDT = function() {
 
   // Helper: fetch → cuba parse JSON, kalau HTML/teks lain bagi error mesra
   async function fetchJSONSafe(url, opts){
-    const r = await fetch(url, Object.assign({ headers:{'Accept':'application/json'} }, opts||{}));
+    const requestOpts = Object.assign({}, opts || {});
+    requestOpts.headers = Object.assign(
+      {'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest'},
+      (opts && opts.headers) || {}
+    );
+    requestOpts.credentials = requestOpts.credentials || 'same-origin';
+
+    const r = await fetch(url, requestOpts);
     const txt = await r.text();
     try { return JSON.parse(txt); }
     catch(e){

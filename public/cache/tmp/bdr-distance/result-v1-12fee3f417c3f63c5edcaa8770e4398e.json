@@ -1,0 +1,18 @@
+{
+    "km": 27.1,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.900649,
+        "lon": 101.665808,
+        "display_name": "Presint 6, Putrajaya, Malaysia",
+        "matched_query": "Presint 6, 62200, Wilayah Persekutuan Putrajaya, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:43:45+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 255.46,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 4.7720544,
+        "lon": 100.9426692,
+        "display_name": "Persiaran Sungai Perak, Bukit Chandan, Kuala Kangsar, Perak, 33040, Malaysia",
+        "matched_query": "Perak., 33000 Kuala Kangsar, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:01:58+00:00"
+}

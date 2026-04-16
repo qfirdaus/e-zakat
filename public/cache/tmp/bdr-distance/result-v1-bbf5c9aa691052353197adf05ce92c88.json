@@ -1,0 +1,18 @@
+{
+    "km": 19.91,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1557373,
+        "lon": 101.7072944,
+        "display_name": "Bangunan Baru Pusat Pelancongan Malaysia, Jalan Cangkat Perak, Kampung Hujung Pasir, Kampung Cendana, Kuala Lumpur, 50250, Malaysia",
+        "matched_query": "57000 Kuala Lumpur, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:20:23+00:00"
+}

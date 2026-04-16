@@ -71,6 +71,33 @@ function group_category_matches_scope(?string $categoryUser, string $scope = 'st
   };
 }
 
+function is_protected_staff_account_local(?string $stafID): bool {
+  if (function_exists('isProtectedStaffAccount')) {
+    return isProtectedStaffAccount($stafID);
+  }
+  $normalized = preg_replace('/[^a-zA-Z0-9]/', '', strtoupper(trim((string)$stafID))) ?? '';
+  if ($normalized === '') return false;
+  $protected = defined('PRESTASI_PROTECTED_STAFF_IDS') && is_array(PRESTASI_PROTECTED_STAFF_IDS)
+    ? PRESTASI_PROTECTED_STAFF_IDS
+    : [];
+  foreach ($protected as $candidate) {
+    $candidateNormalized = preg_replace('/[^a-zA-Z0-9]/', '', strtoupper(trim((string)$candidate))) ?? '';
+    if ($candidateNormalized !== '' && $candidateNormalized === $normalized) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function can_self_manage_protected_staff_account_local(?string $targetStafID, string $currentUserStafIDNormalized = ''): bool {
+  if (!is_protected_staff_account_local($targetStafID)) {
+    return false;
+  }
+
+  $targetNormalized = preg_replace('/[^a-zA-Z0-9]/', '', strtoupper(trim((string)$targetStafID))) ?? '';
+  return $targetNormalized !== '' && $currentUserStafIDNormalized !== '' && $targetNormalized === $currentUserStafIDNormalized;
+}
+
 /**
  * Cache helper untuk user list page (session-based cache dengan TTL)
  */
@@ -228,10 +255,13 @@ function load_users_by_category(PDO $pdo, string $category, string $q = ''): arr
       u.f_nokp,
       u.f_nopekerja,
       u.f_nama,
+      u.f_categoryUser,
       u.f_namajabatan,
       u.f_jawatan,
       u.f_status,
       u.f_flag,
+      COALESCE(u.f_isAutoProvisioned, 0) AS f_isAutoProvisioned,
+      TRIM(COALESCE(u.f_identitySource, '')) AS f_identitySource,
       u.f_groupID,
       TRIM(u.f_groupKod) AS f_groupKod,
       COALESCE(NULLIF(TRIM(g.f_groupName), ''), TRIM(u.f_groupKod)) AS f_groupName
@@ -377,7 +407,7 @@ function render_user_access_table(
               </thead>
               <tbody>
                 <?php if (!empty($users)): ?>
-                  <?php foreach ($users as $u): ?>
+                  <?php foreach ($users as $rowIndex => $u): ?>
                     <?php
                       $userID  = (int)($u['f_userID'] ?? 0);
                       $nama    = (string)($u['f_nama'] ?? '');
@@ -398,10 +428,14 @@ function render_user_access_table(
                       $f_flag  = (int)($u['f_flag'] ?? 1);
                       $f_nopekerja = (string)($u['f_nopekerja'] ?? '');
                       $avatarUrl = $userModel->resolveAvatarUrl($u);
+                      $isProtectedAccount = is_protected_staff_account_local($stafID);
+                      $isAutoProvisioned = (int)($u['f_isAutoProvisioned'] ?? 0) === 1;
+                      $identitySource = strtoupper(trim((string)($u['f_identitySource'] ?? '')));
                       $isCurrentLoggedInUser =
                         ($currentUserId > 0 && $userID === $currentUserId) ||
                         ($currentUserStafIDNormalized !== '' && str_replace('-', '', $stafID) === $currentUserStafIDNormalized) ||
                         ($currentUserNoPekerjaNormalized !== '' && str_replace('-', '', $f_nopekerja) === $currentUserNoPekerjaNormalized);
+                      $canManageProtectedSelf = can_self_manage_protected_staff_account_local($stafID, $currentUserStafIDNormalized);
                     ?>
                     <?php
                       $groupStyle = prestasi_group_ui_resolve($groupUiMaps, $gId, $gKod);
@@ -409,9 +443,23 @@ function render_user_access_table(
                       $badgeInlineStyle = group_badge_inline_style($groupStyle);
                     ?>
                     <tr data-user-id="<?= h((string)$userID) ?>" data-user-scope="<?= h($scopeValue) ?>" data-group-id="<?= h((string)$gId) ?>" data-group-kod="<?= h($gKod) ?>" data-row-class="<?= h($rowClass) ?>" data-flag="<?= h((string)$f_flag) ?>" data-extra-count="<?= h((string)$extraCount) ?>" data-extra-roles="<?= h(implode(', ', $extraRoles)) ?>" class="<?= h($rowClass) ?>">
-                      <td class="col-bil"></td>
+                      <td class="col-bil"><?= (int)$rowIndex + 1 ?></td>
                       <?php $visibleIdentifier = $scopeValue === 'public' ? ($loginID !== '' ? $loginID : $stafID) : $stafID; ?>
-                      <td class="col-nama"><span class="truncate-1line cell-tooltip-text" data-bs-toggle="tooltip" data-bs-placement="top" title="<?= h($nama . ' (' . $visibleIdentifier . ')') ?>"><?= h($nama) ?> (<?= h($visibleIdentifier) ?>)</span></td>
+                      <td class="col-nama">
+                        <div class="user-name-shell">
+                          <span class="truncate-1line cell-tooltip-text" data-bs-toggle="tooltip" data-bs-placement="top" title="<?= h($nama . ' (' . $visibleIdentifier . ')') ?>"><?= h($nama) ?> (<?= h($visibleIdentifier) ?>)</span>
+                          <?php if ($isAutoProvisioned || $isProtectedAccount): ?>
+                            <span class="user-name-indicators">
+                              <?php if ($isAutoProvisioned): ?>
+                                <span class="auto-provisioned-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="<?= h(sprintf((string)__('userList_auto_provisioned_tooltip'), $identitySource !== '' ? $identitySource : 'SSO')) ?>"><i class="ri-user-add-line"></i></span>
+                              <?php endif; ?>
+                              <?php if ($isProtectedAccount): ?>
+                                <span class="protected-account-badge" data-bs-toggle="tooltip" data-bs-placement="top" title="<?= h(__('userList_protected_tooltip')) ?>"><?= h(__('userList_protected_badge')) ?></span>
+                              <?php endif; ?>
+                            </span>
+                          <?php endif; ?>
+                        </div>
+                      </td>
                       <td class="col-jabatan"><span class="truncate-1line cell-tooltip-text" data-bs-toggle="tooltip" data-bs-placement="top" title="<?= h($jabatan) ?>"><?= h($jabatan) ?></span></td>
                       <?php if ($showPositionColumn): ?>
                       <td class="col-jawatan"><span class="truncate-1line"><?= h($jawatan) ?></span></td>
@@ -435,7 +483,7 @@ function render_user_access_table(
                         <?php endif; ?>
                       </td>
                       <td class="col-actions">
-                        <?php if ($isSuperAdmin): ?>
+                        <?php if ($isSuperAdmin && (!$isProtectedAccount || $canManageProtectedSelf)): ?>
                           <button type="button"
                             class="btn btn-outline-primary btn-sm icon-btn btn-edit-group"
                             title="<?= h(__('userList_action_change_group')) ?>"
@@ -459,7 +507,7 @@ function render_user_access_table(
                             data-flag="<?= h((string)$f_flag) ?>">
                             <i class="ri-pencil-line"></i>
                           </button>
-                          <?php if (!$isCurrentLoggedInUser): ?>
+                          <?php if (!$isCurrentLoggedInUser && !$isProtectedAccount): ?>
                             <button type="button"
                               class="btn btn-outline-danger btn-sm icon-btn btn-delete-user ms-1"
                               title="<?= h(__('userList_action_delete_user')) ?>"
@@ -539,6 +587,53 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
     #userDT th.col-akses,   #userDT td.col-akses   { width:10%; text-align:left; }
     #userDT th.col-actions, #userDT td.col-actions { width:10%; text-align:center; }
     .truncate-1line { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .user-name-shell{
+      display:flex;
+      align-items:center;
+      gap:.45rem;
+      min-width:0;
+    }
+    .user-name-shell .truncate-1line{
+      min-width:0;
+      flex:1 1 auto;
+    }
+    .user-name-indicators{
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      flex:0 0 auto;
+      margin-left:auto;
+      padding-left:.35rem;
+    }
+    .protected-account-badge{
+      display:inline-flex;
+      align-items:center;
+      flex:0 0 auto;
+      padding:.18rem .5rem;
+      border-radius:999px;
+      border:1px solid rgba(217,119,6,.28);
+      background:rgba(254,243,199,.95);
+      color:#92400e;
+      font-size:.68rem;
+      font-weight:700;
+      letter-spacing:.03em;
+      white-space:nowrap;
+    }
+    .auto-provisioned-icon{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 auto;
+      width:1.35rem;
+      height:1.35rem;
+      border-radius:999px;
+      border:1px solid rgba(14,165,233,.24);
+      background:rgba(224,242,254,.98);
+      color:#075985;
+      font-size:.8rem;
+      line-height:1;
+      cursor:help;
+    }
     .cell-tooltip-text{
       display:block;
       width:100%;
@@ -2029,6 +2124,16 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
       color: #fecaca;
       border-color: rgba(248, 113, 113, 0.18);
     }
+    [data-bs-theme="dark"] .protected-account-badge{
+      background: rgba(120,53,15,.36);
+      color: #fcd34d;
+      border-color: rgba(245,158,11,.28);
+    }
+    [data-bs-theme="dark"] .auto-provisioned-icon{
+      background: rgba(8,47,73,.88);
+      color: #7dd3fc;
+      border-color: rgba(56,189,248,.3);
+    }
     [data-bs-theme="dark"] #addUserModal .info-card,
     [data-bs-theme="dark"] #userGroupModal .info-card{
       background: linear-gradient(180deg, rgba(15,23,42,.96), rgba(15,23,42,.9));
@@ -2688,9 +2793,6 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
 
 <script>
 (function(){
-  if (!window.bootstrap || !bootstrap.Modal) {
-    return;
-  }
   const hasDT = () => !!(window.jQuery && jQuery.fn && jQuery.fn.DataTable);
   const CSRF  = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
   const table = document;
@@ -2732,6 +2834,7 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
     nopekerja: '<?= h($currentUserNoPekerjaNormalized) ?>'
   };
   const isSuperAdmin = <?= $isSuperAdmin ? 'true' : 'false' ?>;
+  const protectedStaffIds = <?= json_encode(array_values(defined('PRESTASI_PROTECTED_STAFF_IDS') && is_array(PRESTASI_PROTECTED_STAFF_IDS) ? PRESTASI_PROTECTED_STAFF_IDS : []), JSON_UNESCAPED_UNICODE) ?>;
 
   // ==================== HELPER FUNCTIONS ====================
   
@@ -2818,6 +2921,19 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
     if (currentUserIdentity.stafID && normalize(stafID) && currentUserIdentity.stafID === normalize(stafID)) return true;
     if (currentUserIdentity.nopekerja && normalize(nopekerja) && currentUserIdentity.nopekerja === normalize(nopekerja)) return true;
     return false;
+  }
+
+  function isProtectedStaffAccountClient(stafID) {
+    const normalize = (value) => String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').trim();
+    const target = normalize(stafID);
+    if (!target) return false;
+    return protectedStaffIds.some((candidate) => normalize(candidate) === target);
+  }
+
+  function canSelfManageProtectedStaffAccountClient(stafID) {
+    const normalize = (value) => String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').trim();
+    const target = normalize(stafID);
+    return !!target && isProtectedStaffAccountClient(stafID) && currentUserIdentity.stafID === target;
   }
 
   /**
@@ -3200,6 +3316,9 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
     const flag = (typeof r.f_flag !== 'undefined') ? r.f_flag : (typeof r.flag !== 'undefined' ? r.flag : 1);
     const nopekerja = String(r.f_nopekerja || r.nopekerja || '');
     const avatarUrl = String(r.avatarUrl || r.avatar || '');
+    const isProtectedAccount = (typeof r.is_protected_account !== 'undefined')
+      ? !!r.is_protected_account
+      : isProtectedStaffAccountClient(stafID);
     const canEditGroup = (typeof r.can_edit_group !== 'undefined')
       ? !!r.can_edit_group
       : ((typeof r.canEditGroup !== 'undefined') ? !!r.canEditGroup : isSuperAdmin);
@@ -3207,7 +3326,7 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
       ? !!r.can_delete_user
       : ((typeof r.canDeleteUser !== 'undefined')
         ? !!r.canDeleteUser
-        : !isCurrentLoggedInUserTarget(userID, stafID, nopekerja));
+        : (!isCurrentLoggedInUserTarget(userID, stafID, nopekerja) && !isProtectedAccount));
 
     // Create row element using jQuery to avoid unsafe innerHTML with server HTML
     const $tr = $('<tr>')
@@ -3227,15 +3346,43 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
     // Column: nama (with stafID)
     const visibleIdentifier = categoryUser === 'UMUM' ? (loginID || stafID) : stafID;
     const nameText = nama + (visibleIdentifier ? (' (' + visibleIdentifier + ')') : '');
+    const $nameShell = $('<div>').addClass('user-name-shell');
+    $nameShell.append(
+      $('<span>')
+        .addClass('truncate-1line cell-tooltip-text')
+        .attr('data-bs-toggle', 'tooltip')
+        .attr('data-bs-placement', 'top')
+        .attr('title', nameText)
+        .text(nameText)
+    );
+    const isAutoProvisioned = Number(r.f_isAutoProvisioned || r.is_auto_provisioned || 0) === 1;
+    if (isAutoProvisioned || isProtectedAccount) {
+      const $indicators = $('<span>').addClass('user-name-indicators');
+      if (isAutoProvisioned) {
+        const identitySource = String(r.f_identitySource || r.identitySource || 'SSO').trim().toUpperCase() || 'SSO';
+        $indicators.append(
+          $('<span>')
+            .addClass('auto-provisioned-icon')
+            .attr('data-bs-toggle', 'tooltip')
+            .attr('data-bs-placement', 'top')
+            .attr('title', '<?= h(__('userList_auto_provisioned_tooltip')) ?>'.replace('%s', identitySource))
+            .append($('<i>').addClass('ri-user-add-line'))
+        );
+      }
+      if (isProtectedAccount) {
+        $indicators.append(
+          $('<span>')
+            .addClass('protected-account-badge')
+            .attr('data-bs-toggle', 'tooltip')
+            .attr('data-bs-placement', 'top')
+            .attr('title', '<?= h(__('userList_protected_tooltip')) ?>')
+            .text('<?= h(__('userList_protected_badge')) ?>')
+        );
+      }
+      $nameShell.append($indicators);
+    }
     $tr.append(
-      $('<td>').addClass('col-nama').append(
-        $('<span>')
-          .addClass('truncate-1line cell-tooltip-text')
-          .attr('data-bs-toggle', 'tooltip')
-          .attr('data-bs-placement', 'top')
-          .attr('title', nameText)
-          .text(nameText)
-      )
+      $('<td>').addClass('col-nama').append($nameShell)
     );
 
     // Column: jabatan
@@ -3905,6 +4052,7 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
   }
 
   function drawTableRowNumbers(dt) {
+    if (!dt || typeof dt.rows !== 'function') return;
     const pageInfo = dt.page.info();
     dt.rows({ page: 'current' }).every(function(displayIndex) {
       $('td:eq(0)', this.node()).text(pageInfo.start + displayIndex + 1);
@@ -4071,7 +4219,7 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
       return existing;
     }
 
-    return $(tableSelector).DataTable({
+    const dt = $(tableSelector).DataTable({
       pageLength: 10,
       lengthChange: true,
       lengthMenu: [10, 25, 50, 100, 200],
@@ -4110,9 +4258,11 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
         initTooltips(document.querySelector(tableSelector) || document);
       },
       drawCallback: function() {
+        drawTableRowNumbers(this.api());
         initTooltips(document.querySelector(tableSelector) || document);
       }
     });
+    return dt;
   }
 
   document.addEventListener('DOMContentLoaded', function(){
@@ -4169,6 +4319,7 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
         initTooltips(document.querySelector('#userDT') || document);
       },
       drawCallback: function() {
+        drawTableRowNumbers(this.api());
         initTooltips(document.querySelector('#userDT') || document);
       }
     });
@@ -4492,6 +4643,16 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
           const stafID = deleteBtn.getAttribute('data-stafid') || '';
           const displayId = deleteBtn.getAttribute('data-displayid') || stafID;
           const sourceTableId = deleteBtn.closest('table')?.id || 'userDT';
+          if (isProtectedStaffAccountClient(stafID)) {
+            await Swal.fire({
+              icon: 'info',
+              title: '<?= h(__('userList_error_title')) ?>',
+              text: '<?= h(__('userList_protected_delete_denied')) ?>',
+              confirmButtonText: '<?= h(__('userList_btn_ok')) ?>',
+              confirmButtonColor: '#0d6efd'
+            });
+            return;
+          }
           if (isCurrentLoggedInUserTarget(userID, stafID)) {
             await Swal.fire({
               icon: 'info',
@@ -4630,6 +4791,16 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
         const stafid  = btn.getAttribute('data-stafid') || '-';
         const displayId = btn.getAttribute('data-displayid') || stafid;
         const nopekerja = btn.getAttribute('data-nopekerja') || '';
+        if (isProtectedStaffAccountClient(stafid) && !canSelfManageProtectedStaffAccountClient(stafid)) {
+          await Swal.fire({
+            icon: 'info',
+            title: '<?= h(__('userList_error_title')) ?>',
+            text: '<?= h(__('userList_protected_self_manage_only')) ?>',
+            confirmButtonText: '<?= h(__('userList_btn_ok')) ?>',
+            confirmButtonColor: '#0d6efd'
+          });
+          return;
+        }
         const avatarUrl = btn.getAttribute('data-avatar-url') || '';
         const jabatan = btn.getAttribute('data-jabatan') || '-';
         const gId     = btn.getAttribute('data-group-id') || '';
@@ -4643,6 +4814,7 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
 
         document.getElementById('ug_userID').value = userID;
         document.getElementById('ug_scope').value = currentUserScope;
+        document.getElementById('ug_userID').setAttribute('data-target-stafid', stafid);
         const $row = btn.closest('tr');
         const extraCount = parseInt($row?.getAttribute('data-extra-count') || '0', 10);
         const extraList = String($row?.getAttribute('data-extra-roles') || '').split(',').map(s=>s.trim()).filter(Boolean);
@@ -4700,6 +4872,11 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
     document.getElementById('ug_addRoleBtn')?.addEventListener('click', async function(e){
       e.preventDefault();
       const userID = parseInt(document.getElementById('ug_userID').value || '0', 10);
+      const currentStafId = document.getElementById('ug_userID')?.getAttribute('data-target-stafid') || '';
+      if (isProtectedStaffAccountClient(currentStafId) && !canSelfManageProtectedStaffAccountClient(currentStafId)) {
+        showRoleErr('<?= h(__('userList_protected_self_manage_only')) ?>');
+        return;
+      }
       if (!userID) {
         showErr('<?= h(__('userList_err_param')) ?>');
         return;
@@ -4822,9 +4999,14 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
       });
       
       const userID   = parseInt(document.getElementById('ug_userID').value || '0', 10);
+      const targetStafId = document.getElementById('ug_userID').getAttribute('data-target-stafid') || '';
       const groupID = document.getElementById('ug_groupKod').value || '';
       const flag     = parseInt(document.getElementById('ug_flag').value || '1', 10);
       const editScope = String(document.getElementById('ug_scope')?.value || currentUserScope || 'staff').toLowerCase();
+      if (isProtectedStaffAccountClient(targetStafId) && !canSelfManageProtectedStaffAccountClient(targetStafId)) {
+        showErr('<?= h(__('userList_protected_self_manage_only')) ?>');
+        return;
+      }
       
       // Validation dengan blink effect
       let isValid = true;

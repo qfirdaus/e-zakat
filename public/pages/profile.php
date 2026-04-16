@@ -42,6 +42,15 @@ try {
   $errorMessage = tr('profile_error_load', 'Ralat memuat data profil. Sila cuba lagi atau hubungi pentadbir sistem.');
 }
 
+$profileAuditMetaAllowed = false;
+try {
+  if (!empty($profileView) && function_exists('is_user_super_admin')) {
+    $profileAuditMetaAllowed = (bool)is_user_super_admin($profileView, Database::getInstance()->getConnection());
+  }
+} catch (Throwable $e) {
+  $profileAuditMetaAllowed = false;
+}
+
 // Close session lock after reading
 if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
 
@@ -145,7 +154,7 @@ $PAGE_TITLE = tr('profile_title','Profil Pengguna');
 </head>
 <body
   data-topbar-color="<?= h($_SESSION['theme.topbar'] ?? 'light') ?>"
-  data-menu-color="<?= h($_SESSION['theme.sidebar'] ?? 'dark') ?>"
+  data-menu-color="<?= h($_SESSION['theme.menu'] ?? $_SESSION['theme.sidebar'] ?? 'dark') ?>"
   data-layout="vertical" data-sidebar-size="default" class="loading">
 
 <div class="wrapper">
@@ -496,6 +505,9 @@ $PAGE_TITLE = tr('profile_title','Profil Pengguna');
 <script>
   window.profilePageConfig = <?= json_encode([
       'config' => PROFILE_CONFIG,
+      'permissions' => [
+          'canViewAuditMetadata' => $profileAuditMetaAllowed,
+      ],
       'csrfToken' => $_SESSION['csrf_token'] ?? '',
       'urls' => [
           'killSessionAjax' => base_url('ajax/profile-kill-session.php'),

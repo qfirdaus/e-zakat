@@ -9,12 +9,23 @@ ob_start();
 require_once __DIR__ . '/../includes/init.php';
 require_login();
 require_once __DIR__ . '/../controllers/ProfileController.php';
+require_once __DIR__ . '/../classes/User.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
 $controller = new ProfileController();
 $limit = defined('PROFILE_CONFIG') && isset(PROFILE_CONFIG['AUDIT_EVENTS_LIMIT']) ? PROFILE_CONFIG['AUDIT_EVENTS_LIMIT'] : 30;
 $rows = $controller->getAuditEvents((int)$limit);
+$pdo = Database::getInstance()->getConnection();
+$profile = null;
+$isSuperAdmin = false;
+try {
+    $userModel = new User($pdo);
+    $profile = $userModel->getProfile((string)($_SESSION['f_stafID'] ?? ''));
+    $isSuperAdmin = $profile && function_exists('is_user_super_admin') && is_user_super_admin($profile, $pdo);
+} catch (Throwable $e) {
+    $isSuperAdmin = false;
+}
 
 function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 function safeDateTime(?string $s): ?DateTime { if (empty($s)) return null; try { return new DateTime($s); } catch (Throwable $e) { return null; } }
@@ -60,7 +71,10 @@ foreach ($rows as $event) {
     if ($hasAnyData) {
         // Only include event id to avoid sending large meta/change-set payloads in table
         $eid = h((string)($event['id'] ?? ''));
-        $actions = '<button class="btn btn-sm btn-outline-primary btn-open-audit-meta" type="button" data-event-id="' . $eid . '" title="' . h((__('profile_audit_view_meta') ?: 'Lihat metadata')) . '"><i class="ri-information-line"></i></button>';
+        $btnTitle = $isSuperAdmin
+            ? h((__('profile_audit_view_meta') ?: 'Lihat metadata'))
+            : h((__('profile_metadata_forbidden_text') ?: 'Metadata jejak audit hanya tersedia untuk semakan Super Admin.'));
+        $actions = '<button class="btn btn-sm btn-outline-primary btn-open-audit-meta" type="button" data-event-id="' . $eid . '" data-super-admin="' . ($isSuperAdmin ? '1' : '0') . '" title="' . $btnTitle . '"><i class="ri-information-line"></i></button>';
     } else {
         $actions = '<span class="text-muted">—</span>';
     }

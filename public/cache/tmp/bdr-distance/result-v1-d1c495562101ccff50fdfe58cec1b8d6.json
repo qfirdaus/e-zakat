@@ -1,0 +1,18 @@
+{
+    "km": 16.15,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0896471,
+        "lon": 101.6938877,
+        "display_name": "Pintu A | Off Jalan Kuchai Lama, Jalan Kuchai Lama, Kuchai Lama, Kuala Lumpur, 58100, Malaysia",
+        "matched_query": "Off Jalan Kuchai Lama, 58200, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:26:05+00:00"
+}

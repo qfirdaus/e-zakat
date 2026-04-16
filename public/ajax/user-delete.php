@@ -21,7 +21,7 @@ try {
 
     // Rate limiting: max 20 requests per 60 seconds
     if (!checkRateLimit('user_delete', 20, 60)) {
-        jsonErrorResponse('Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.', 429);
+        jsonErrorResponse((string)__('userList_ajax_rate_limited'), 429);
     }
 
     // SECURITY CRITICAL – DO NOT MODIFY: backend permission guard
@@ -38,7 +38,7 @@ try {
     
     $isSuperAdmin = $currentProfile && function_exists('is_user_super_admin') && is_user_super_admin($currentProfile, $pdo);
     if (!$isSuperAdmin) {
-        jsonErrorResponse('Anda tidak mempunyai kebenaran untuk memadam pengguna. Hanya Super Admin dibenarkan.', 403);
+        jsonErrorResponse((string)__('userList_ajax_delete_permission_superadmin'), 403);
     }
 
     $normalizeIdentity = static function (?string $value): string {
@@ -50,7 +50,7 @@ try {
         $data = json_decode($rawInput, true);
 
         if (!is_array($data)) {
-            jsonErrorResponse('Data tidak sah.', 400);
+            jsonErrorResponse((string)__('userList_ajax_invalid_data'), 400);
         }
 
         if (!isValidCsrfToken((string)($data['csrf_token'] ?? ''))) {
@@ -59,7 +59,7 @@ try {
 
         $userID = isset($data['userID']) ? (int)$data['userID'] : 0;
         if ($userID <= 0) {
-            jsonErrorResponse('ID pengguna tidak sah.', 400);
+            jsonErrorResponse((string)__('userList_ajax_invalid_user_id'), 400);
         }
 
         return ['data' => $data, 'userID' => $userID];
@@ -72,7 +72,7 @@ try {
         $userData = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$userData) {
-            jsonErrorResponse('Pengguna tidak dijumpai dalam sistem.', 404);
+            jsonErrorResponse((string)__('userList_ajax_user_not_found_in_system'), 404);
         }
 
         return $userData;
@@ -220,10 +220,33 @@ try {
         jsonErrorResponse((string)__('studentSearch_mode_disabled'), 403);
     }
 
+    if (isProtectedStaffAccount((string)($userData['f_stafID'] ?? ''))) {
+        try {
+            audit_event([
+                'event_type' => 'DELETE',
+                'severity' => 'WARN',
+                'outcome' => 'DENIED',
+                'target_type' => 'user',
+                'target_id' => (string)$userID,
+                'target_label' => (string)($userData['f_nama'] ?? $userData['f_stafID'] ?? 'Protected User'),
+                'message' => 'DELETE_USER blocked (protected account)',
+                'meta' => [
+                    'reason' => 'protected_staff_account',
+                    'protected_stafID' => (string)($userData['f_stafID'] ?? ''),
+                    'deleted_by' => (string)($_SESSION['f_stafID'] ?? ''),
+                ],
+            ]);
+        } catch (Throwable $e) {
+            error_log('[user-delete] Protected account audit failed: ' . $e->getMessage());
+        }
+
+        jsonErrorResponse((string)__('userList_protected_delete_denied'), 403);
+    }
+
     $isDeletingOwnAccount = $isDeletingOwnUserAccount($currentProfile ?: [], $userData, $userID);
 
     if ($isDeletingOwnAccount) {
-        jsonErrorResponse('Anda tidak dibenarkan memadam akaun anda sendiri.', 403);
+        jsonErrorResponse((string)__('userList_ajax_delete_self_denied'), 403);
     }
 
     $loggedInStafID = $_SESSION['f_stafID'] ?? null;
@@ -237,7 +260,7 @@ try {
     ]);
 
     if (!$result) {
-        throw new Exception('Gagal memadam data pengguna.');
+        throw new Exception((string)__('userList_ajax_delete_failed_backend'));
     }
 
     try {
@@ -249,14 +272,14 @@ try {
     $clearDeleteCaches();
     
     jsonSuccessResponse([
-        'message' => 'Pengguna berjaya dipadam.',
+        'message' => (string)__('userList_success_delete'),
         'userID' => $userID
     ]);
 
 } catch (PDOException $e) {
     error_log('[user-delete] PDO Error: ' . $e->getMessage());
-    jsonErrorResponse('Ralat database: ' . $e->getMessage(), 500);
+    jsonErrorResponse((string)__('userList_ajax_system_error'), 500);
 } catch (Throwable $e) {
     error_log('[user-delete] Error: ' . $e->getMessage());
-    jsonErrorResponse('Ralat sistem semasa memadam pengguna.', 500);
+    jsonErrorResponse((string)__('userList_ajax_system_error'), 500);
 }

@@ -1,0 +1,18 @@
+{
+    "km": 40.84,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1691309,
+        "lon": 101.5409596,
+        "display_name": "Jalan Nova U5/96A, Pangsapuri Orkid, Subang Bestari, Shah Alam, Petaling, Selangor, 40160, Malaysia",
+        "matched_query": "Jalan Nova U5/49, Subang Bestari, Shah Alam, 40150, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:22:40+00:00"
+}

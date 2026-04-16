@@ -129,17 +129,8 @@ class LogoutController
             ]);
         }
 
-        // ========== 6) Mula sesi BARU kosong untuk simpan flash alert ==========
+        // ========== 6) Mula sesi BARU kosong supaya redirect login tidak bawa flash logout ==========
         session_start();
-        if (function_exists('set_alert')) {
-            set_alert([
-                'type'  => 'sweet',
-                'title' => __('logout_title'),
-                'text'  => __('logout_msg'),
-                'icon'  => 'info',
-                'timer' => 3000
-            ]);
-        }
         session_write_close();
 
         // ========== 7) Anti-cache (elak tekan Back nampak page lama) ==========
@@ -258,17 +249,8 @@ class LogoutController
             ]);
         }
 
-        // Start new empty session for flash if helper available
+        // Start a new empty session without a logout flash alert.
         session_start();
-        if (function_exists('set_alert')) {
-            set_alert([
-                'type'  => 'sweet',
-                'title' => __('logout_title'),
-                'text'  => __('logout_msg'),
-                'icon'  => 'info',
-                'timer' => 3000,
-            ]);
-        }
         session_write_close();
     }
 }

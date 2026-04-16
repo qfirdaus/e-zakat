@@ -228,7 +228,15 @@ final class EmailTemplateController
             exit;
         } catch (Throwable $e) {
             error_log('[EmailTemplateController] handleRequest failed: ' . $e->getMessage());
-            $this->errorMessage = $this->tr('emailTemplate_save_fail', 'Template emel tidak berjaya disimpan.');
+            $message = trim($e->getMessage());
+            if ($message === 'Default email template cannot be archived until another template is set as default.') {
+                $message = $this->tr('emailTemplate_error_archive_default_blocked', 'Template default tidak boleh diarkibkan selagi belum ada template lain dijadikan default bagi peranan dan kategori yang sama.');
+            } elseif ($message === 'Unable to generate a unique duplicate template code.') {
+                $message = $this->tr('emailTemplate_error_duplicate_failed', 'Salinan template tidak berjaya dijana. Sila cuba semula.');
+            } else {
+                $message = $this->tr('emailTemplate_save_fail', 'Template emel tidak berjaya disimpan.');
+            }
+            $this->errorMessage = $message;
         }
     }
 

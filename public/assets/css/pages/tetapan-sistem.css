@@ -804,6 +804,21 @@
       font-weight:800;
       line-height:1.3;
     }
+    .auth-auto-provision-grid{
+      --bs-gutter-y: 1rem;
+    }
+    .auth-auto-provision-card{
+      min-height:100%;
+    }
+    .auth-auto-provision-card .auth-form-group{
+      height:auto;
+    }
+    .auth-auto-provision-card .auth-form-group .form-control{
+      margin-top:0;
+    }
+    .auth-auto-provision-note{
+      margin-top:.15rem;
+    }
     @media (max-width: 991.98px){
       .auth-password-workspace{
         grid-template-columns:1fr;

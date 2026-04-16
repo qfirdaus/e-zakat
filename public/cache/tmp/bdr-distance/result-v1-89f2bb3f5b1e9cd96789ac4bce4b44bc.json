@@ -1,0 +1,18 @@
+{
+    "km": 441.78,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 6.0363192,
+        "lon": 102.2378447,
+        "display_name": "Kedai Mulong, Kota Bharu, Kelantan, 16010, Malaysia",
+        "matched_query": "Kedai Mulong, Kota Bharu, 16010, Kelantan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:11:08+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 65.28,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.6518503,
+        "lon": 101.6793148,
+        "display_name": "Jalan Timur, Kampung Bukit Bangkong, Sepang, Selangor, 43950, Malaysia",
+        "matched_query": "Jalan Timur 2/3B, 71760, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:50:15+00:00"
+}

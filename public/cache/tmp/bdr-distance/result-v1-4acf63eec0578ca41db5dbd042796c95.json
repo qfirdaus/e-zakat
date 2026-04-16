@@ -1,0 +1,18 @@
+{
+    "km": 32.4,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9110684,
+        "lon": 101.8671503,
+        "display_name": "Jalan Kesuma 5/1M, Bandar Tasik Kesuma Fasa 4, Fasa 1, 3, 8 & 9, Bandar Tasik Kseuma, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43700, Malaysia",
+        "matched_query": "Jalan Kesuma, 5/11A, 43700 Bandar Tasik Kesuma, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:02:34+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 132.08,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.1942647,
+        "lon": 102.2486651,
+        "display_name": "Bandaraya Melaka, Melaka Tengah, Melaka, 75100, Malaysia",
+        "matched_query": "43000, Melaka, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:21:07+00:00"
+}

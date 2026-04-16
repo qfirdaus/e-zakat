@@ -1,0 +1,18 @@
+{
+    "km": 53,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0922442,
+        "lon": 101.3807748,
+        "display_name": "Jalan Seri Sementa 1, Sementa, Bandaraya Klang, Klang, Selangor, 42200, Malaysia",
+        "matched_query": "Jalan Seri Sementa 1, 42100, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:32:02+00:00"
+}

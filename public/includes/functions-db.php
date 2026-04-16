@@ -174,6 +174,10 @@ if (!function_exists('get_auth_policy_defaults')) {
             'sso_hybrid_staf' => 'SSO',
             'sso_hybrid_pelajar' => 'SSO',
             'sso_hybrid_umum' => 'MANUAL',
+            'auto_provision_staf_sso' => false,
+            'auto_provision_pelajar_sso' => false,
+            'default_group_staff_code' => 'ADM-STAF',
+            'default_group_student_code' => 'ADM-STUDENT',
             'password_min_length' => 8,
             'password_expiry_days' => 90,
             'password_history_count' => 5,
@@ -207,6 +211,10 @@ if (!function_exists('get_auth_policy_raw_config')) {
             'sso_hybrid_staf' => app_config('auth.sso_hybrid_staf', $defaults['sso_hybrid_staf']),
             'sso_hybrid_pelajar' => app_config('auth.sso_hybrid_pelajar', $defaults['sso_hybrid_pelajar']),
             'sso_hybrid_umum' => app_config('auth.sso_hybrid_umum', $defaults['sso_hybrid_umum']),
+            'auto_provision_staf_sso' => app_config('auth.auto_provision_staf_sso', $defaults['auto_provision_staf_sso']),
+            'auto_provision_pelajar_sso' => app_config('auth.auto_provision_pelajar_sso', $defaults['auto_provision_pelajar_sso']),
+            'default_group_staff_code' => app_config('auth.default_group_staff_code', $defaults['default_group_staff_code']),
+            'default_group_student_code' => app_config('auth.default_group_student_code', $defaults['default_group_student_code']),
             'password_min_length' => app_config('auth.password_min_length', $defaults['password_min_length']),
             'password_expiry_days' => app_config('auth.password_expiry_days', $defaults['password_expiry_days']),
             'password_history_count' => app_config('auth.password_history_count', $defaults['password_history_count']),
@@ -321,12 +329,19 @@ if (!function_exists('auth_normalize_hybrid_mode')) {
     }
 }
 
+if (!function_exists('auth_normalize_group_code')) {
+    function auth_normalize_group_code($value, string $default = ''): string {
+        $normalized = strtoupper(trim((string)$value));
+        return $normalized !== '' ? $normalized : strtoupper(trim($default));
+    }
+}
+
 if (!function_exists('validate_auth_policy_raw_config')) {
     function validate_auth_policy_raw_config(array $raw): array {
         $warnings = [];
         $errors = [];
 
-        foreach (['maintenance_mode', 'login_enable_staf', 'login_enable_pelajar', 'login_enable_umum', 'sso_enabled', 'password_require_uppercase', 'password_require_lowercase', 'password_require_number', 'password_require_symbol', 'password_block_loginid_variants'] as $boolKey) {
+        foreach (['maintenance_mode', 'login_enable_staf', 'login_enable_pelajar', 'login_enable_umum', 'sso_enabled', 'auto_provision_staf_sso', 'auto_provision_pelajar_sso', 'password_require_uppercase', 'password_require_lowercase', 'password_require_number', 'password_require_symbol', 'password_block_loginid_variants'] as $boolKey) {
             if (!auth_raw_bool_is_valid($raw[$boolKey] ?? null)) {
                 $errors[] = sprintf('Invalid boolean value for %s.', $boolKey);
             }
@@ -364,6 +379,24 @@ if (!function_exists('validate_auth_policy_raw_config')) {
 
         $normalizedSsoMode = auth_normalize_sso_mode($raw['sso_mode'] ?? null, get_auth_policy_defaults()['sso_mode']);
         $ssoEnabled = auth_normalize_bool($raw['sso_enabled'] ?? null, get_auth_policy_defaults()['sso_enabled']);
+        $staffEnabled = auth_normalize_bool($raw['login_enable_staf'] ?? null, get_auth_policy_defaults()['login_enable_staf']);
+        $studentEnabled = auth_normalize_bool($raw['login_enable_pelajar'] ?? null, get_auth_policy_defaults()['login_enable_pelajar']);
+        $staffAutoProvision = auth_normalize_bool($raw['auto_provision_staf_sso'] ?? null, get_auth_policy_defaults()['auto_provision_staf_sso']);
+        $studentAutoProvision = auth_normalize_bool($raw['auto_provision_pelajar_sso'] ?? null, get_auth_policy_defaults()['auto_provision_pelajar_sso']);
+        $staffGroupCode = auth_normalize_group_code($raw['default_group_staff_code'] ?? null, get_auth_policy_defaults()['default_group_staff_code']);
+        $studentGroupCode = auth_normalize_group_code($raw['default_group_student_code'] ?? null, get_auth_policy_defaults()['default_group_student_code']);
+
+        $staffLoginMethod = 'MANUAL';
+        $studentLoginMethod = 'MANUAL';
+        if ($ssoEnabled) {
+            if ($normalizedSsoMode === 'ALL') {
+                $staffLoginMethod = 'SSO';
+                $studentLoginMethod = 'SSO';
+            } elseif ($normalizedSsoMode === 'HYBRID') {
+                $staffLoginMethod = auth_normalize_hybrid_mode($raw['sso_hybrid_staf'] ?? null, get_auth_policy_defaults()['sso_hybrid_staf']);
+                $studentLoginMethod = auth_normalize_hybrid_mode($raw['sso_hybrid_pelajar'] ?? null, get_auth_policy_defaults()['sso_hybrid_pelajar']);
+            }
+        }
 
         if ($normalizedSsoMode === 'HYBRID') {
             foreach (['sso_hybrid_staf', 'sso_hybrid_pelajar', 'sso_hybrid_umum'] as $hybridKey) {
@@ -409,6 +442,30 @@ if (!function_exists('validate_auth_policy_raw_config')) {
             $warnings[] = 'All login categories are disabled. Only Super Admin access will remain.';
         }
 
+        if ($staffAutoProvision && $staffGroupCode === '') {
+            $errors[] = 'Default group code for staff SSO auto provision is required.';
+        }
+
+        if ($studentAutoProvision && $studentGroupCode === '') {
+            $errors[] = 'Default group code for student SSO auto provision is required.';
+        }
+
+        if ($staffAutoProvision && !$staffEnabled) {
+            $warnings[] = 'Staff SSO auto provision is enabled while staff login is disabled.';
+        }
+
+        if ($studentAutoProvision && !$studentEnabled) {
+            $warnings[] = 'Student SSO auto provision is enabled while student login is disabled.';
+        }
+
+        if ($staffAutoProvision && $staffLoginMethod !== 'SSO') {
+            $warnings[] = 'Staff SSO auto provision is enabled but the current staff login route is not SSO.';
+        }
+
+        if ($studentAutoProvision && $studentLoginMethod !== 'SSO') {
+            $warnings[] = 'Student SSO auto provision is enabled but the current student login route is not SSO.';
+        }
+
         return [
             'warnings' => array_values(array_unique($warnings)),
             'errors' => array_values(array_unique($errors)),
@@ -437,6 +494,12 @@ if (!function_exists('get_auth_policy_config')) {
                       'pelajar' => auth_normalize_hybrid_mode($raw['sso_hybrid_pelajar'] ?? null, $defaults['sso_hybrid_pelajar']),
                       'umum' => auth_normalize_hybrid_mode($raw['sso_hybrid_umum'] ?? null, $defaults['sso_hybrid_umum']),
                   ],
+              ],
+              'provisioning' => [
+                  'staf_sso_enabled' => auth_normalize_bool($raw['auto_provision_staf_sso'] ?? null, $defaults['auto_provision_staf_sso']),
+                  'pelajar_sso_enabled' => auth_normalize_bool($raw['auto_provision_pelajar_sso'] ?? null, $defaults['auto_provision_pelajar_sso']),
+                  'default_group_staff_code' => auth_normalize_group_code($raw['default_group_staff_code'] ?? null, $defaults['default_group_staff_code']),
+                  'default_group_student_code' => auth_normalize_group_code($raw['default_group_student_code'] ?? null, $defaults['default_group_student_code']),
               ],
               'password' => [
                   'min_length' => auth_normalize_int($raw['password_min_length'] ?? null, $defaults['password_min_length'], 8, 128),

@@ -1,0 +1,18 @@
+{
+    "km": 78.42,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.5938861,
+        "lon": 102.0759696,
+        "display_name": "Rumah Rakyat Chembong, Chembong, Rembau, Negeri Sembilan, Malaysia",
+        "matched_query": "No 184 Rumah Rakyat Chembong, Rembau, 71300, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T20:25:11+00:00"
+}

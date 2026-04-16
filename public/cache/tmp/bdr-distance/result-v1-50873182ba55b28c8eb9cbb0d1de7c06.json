@@ -1,0 +1,18 @@
+{
+    "km": 390.8,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 5.6435195,
+        "lon": 100.4869513,
+        "display_name": "Sungai Petani, Kuala Muda, Kedah, 08000, Malaysia",
+        "matched_query": "Sungai Petani, 08500, Kedah, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:00:44+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 24.94,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9664767,
+        "lon": 101.8416224,
+        "display_name": "Jalan Desa Mewah 1, Taman Desa Mewah, Semenyih, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43500, Malaysia",
+        "matched_query": "6, Jalan Desa Mewah 1, Taman Desa Mewah, Semenyih, 43500, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:03:03+00:00"
+}

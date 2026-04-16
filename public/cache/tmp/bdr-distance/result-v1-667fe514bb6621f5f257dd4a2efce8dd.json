@@ -1,0 +1,18 @@
+{
+    "km": 36.48,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.2062633,
+        "lon": 101.581848,
+        "display_name": "PY04 Sungai Buloh, Lebuhraya Utara–Selatan, Majlis Perbandaran Selayang, Gombak, Selangor, 47830, Malaysia",
+        "matched_query": "Sungai Buloh, 47000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:06:13+00:00"
+}

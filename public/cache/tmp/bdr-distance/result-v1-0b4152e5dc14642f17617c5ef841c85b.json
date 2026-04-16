@@ -1,0 +1,18 @@
+{
+    "km": 15.44,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9687174,
+        "lon": 101.7415821,
+        "display_name": "Lembaga Minyak Sawit Malaysia, Persiaran Institusi, Seksyen 11, Bandar Baru Bangi, Sepang, Selangor, 62500, Malaysia",
+        "matched_query": "Bandar Baru Bangi, 43650 Bandar Baru Bangi, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:34:25+00:00"
+}

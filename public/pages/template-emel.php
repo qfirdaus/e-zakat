@@ -208,7 +208,7 @@ if ($sampleVariablesJson === false) {
                     <div class="col-12">
                         <div class="card et-table-card">
                             <div class="card-body">
-                                <table id="emailTemplateDT" class="table table-striped table-bordered align-middle w-100">
+                                <table id="emailTemplateDT" class="table table-striped table-bordered align-top w-100">
                                     <thead>
                                     <tr>
                                         <th class="col-bil" data-orderable="false">#</th>
@@ -249,7 +249,18 @@ if ($sampleVariablesJson === false) {
                                         ?>
                                         <tr>
                                             <td class="col-bil"><?= (int)$index + 1 ?></td>
-                                            <td><div class="et-template-cell"><div class="fw-semibold truncate-1line"><?= h((string)($record['f_templateName'] ?? '')) ?></div><div class="small text-muted truncate-1line"><?= h((string)($record['f_templateCode'] ?? '')) ?></div><div class="small text-muted"><?= h(t('emailTemplate_usage_label', 'Usage')) ?>: <?= (int)($usageCounts[(int)($record['f_templateID'] ?? 0)] ?? 0) ?></div><?php if (!empty($record['f_isDefault'])): ?><span class="badge et-default-badge"><?= h(t('emailTemplate_badge_default', 'Default')) ?></span><?php endif; ?></div></td>
+                                            <td>
+                                                <div class="et-template-cell">
+                                                    <div class="fw-semibold truncate-1line"><?= h((string)($record['f_templateName'] ?? '')) ?></div>
+                                                    <div class="small text-muted truncate-1line"><?= h((string)($record['f_templateCode'] ?? '')) ?></div>
+                                                    <div class="et-template-meta">
+                                                        <span class="et-meta-chip"><?= h(t('emailTemplate_usage_label', 'Usage')) ?>: <?= (int)($usageCounts[(int)($record['f_templateID'] ?? 0)] ?? 0) ?></span>
+                                                        <?php if (!empty($record['f_isDefault'])): ?>
+                                                            <span class="badge et-default-badge" data-bs-toggle="tooltip" data-bs-placement="top" title="<?= h(t('emailTemplate_default_note', 'Set another default first before archiving.')) ?>"><?= h(t('emailTemplate_badge_default_active', 'Active Default')) ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </td>
                                             <td><?= h($roleOptions[(string)($record['f_roleCode'] ?? '')] ?? (string)($record['f_roleCode'] ?? '-')) ?></td>
                                             <td><?= h($categoryOptions[(string)($record['f_categoryCode'] ?? '')] ?? (string)($record['f_categoryCode'] ?? '-')) ?></td>
                                             <td><div class="truncate-2line"><?= h((string)($record['f_subjectTemplate'] ?? '')) ?></div></td>
@@ -268,7 +279,7 @@ if ($sampleVariablesJson === false) {
                                                             <i class="ri-file-copy-line"></i>
                                                         </button>
                                                     </form>
-                                                    <?php if ($statusCode !== 'ARCHIVED'): ?>
+                                                    <?php if ($statusCode !== 'ARCHIVED' && empty($record['f_isDefault'])): ?>
                                                         <form method="post" action="" class="d-inline-block" onsubmit="return confirm('<?= h(t('emailTemplate_archive_confirm', 'Arkibkan template ini?')) ?>');">
                                                             <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
                                                             <input type="hidden" name="template_id" value="<?= (int)($record['f_templateID'] ?? 0) ?>">
@@ -277,6 +288,10 @@ if ($sampleVariablesJson === false) {
                                                                 <i class="ri-archive-line"></i>
                                                             </button>
                                                         </form>
+                                                    <?php elseif ($statusCode !== 'ARCHIVED' && !empty($record['f_isDefault'])): ?>
+                                                        <button type="button" class="btn btn-outline-secondary et-icon-btn" title="<?= h(t('emailTemplate_archive_default_tooltip', 'Set another template as default before archiving this one.')) ?>" aria-label="<?= h(t('emailTemplate_archive_default_tooltip', 'Set another template as default before archiving this one.')) ?>" disabled>
+                                                            <i class="ri-archive-line"></i>
+                                                        </button>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
@@ -351,7 +366,7 @@ if ($sampleVariablesJson === false) {
                                     <div class="col-md-4"><label class="form-label"><?= h(t('emailTemplate_field_status', 'Status')) ?> <span class="text-danger">*</span></label><select name="status" class="form-select <?= isset($fieldErrors['status']) ? 'is-invalid' : '' ?>" data-field="status" required><?php foreach ($statusOptions as $optionValue => $optionLabel): ?><option value="<?= h($optionValue) ?>" <?= strtoupper((string)($form['status'] ?? 'DRAFT')) === (string)$optionValue ? 'selected' : '' ?>><?= h($optionLabel) ?></option><?php endforeach; ?></select><?php if (isset($fieldErrors['status'])): ?><div class="invalid-feedback"><?= h((string)$fieldErrors['status']) ?></div><?php endif; ?></div>
                                     <div class="col-12"><label class="form-label"><?= h(t('emailTemplate_field_description', 'Penerangan Ringkas')) ?></label><input type="text" name="description" class="form-control" value="<?= h((string)($form['description'] ?? '')) ?>" data-field="description" placeholder="<?= h(t('emailTemplate_field_description_placeholder', 'Ringkaskan tujuan template ini')) ?>"></div>
                                     <div class="col-12"><label class="form-label"><?= h(t('emailTemplate_field_subject', 'Subjek Emel')) ?> <span class="text-danger">*</span></label><input type="text" name="subject_template" class="form-control <?= isset($fieldErrors['subject_template']) ? 'is-invalid' : '' ?>" value="<?= h((string)($form['subject_template'] ?? '')) ?>" data-field="subject_template" data-placeholder-target required><?php if (isset($fieldErrors['subject_template'])): ?><div class="invalid-feedback"><?= h((string)$fieldErrors['subject_template']) ?></div><?php endif; ?></div>
-                                    <div class="col-12"><label class="form-label"><?= h(t('emailTemplate_field_body_html', 'Kandungan HTML')) ?> <span class="text-danger">*</span></label><textarea name="body_html" rows="11" class="form-control et-code-field <?= isset($fieldErrors['body_html']) ? 'is-invalid' : '' ?>" data-field="body_html" data-placeholder-target required><?= h((string)($form['body_html'] ?? '')) ?></textarea><?php if (isset($fieldErrors['body_html'])): ?><div class="invalid-feedback"><?= h((string)$fieldErrors['body_html']) ?></div><?php endif; ?><div class="form-text"><?= h(t('emailTemplate_hint_body_html', 'Fasa ini menggunakan textarea HTML biasa. Preview render akan ditambah dalam fasa seterusnya.')) ?></div></div>
+                                    <div class="col-12"><label class="form-label"><?= h(t('emailTemplate_field_body_html', 'Kandungan HTML')) ?> <span class="text-danger">*</span></label><textarea name="body_html" rows="11" class="form-control et-code-field <?= isset($fieldErrors['body_html']) ? 'is-invalid' : '' ?>" data-field="body_html" data-placeholder-target required><?= h((string)($form['body_html'] ?? '')) ?></textarea><?php if (isset($fieldErrors['body_html'])): ?><div class="invalid-feedback"><?= h((string)$fieldErrors['body_html']) ?></div><?php endif; ?><div class="form-text"><?= h(t('emailTemplate_hint_body_html', 'Gunakan HTML biasa di sini. Semak hasil akhir melalui tab Preview & Test.')) ?></div></div>
                                     <div class="col-12"><label class="form-label"><?= h(t('emailTemplate_field_body_text', 'Kandungan Text')) ?></label><textarea name="body_text" rows="6" class="form-control et-code-field" data-field="body_text" data-placeholder-target><?= h((string)($form['body_text'] ?? '')) ?></textarea></div>
                                     <div class="col-12"><label class="form-label"><?= h(t('emailTemplate_field_notes', 'Nota Dalaman')) ?></label><textarea name="notes" rows="3" class="form-control" data-field="notes"><?= h((string)($form['notes'] ?? '')) ?></textarea></div>
                                     <div class="col-12"><div class="form-check form-switch et-default-switch"><input class="form-check-input" type="checkbox" role="switch" name="is_default" value="1" id="emailTemplateIsDefault" data-field="is_default" <?= !empty($form['is_default']) ? 'checked' : '' ?>><label class="form-check-label" for="emailTemplateIsDefault"><?= h(t('emailTemplate_field_is_default', 'Tetapkan sebagai template default untuk role dan kategori ini')) ?></label></div></div>

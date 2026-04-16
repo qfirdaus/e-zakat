@@ -1,0 +1,18 @@
+{
+    "km": 369.89,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 5.4275044,
+        "lon": 100.5318563,
+        "display_name": "Jalan Sungai, Taman Indah, Lunas, Kulim, Kedah, 09600, Malaysia",
+        "matched_query": "Jalan 3/2, Taman Sutera, 43000, Kedah, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:10:12+00:00"
+}

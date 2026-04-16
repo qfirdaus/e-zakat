@@ -1,0 +1,18 @@
+{
+    "km": 35.94,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.8153992,
+        "lon": 101.7856037,
+        "display_name": "Bandar Baru Nilai, Nilai, Seremban, Negeri Sembilan, 71800, Malaysia",
+        "matched_query": "Bandar Baru Nilai, 71800, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:06:40+00:00"
+}

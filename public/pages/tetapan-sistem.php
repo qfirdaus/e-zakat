@@ -43,6 +43,7 @@ $languageData = is_array($viewData['languageData'] ?? null) ? $viewData['languag
 $dbRuntime = is_array($viewData['dbRuntime'] ?? null) ? $viewData['dbRuntime'] : [];
 $themeSettings = is_array($viewData['themeSettings'] ?? null) ? $viewData['themeSettings'] : [];
 $sidebarSmallImages = is_array($viewData['sidebarSmallImages'] ?? null) ? $viewData['sidebarSmallImages'] : [];
+$systemVersion = app_current_version();
 
 $senaraiBahasa = $languageData['list']   ?? [];
 $bahasaAktif   = $languageData['active'] ?? [];
@@ -88,8 +89,18 @@ $tetapanSistemJsKeys = [
   'config_auth_summary_public_disabled',
   'config_auth_summary_sso_enabled',
   'config_auth_summary_sso_disabled',
+  'config_auth_summary_staff_auto_provision_enabled',
+  'config_auth_summary_staff_auto_provision_disabled',
+  'config_auth_summary_student_auto_provision_enabled',
+  'config_auth_summary_student_auto_provision_disabled',
   'config_auth_warning_sso_disabled_mode',
   'config_auth_warning_all_categories_blocked',
+  'config_auth_warning_staff_auto_provision_group_missing',
+  'config_auth_warning_student_auto_provision_group_missing',
+  'config_auth_warning_staff_auto_provision_category_disabled',
+  'config_auth_warning_student_auto_provision_category_disabled',
+  'config_auth_warning_staff_auto_provision_route_manual',
+  'config_auth_warning_student_auto_provision_route_manual',
   'config_auth_sso_mode_all_note',
   'config_auth_sso_mode_manual_note',
   'config_auth_sso_mode_hybrid_note',
@@ -211,38 +222,43 @@ if (is_file($langFileForJs)) {
           </div>
 
           <!-- Tab Navigasi -->
-          <ul class="nav nav-tabs" role="tablist">
-            <li class="nav-item">
-              <a class="nav-link <?= (($_GET['tab'] ?? '') === 'general' || !isset($_GET['tab'])) ? 'active' : '' ?>" data-bs-toggle="tab" href="#general-tab" role="tab" aria-selected="<?= (($_GET['tab'] ?? '') === 'general' || !isset($_GET['tab'])) ? 'true' : 'false' ?>">
-                <i class="ri-settings-3-line me-1"></i> <?= __('config_tab_general') ?? 'Umum' ?>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link <?= ($_GET['tab'] ?? '') === 'auth' ? 'active' : '' ?>" data-bs-toggle="tab" href="#auth-tab" role="tab" aria-selected="<?= ($_GET['tab'] ?? '') === 'auth' ? 'true' : 'false' ?>">
-                <i class="ri-shield-keyhole-line me-1"></i> <?= __('config_tab_auth') ?? 'Login Policy' ?>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link <?= ($_GET['tab'] ?? '') === 'email' ? 'active' : '' ?>" data-bs-toggle="tab" href="#email-tab" role="tab" aria-selected="<?= ($_GET['tab'] ?? '') === 'email' ? 'true' : 'false' ?>">
-                <i class="ri-mail-settings-line me-1"></i> <?= __('config_tab_emel') ?? 'Emel' ?>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link <?= ($_GET['tab'] ?? '') === 'db' ? 'active' : '' ?>" data-bs-toggle="tab" href="#db-tab" role="tab" aria-selected="<?= ($_GET['tab'] ?? '') === 'db' ? 'true' : 'false' ?>">
-                <i class="ri-database-2-line me-1"></i> <?= __('config_tab_db') ?? 'Pangkalan Data' ?>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link <?= ($_GET['tab'] ?? '') === 'theme' ? 'active' : '' ?>" data-bs-toggle="tab" href="#theme-tab" role="tab" aria-selected="<?= ($_GET['tab'] ?? '') === 'theme' ? 'true' : 'false' ?>">
-                <i class="ri-palette-line me-1"></i> <?= __('config_tab_tema') ?? 'Tema' ?>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link <?= ($_GET['tab'] ?? '') === 'lang' ? 'active' : '' ?>" data-bs-toggle="tab" href="#lang-tab" role="tab" aria-selected="<?= ($_GET['tab'] ?? '') === 'lang' ? 'true' : 'false' ?>">
-                <i class="ri-translate-2 me-1"></i> <?= __('config_tab_bahasa') ?? 'Bahasa' ?>
-              </a>
-            </li>
-          </ul>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <ul class="nav nav-tabs flex-grow-1" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link <?= (($_GET['tab'] ?? '') === 'general' || !isset($_GET['tab'])) ? 'active' : '' ?>" data-bs-toggle="tab" href="#general-tab" role="tab" aria-selected="<?= (($_GET['tab'] ?? '') === 'general' || !isset($_GET['tab'])) ? 'true' : 'false' ?>">
+                  <i class="ri-settings-3-line me-1"></i> <?= __('config_tab_general') ?? 'Umum' ?>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link <?= ($_GET['tab'] ?? '') === 'auth' ? 'active' : '' ?>" data-bs-toggle="tab" href="#auth-tab" role="tab" aria-selected="<?= ($_GET['tab'] ?? '') === 'auth' ? 'true' : 'false' ?>">
+                  <i class="ri-shield-keyhole-line me-1"></i> <?= __('config_tab_auth') ?? 'Login Policy' ?>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link <?= ($_GET['tab'] ?? '') === 'email' ? 'active' : '' ?>" data-bs-toggle="tab" href="#email-tab" role="tab" aria-selected="<?= ($_GET['tab'] ?? '') === 'email' ? 'true' : 'false' ?>">
+                  <i class="ri-mail-settings-line me-1"></i> <?= __('config_tab_emel') ?? 'Emel' ?>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link <?= ($_GET['tab'] ?? '') === 'db' ? 'active' : '' ?>" data-bs-toggle="tab" href="#db-tab" role="tab" aria-selected="<?= ($_GET['tab'] ?? '') === 'db' ? 'true' : 'false' ?>">
+                  <i class="ri-database-2-line me-1"></i> <?= __('config_tab_db') ?? 'Pangkalan Data' ?>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link <?= ($_GET['tab'] ?? '') === 'theme' ? 'active' : '' ?>" data-bs-toggle="tab" href="#theme-tab" role="tab" aria-selected="<?= ($_GET['tab'] ?? '') === 'theme' ? 'true' : 'false' ?>">
+                  <i class="ri-palette-line me-1"></i> <?= __('config_tab_tema') ?? 'Tema' ?>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link <?= ($_GET['tab'] ?? '') === 'lang' ? 'active' : '' ?>" data-bs-toggle="tab" href="#lang-tab" role="tab" aria-selected="<?= ($_GET['tab'] ?? '') === 'lang' ? 'true' : 'false' ?>">
+                  <i class="ri-translate-2 me-1"></i> <?= __('config_tab_bahasa') ?? 'Bahasa' ?>
+                </a>
+              </li>
+            </ul>
+            <div class="ms-auto">
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fw-semibold"><?= h(app_current_version_label()) ?></span>
+            </div>
+          </div>
 
           <!-- Kandungan Tab -->
           <div class="tab-content pt-3">
@@ -376,8 +392,14 @@ if (is_file($langFileForJs)) {
       var publicInput = document.getElementById('auth_login_enable_umum');
       var ssoEnabledInput = document.getElementById('auth_sso_enabled');
       var ssoModeInput = document.getElementById('auth_sso_mode');
+      var staffAutoProvisionInput = document.getElementById('auth_auto_provision_staf_sso');
+      var studentAutoProvisionInput = document.getElementById('auth_auto_provision_pelajar_sso');
+      var staffDefaultGroupInput = document.getElementById('auth_default_group_staff_code');
+      var studentDefaultGroupInput = document.getElementById('auth_default_group_student_code');
+      var staffHybridInput = document.getElementById('auth_sso_hybrid_staf');
+      var studentHybridInput = document.getElementById('auth_sso_hybrid_pelajar');
 
-      if (!maintenanceInput || !staffInput || !studentInput || !publicInput || !ssoEnabledInput || !ssoModeInput) {
+      if (!maintenanceInput || !staffInput || !studentInput || !publicInput || !ssoEnabledInput || !ssoModeInput || !staffAutoProvisionInput || !studentAutoProvisionInput || !staffDefaultGroupInput || !studentDefaultGroupInput) {
         return;
       }
 
@@ -387,7 +409,25 @@ if (is_file($langFileForJs)) {
       var publicEnabled = !!publicInput.checked;
       var ssoEnabled = !!ssoEnabledInput.checked;
       var ssoMode = String(ssoModeInput.value || 'MANUAL').toUpperCase();
+      var staffAutoProvision = !!staffAutoProvisionInput.checked;
+      var studentAutoProvision = !!studentAutoProvisionInput.checked;
+      var staffDefaultGroup = String((staffDefaultGroupInput.value || '').trim()).toUpperCase();
+      var studentDefaultGroup = String((studentDefaultGroupInput.value || '').trim()).toUpperCase();
+      var staffHybridMode = staffHybridInput ? String(staffHybridInput.value || 'SSO').toUpperCase() : 'SSO';
+      var studentHybridMode = studentHybridInput ? String(studentHybridInput.value || 'SSO').toUpperCase() : 'SSO';
       var warnings = [];
+      var staffLoginMethod = 'MANUAL';
+      var studentLoginMethod = 'MANUAL';
+
+      if (ssoEnabled) {
+        if (ssoMode === 'ALL') {
+          staffLoginMethod = 'SSO';
+          studentLoginMethod = 'SSO';
+        } else if (ssoMode === 'HYBRID') {
+          staffLoginMethod = staffHybridMode === 'SSO' ? 'SSO' : 'MANUAL';
+          studentLoginMethod = studentHybridMode === 'SSO' ? 'SSO' : 'MANUAL';
+        }
+      }
 
       function setBadgeState(element, active, activeText, inactiveText, activeClass, inactiveClass) {
         if (!element) {
@@ -414,6 +454,8 @@ if (is_file($langFileForJs)) {
       setBadgeState(document.getElementById('auth-category-state-auth_login_enable_pelajar'), studentEnabled, __('config_auth_allowed') || 'Allowed', __('config_auth_blocked') || 'Blocked', 'success', 'secondary');
       setBadgeState(document.getElementById('auth-category-state-auth_login_enable_umum'), publicEnabled, __('config_auth_allowed') || 'Allowed', __('config_auth_blocked') || 'Blocked', 'success', 'secondary');
       setBadgeState(document.getElementById('auth-sso-enabled-state'), ssoEnabled, __('config_auth_enabled') || 'Enabled', __('config_auth_disabled') || 'Disabled', 'success', 'secondary');
+      setBadgeState(document.getElementById('auth-auto-provision-state-staff'), staffAutoProvision, __('config_auth_enabled') || 'Enabled', __('config_auth_disabled') || 'Disabled', 'success', 'secondary');
+      setBadgeState(document.getElementById('auth-auto-provision-state-student'), studentAutoProvision, __('config_auth_enabled') || 'Enabled', __('config_auth_disabled') || 'Disabled', 'success', 'secondary');
 
       var modeNote = document.getElementById('auth-sso-mode-note');
       if (modeNote) {
@@ -446,7 +488,13 @@ if (is_file($langFileForJs)) {
           : (__('config_auth_summary_public_disabled') || 'Public login is disabled.'),
         ssoEnabled
           ? ((__('config_auth_summary_sso_enabled') || 'SSO is enabled in %s mode.').replace('%s', ssoMode))
-          : (__('config_auth_summary_sso_disabled') || 'SSO is disabled. All allowed categories use manual login.')
+          : (__('config_auth_summary_sso_disabled') || 'SSO is disabled. All allowed categories use manual login.'),
+        staffAutoProvision
+          ? ((__('config_auth_summary_staff_auto_provision_enabled') || 'Staff SSO auto provision is enabled with default group %s.').replace('%s', staffDefaultGroup || 'ADM-STAF'))
+          : (__('config_auth_summary_staff_auto_provision_disabled') || 'Staff SSO auto provision is disabled.'),
+        studentAutoProvision
+          ? ((__('config_auth_summary_student_auto_provision_enabled') || 'Student SSO auto provision is enabled with default group %s.').replace('%s', studentDefaultGroup || 'ADM-STUDENT'))
+          : (__('config_auth_summary_student_auto_provision_disabled') || 'Student SSO auto provision is disabled.')
       ];
 
       if (!ssoEnabled && ssoMode !== 'MANUAL') {
@@ -454,6 +502,24 @@ if (is_file($langFileForJs)) {
       }
       if (!staffEnabled && !studentEnabled && !publicEnabled) {
         warnings.push((__('config_auth_warning_all_categories_blocked')) || 'All login categories are blocked. Only Super Admin will remain able to log in.');
+      }
+      if (staffAutoProvision && !staffDefaultGroup) {
+        warnings.push((__('config_auth_warning_staff_auto_provision_group_missing')) || 'Staff SSO auto provision is enabled but the default staff group code is empty.');
+      }
+      if (studentAutoProvision && !studentDefaultGroup) {
+        warnings.push((__('config_auth_warning_student_auto_provision_group_missing')) || 'Student SSO auto provision is enabled but the default student group code is empty.');
+      }
+      if (staffAutoProvision && !staffEnabled) {
+        warnings.push((__('config_auth_warning_staff_auto_provision_category_disabled')) || 'Staff SSO auto provision is enabled while staff login is disabled.');
+      }
+      if (studentAutoProvision && !studentEnabled) {
+        warnings.push((__('config_auth_warning_student_auto_provision_category_disabled')) || 'Student SSO auto provision is enabled while student login is disabled.');
+      }
+      if (staffAutoProvision && staffLoginMethod !== 'SSO') {
+        warnings.push((__('config_auth_warning_staff_auto_provision_route_manual')) || 'Staff SSO auto provision is enabled but the current staff login route is not SSO.');
+      }
+      if (studentAutoProvision && studentLoginMethod !== 'SSO') {
+        warnings.push((__('config_auth_warning_student_auto_provision_route_manual')) || 'Student SSO auto provision is enabled but the current student login route is not SSO.');
       }
 
       renderListItems(document.getElementById('auth-summary-effective-list'), effectiveSummary);

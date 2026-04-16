@@ -1,0 +1,18 @@
+{
+    "km": 17.9,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0995497,
+        "lon": 101.6889051,
+        "display_name": "Jalan 109F, Taman Danau Desa, Taman Desa, Kuala Lumpur, 58100, Malaysia",
+        "matched_query": "Jalan 109F, Taman Desa, 58100, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-04T00:14:23+00:00"
+}

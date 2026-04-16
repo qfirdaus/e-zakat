@@ -8,6 +8,11 @@
   $authSsoEnabled = !empty($authSso['enabled']);
   $authSsoMode = (string)($authSso['mode'] ?? 'MANUAL');
   $authHybrid = (array)($authSso['hybrid'] ?? []);
+  $authProvisioning = (array)($authSettings['provisioning'] ?? []);
+  $authAutoProvisionStaff = !empty($authProvisioning['staf_sso_enabled']);
+  $authAutoProvisionStudent = !empty($authProvisioning['pelajar_sso_enabled']);
+  $authDefaultGroupStaffCode = (string)($authProvisioning['default_group_staff_code'] ?? 'ADM-STAF');
+  $authDefaultGroupStudentCode = (string)($authProvisioning['default_group_student_code'] ?? 'ADM-STUDENT');
   $authPassword = (array)($authSettings['password'] ?? []);
   $authIntegration = (array)($authSettings['integration'] ?? []);
   $authSsoSiteId = (string)($authIntegration['site_id'] ?? '');
@@ -57,6 +62,18 @@
           $authSsoMode
         )
       : (__('config_auth_summary_sso_disabled') ?? 'SSO is disabled. All allowed categories use manual login.'),
+    $authAutoProvisionStaff
+      ? sprintf(
+          __('config_auth_summary_staff_auto_provision_enabled') ?? 'Staff SSO auto provision is enabled with default group %s.',
+          $authDefaultGroupStaffCode !== '' ? $authDefaultGroupStaffCode : 'ADM-STAF'
+        )
+      : (__('config_auth_summary_staff_auto_provision_disabled') ?? 'Staff SSO auto provision is disabled.'),
+    $authAutoProvisionStudent
+      ? sprintf(
+          __('config_auth_summary_student_auto_provision_enabled') ?? 'Student SSO auto provision is enabled with default group %s.',
+          $authDefaultGroupStudentCode !== '' ? $authDefaultGroupStudentCode : 'ADM-STUDENT'
+        )
+      : (__('config_auth_summary_student_auto_provision_disabled') ?? 'Student SSO auto provision is disabled.'),
   ];
 ?>
 
@@ -539,6 +556,10 @@
                   <span class="auth-password-nav-icon"><i class="ri-links-line"></i></span>
                   <span class="auth-password-nav-title">SSO Access</span>
                 </button>
+                <button class="auth-password-nav-link" type="button" data-bs-toggle="pill" data-bs-target="#auth-sso-section-auto-provision" role="tab" aria-selected="false">
+                  <span class="auth-password-nav-icon"><i class="ri-user-add-line"></i></span>
+                  <span class="auth-password-nav-title"><?= __('config_auth_auto_provision_title') ?? 'SSO Auto Provisioning' ?></span>
+                </button>
                 <button class="auth-password-nav-link" type="button" data-bs-toggle="pill" data-bs-target="#auth-sso-section-provider" role="tab" aria-selected="false">
                   <span class="auth-password-nav-icon"><i class="ri-server-line"></i></span>
                   <span class="auth-password-nav-title">Identity Provider</span>
@@ -587,7 +608,7 @@
                       </div>
                       <div class="row g-3 auth-password-policy-grid">
                         <div class="col-xl-5">
-                          <div class="auth-form-group h-100">
+                          <div class="auth-form-group">
                             <label class="form-label fw-semibold" for="auth_sso_mode"><?= __('config_auth_sso_mode') ?? 'SSO Mode' ?></label>
                             <div class="text-muted small mb-2"><?= __('config_auth_sso_mode_help') ?? 'Choose how authentication method is applied to each allowed user category.' ?></div>
                             <select class="form-select" id="auth_sso_mode" name="auth_sso_mode" onchange="if(window.__tetapanSyncAuthPolicyUi){window.__tetapanSyncAuthPolicyUi();}else if(window.__tetapanRefreshAuthPolicySummary){window.__tetapanRefreshAuthPolicySummary();}">
@@ -600,7 +621,7 @@
                           </div>
                         </div>
                         <div class="col-xl-7">
-                          <div class="auth-form-group h-100">
+                          <div class="auth-form-group">
                             <label class="form-label fw-semibold"><?= __('config_auth_sso_mode_effective') ?? 'Mode Summary' ?></label>
                             <div class="auth-settings-note mb-0" id="auth-sso-mode-note">
                               <?php if ($authSsoMode === 'ALL'): ?>
@@ -614,6 +635,80 @@
                           </div>
                         </div>
                       </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <div class="tab-pane fade" id="auth-sso-section-auto-provision" role="tabpanel">
+                  <div class="auth-password-section-head mb-3">
+                    <div>
+                      <div class="auth-password-section-title"><?= __('config_auth_auto_provision_title') ?? 'SSO Auto Provisioning' ?></div>
+                      <div class="text-muted small"><?= __('config_auth_auto_provision_sub') ?? 'Allow first-time Staff and Student users to be created automatically through SSO using the configured default group.' ?></div>
+                    </div>
+                  </div>
+
+                  <div class="auth-security-stack auth-auto-provision-stack">
+                    <div class="row g-3 auth-password-policy-grid auth-auto-provision-grid">
+                      <div class="col-xl-6">
+                        <div class="auth-security-group auth-auto-provision-card h-100 mb-0">
+                          <div class="auth-security-group-head">
+                            <div class="auth-security-group-title"><?= __('config_auth_auto_provision_staff_panel') ?? 'Staff Auto Provision' ?></div>
+                            <div class="text-muted small"><?= __('config_auth_auto_provision_staff_panel_sub') ?? 'Only applies on first login through SSO. Manual staff login still requires an existing app user record.' ?></div>
+                          </div>
+                          <div class="auth-setting-row mb-3">
+                            <div class="auth-setting-copy">
+                              <label class="form-label fw-semibold mb-1" for="auth_auto_provision_staf_sso"><?= __('config_auth_auto_provision_staf_sso') ?? 'Enable Staff SSO Auto Provision' ?></label>
+                              <div class="text-muted small"><?= __('config_auth_auto_provision_staf_sso_help') ?? 'Automatically create a Staff app record when a valid SSO user has no existing tbl_m_user record.' ?></div>
+                            </div>
+                            <div class="auth-setting-control">
+                              <div class="form-check form-switch auth-switch mb-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="auth_auto_provision_staf_sso" name="auth_auto_provision_staf_sso" value="1" onchange="if(window.__tetapanSyncAuthPolicyUi){window.__tetapanSyncAuthPolicyUi();}else if(window.__tetapanRefreshAuthPolicySummary){window.__tetapanRefreshAuthPolicySummary();}" <?= $authAutoProvisionStaff ? 'checked' : '' ?>>
+                              </div>
+                              <span id="auth-auto-provision-state-staff" class="badge bg-<?= $authAutoProvisionStaff ? 'success' : 'secondary' ?>-subtle text-<?= $authAutoProvisionStaff ? 'success' : 'secondary' ?>">
+                                <?= $authAutoProvisionStaff ? (__('config_auth_enabled') ?? 'Enabled') : (__('config_auth_disabled') ?? 'Disabled') ?>
+                              </span>
+                            </div>
+                          </div>
+                          <div class="auth-form-group">
+                            <label class="form-label fw-semibold" for="auth_default_group_staff_code"><?= __('config_auth_default_group_staff_code') ?? 'Default Staff Group Code' ?></label>
+                            <div class="text-muted small mb-2"><?= __('config_auth_default_group_staff_code_help') ?? 'Group code assigned to newly auto-provisioned Staff users after successful first-time SSO login.' ?></div>
+                            <input type="text" class="form-control text-uppercase" id="auth_default_group_staff_code" name="auth_default_group_staff_code" maxlength="50" value="<?= htmlspecialchars($authDefaultGroupStaffCode, ENT_QUOTES, 'UTF-8') ?>" placeholder="ADM-STAF" oninput="this.value=this.value.toUpperCase(); if(window.__tetapanSyncAuthPolicyUi){window.__tetapanSyncAuthPolicyUi();}else if(window.__tetapanRefreshAuthPolicySummary){window.__tetapanRefreshAuthPolicySummary();}">
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="col-xl-6">
+                        <div class="auth-security-group auth-auto-provision-card h-100 mb-0">
+                          <div class="auth-security-group-head">
+                            <div class="auth-security-group-title"><?= __('config_auth_auto_provision_student_panel') ?? 'Student Auto Provision' ?></div>
+                            <div class="text-muted small"><?= __('config_auth_auto_provision_student_panel_sub') ?? 'Only applies on first login through SSO. Manual student login still requires an existing app user record.' ?></div>
+                          </div>
+                          <div class="auth-setting-row mb-3">
+                            <div class="auth-setting-copy">
+                              <label class="form-label fw-semibold mb-1" for="auth_auto_provision_pelajar_sso"><?= __('config_auth_auto_provision_pelajar_sso') ?? 'Enable Student SSO Auto Provision' ?></label>
+                              <div class="text-muted small"><?= __('config_auth_auto_provision_pelajar_sso_help') ?? 'Automatically create a Student app record when a valid SSO user has no existing tbl_m_user record.' ?></div>
+                            </div>
+                            <div class="auth-setting-control">
+                              <div class="form-check form-switch auth-switch mb-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="auth_auto_provision_pelajar_sso" name="auth_auto_provision_pelajar_sso" value="1" onchange="if(window.__tetapanSyncAuthPolicyUi){window.__tetapanSyncAuthPolicyUi();}else if(window.__tetapanRefreshAuthPolicySummary){window.__tetapanRefreshAuthPolicySummary();}" <?= $authAutoProvisionStudent ? 'checked' : '' ?>>
+                              </div>
+                              <span id="auth-auto-provision-state-student" class="badge bg-<?= $authAutoProvisionStudent ? 'success' : 'secondary' ?>-subtle text-<?= $authAutoProvisionStudent ? 'success' : 'secondary' ?>">
+                                <?= $authAutoProvisionStudent ? (__('config_auth_enabled') ?? 'Enabled') : (__('config_auth_disabled') ?? 'Disabled') ?>
+                              </span>
+                            </div>
+                          </div>
+                          <div class="auth-form-group">
+                            <label class="form-label fw-semibold" for="auth_default_group_student_code"><?= __('config_auth_default_group_student_code') ?? 'Default Student Group Code' ?></label>
+                            <div class="text-muted small mb-2"><?= __('config_auth_default_group_student_code_help') ?? 'Group code assigned to newly auto-provisioned Student users after successful first-time SSO login.' ?></div>
+                            <input type="text" class="form-control text-uppercase" id="auth_default_group_student_code" name="auth_default_group_student_code" maxlength="50" value="<?= htmlspecialchars($authDefaultGroupStudentCode, ENT_QUOTES, 'UTF-8') ?>" placeholder="ADM-STUDENT" oninput="this.value=this.value.toUpperCase(); if(window.__tetapanSyncAuthPolicyUi){window.__tetapanSyncAuthPolicyUi();}else if(window.__tetapanRefreshAuthPolicySummary){window.__tetapanRefreshAuthPolicySummary();}">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="auth-settings-inline-note auth-auto-provision-note mb-0">
+                      <i class="ri-information-line me-1"></i><?= __('config_auth_auto_provision_note') ?? 'Auto provisioning only applies through SSO. Staff and Student manual login still require an existing tbl_m_user record.' ?>
                     </div>
                   </div>
                 </div>
@@ -661,7 +756,7 @@
                                   name="auth_sso_idp_domain"
                                   value="<?= htmlspecialchars($authSsoIdpDomain, ENT_QUOTES, 'UTF-8') ?>"
                                  <?= $authSsoEnabled ? 'required' : '' ?>
-                                  placeholder="https://oneid-dev.upnm.edu.my/">
+                                  placeholder="https://oneid.upnm.edu.my/">
                         </div>
                       </div>
                     </div>

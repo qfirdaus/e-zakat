@@ -23,6 +23,7 @@ final class SystemTemplateController
         'page_title_en' => '',
         'page_icon' => '',
         'template_key' => '',
+        'access_mode' => FileGenerationService::ACCESS_MODE_GROUP_MENU,
     ];
     public array $fieldErrors = [];
     public ?array $previewResult = null;
@@ -122,6 +123,7 @@ final class SystemTemplateController
             'page_title_en' => trim((string)($_POST['page_title_en'] ?? '')),
             'page_icon' => trim((string)($_POST['page_icon'] ?? '')),
             'template_key' => trim((string)($_POST['template_key'] ?? '')),
+            'access_mode' => trim((string)($_POST['access_mode'] ?? FileGenerationService::ACCESS_MODE_GROUP_MENU)),
         ];
 
         $csrf = trim((string)($_POST['csrf_token'] ?? ''));
@@ -142,6 +144,7 @@ final class SystemTemplateController
             'page_title_ms' => $this->form['page_title_ms'],
             'page_title_en' => $this->form['page_title_en'],
             'page_icon' => $this->form['page_icon'],
+            'access_mode' => $this->form['access_mode'],
         ];
 
         try {
@@ -181,6 +184,7 @@ final class SystemTemplateController
             'page_title_en' => '',
             'page_icon' => '',
             'template_key' => '',
+            'access_mode' => FileGenerationService::ACCESS_MODE_GROUP_MENU,
         ];
         $this->fieldErrors = [];
         $this->previewResult = null;
@@ -277,6 +281,9 @@ final class SystemTemplateController
         }
         if (trim((string)($form['page_icon'] ?? '')) === '') {
             $errors['page_icon'] = (string)__('pageTemplateGenerator_required_field');
+        }
+        if (!in_array(trim((string)($form['access_mode'] ?? '')), [FileGenerationService::ACCESS_MODE_GROUP_MENU, FileGenerationService::ACCESS_MODE_SUPER_ADMIN_ONLY], true)) {
+            $errors['access_mode'] = (string)__('pageTemplateGenerator_required_field');
         }
 
         return $errors;

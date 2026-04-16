@@ -1,0 +1,18 @@
+{
+    "km": 29.82,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9444848,
+        "lon": 101.8760283,
+        "display_name": "Universiti Nottingham Malaysia, Jalan Broga, Taman Tasik Semenyih, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43500, Malaysia",
+        "matched_query": "43500 Semenyih, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:28:52+00:00"
+}

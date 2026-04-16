@@ -1,0 +1,18 @@
+{
+    "km": 23.54,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9698653,
+        "lon": 101.8253341,
+        "display_name": "Jalan 3/21, Bandar Teknologi Kajang, Semenyih, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43500, Malaysia",
+        "matched_query": "Jalan 3/21, Bandar Teknologi Kajang, 43500, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:11:11+00:00"
+}

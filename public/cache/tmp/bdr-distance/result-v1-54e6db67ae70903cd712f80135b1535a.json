@@ -1,0 +1,18 @@
+{
+    "km": 29.89,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.219697,
+        "lon": 101.7378728,
+        "display_name": "Desa Melawati, Wangsa Maju, Kuala Lumpur, 53100, Malaysia",
+        "matched_query": "Desa Melawati, 53100, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T20:26:28+00:00"
+}

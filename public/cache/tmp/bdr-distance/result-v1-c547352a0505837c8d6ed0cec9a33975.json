@@ -1,0 +1,18 @@
+{
+    "km": 149.98,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.6454941,
+        "lon": 102.4818733,
+        "display_name": "FELDA Jelai 2, Tampin, Negeri Sembilan, Malaysia",
+        "matched_query": "Blok 3, Felda Jelai 2, 73480, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:04:18+00:00"
+}

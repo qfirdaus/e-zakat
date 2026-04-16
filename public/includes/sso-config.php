@@ -1,6 +1,21 @@
 <?php
 
 if (!function_exists('sso_shared_config')) {
+    function sso_config_bootstrap_app_config(): void
+    {
+        if (function_exists('app_config')) {
+            return;
+        }
+
+        try {
+            require_once __DIR__ . '/../classes/Database.php';
+            require_once __DIR__ . '/../classes/Config.php';
+            require_once __DIR__ . '/../setting/helper/config_helper.php';
+        } catch (Throwable $e) {
+            error_log('[sso_config] Failed bootstrapping app_config: ' . $e->getMessage());
+        }
+    }
+
     function sso_config_first_non_empty(array $values, string $fallback = ''): string
     {
         foreach ($values as $value) {
@@ -68,6 +83,8 @@ if (!function_exists('sso_shared_config')) {
             return $config;
         }
 
+        sso_config_bootstrap_app_config();
+
         $siteId = sso_config_normalize_site_id(
             sso_config_first_non_empty([
                 function_exists('app_config') ? app_config('auth.sso_site_id', '') : '',
@@ -84,10 +101,10 @@ if (!function_exists('sso_shared_config')) {
                 function_exists('app_config') ? app_config('auth.sso_idp_domain', '') : '',
                 getenv('SSO_IDP_DOMAIN'),
                 getenv('SSO_IDP_URL'),
-            ], 'https://oneid-dev.upnm.edu.my/')
+            ], 'https://oneid.upnm.edu.my/')
         );
         if ($idpDomain === '') {
-            $idpDomain = 'https://oneid-dev.upnm.edu.my/';
+            $idpDomain = 'https://oneid.upnm.edu.my/';
         }
 
         $idpHost = strtolower((string)(parse_url($idpDomain, PHP_URL_HOST) ?: ''));

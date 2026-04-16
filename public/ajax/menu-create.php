@@ -9,8 +9,16 @@ header('Content-Type: application/json; charset=utf-8');
 
 try {
     // ===== CSRF =====
-    $headers = function_exists('getallheaders') ? getallheaders() : [];
-    $csrf = $headers['X-CSRF-Token'] ?? $headers['x-csrf-token'] ?? '';
+    $csrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if ($csrf === '') {
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        foreach ($headers as $name => $value) {
+            if (strtolower((string)$name) === 'x-csrf-token') {
+                $csrf = (string)$value;
+                break;
+            }
+        }
+    }
     if (!$csrf || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf)) {
         http_response_code(400);
         echo json_encode(['error'=>true,'message'=>'CSRF token tidak sah'], JSON_UNESCAPED_UNICODE); exit;
@@ -23,7 +31,7 @@ try {
     }
     
     // Permission check
-    $db = Database::getInstance()->getConnection();
+    $db = Database::getInstance('mysql')->getConnection();
     if (!hasGroupManagePermission($db)) {
         http_response_code(403);
         echo json_encode(['error'=>true,'message'=>'Anda tidak mempunyai kebenaran untuk menambah menu.'], JSON_UNESCAPED_UNICODE); exit;
@@ -53,7 +61,7 @@ try {
         echo json_encode(['error'=>true,'message'=>'Sila pilih Kumpulan, Modul dan isi Path.']); exit;
     }
 
-    $db = Database::getInstance()->getConnection();
+    $db = Database::getInstance('mysql')->getConnection();
     $db->beginTransaction();
 
     // (Pilihan) Semak kewujudan kumpulan & modul (untuk error yang lebih jelas)

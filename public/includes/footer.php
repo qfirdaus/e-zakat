@@ -21,13 +21,14 @@ $organizationName = trim((string)app_config('organization.name', app_config('sys
 $organizationShort = trim((string)app_config('organization.short', ''));
 $organizationWebsite = trim((string)app_config('organization.website', ''));
 $supportEmail = trim((string)app_config('system.support', ''));
+$systemVersion = app_current_version();
 ?>
 <!-- Footer Start -->
 <footer class="footer">
   <div class="container-fluid">
     <div class="row">
       <div class="col-md-6">
-        <?= date('Y') ?> © <?= h($footerText !== '' ? $footerText : (string)__('footer_it')) ?>
+        <?= date('Y') ?> © <?= h($footerText !== '' ? $footerText : (string)__('footer_it')) ?> <span class="small text-muted ms-2"><?= h(app_current_version_label()) ?></span>
       </div>
       <div class="col-md-6">
         <div class="text-md-end footer-links d-none d-md-block">

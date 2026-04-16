@@ -1046,14 +1046,20 @@ const MenuAccess = {
     if (!sel) return;
     sel.innerHTML = '<option value="">' + GroupUtils.esc(this.T.loading_modules || 'Memuatkan modul...') + '</option>';
     let options = [];
+    const normalizeModules = (rows) => (Array.isArray(rows) ? rows : []).map(m => ({
+      id: parseInt(m.id ?? m.f_modulID, 10),
+      nama: String(m.nama || m.modulName || m.f_modulName_ms || m.f_modulName_en || ('Modul ' + (m.id || m.f_modulID)))
+    })).filter(x => Number.isInteger(x.id) && x.id > 0);
     try {
       const j = await GroupUtils.fetchJSONSafe(GroupUtils.apiUrl('modul-list.php'));
       const arr = Array.isArray(j?.moduls) ? j.moduls : (Array.isArray(j) ? j : []);
-      options = arr.map(m => ({
-        id: parseInt(m.id ?? m.f_modulID, 10),
-        nama: String(m.nama || m.modulName || ('Modul ' + (m.id || m.f_modulID)))
-      })).filter(x => Number.isInteger(x.id) && x.id > 0);
-    } catch (_) {}
+      options = normalizeModules(arr);
+    } catch (e) {
+      console.warn('populateModuls AJAX failed, using embedded module options', e);
+    }
+    if (!options.length) {
+      options = normalizeModules(window.GroupModuleOptions || []);
+    }
     sel.innerHTML = '';
     options.forEach(m => {
       const opt = document.createElement('option');
@@ -1062,6 +1068,12 @@ const MenuAccess = {
       if (selected && parseInt(selected, 10) === m.id) opt.selected = true;
       sel.appendChild(opt);
     });
+    if (!options.length) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = this.T.no_modules_found || 'Tiada modul ditemui.';
+      sel.appendChild(opt);
+    }
   },
   
   openMenuFromBtn(btn) {

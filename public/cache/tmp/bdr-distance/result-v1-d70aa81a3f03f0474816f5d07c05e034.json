@@ -1,0 +1,18 @@
+{
+    "km": 35.95,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.2530813,
+        "lon": 101.7356842,
+        "display_name": "Universiti Islam Antarabangsa Malaysia (UIAM), Jalan Gombak, Taman Permai Jaya, Kampung Desa Makmur, Gombak, Majlis Perbandaran Selayang, Gombak, Selangor, 53100, Malaysia",
+        "matched_query": "68000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:40:40+00:00"
+}

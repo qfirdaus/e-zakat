@@ -1,0 +1,18 @@
+{
+    "km": 112.59,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.381644,
+        "lon": 102.2419883,
+        "display_name": "Jalan Lesung Batu Emas 8, Taman Lesung Batu Emas, Alor Gajah, Melaka, 78000, Malaysia",
+        "matched_query": "Lot 2112 Batu 8, 76400 Melaka, Melaka, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:01:25+00:00"
+}

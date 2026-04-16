@@ -1,0 +1,18 @@
+{
+    "km": 43.09,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.8751686,
+        "lon": 101.9249203,
+        "display_name": "Jalan Tasik Senangin 17/2, Bandar Tasik Senangin, Lenggeng, Seremban, Negeri Sembilan, 71750, Malaysia",
+        "matched_query": "Jalan Tasik Senangin 17/2, Lenggeng, 71750, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:55:31+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 21.99,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9547237,
+        "lon": 101.7863639,
+        "display_name": "Residensi Melor, Jalan 5E/1, Seksyen 5, Bandar Baru Bangi, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43650, Malaysia",
+        "matched_query": "Residensi Melor, Seksyen 5 Bandar Baru Bangi, 43650, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:49:18+00:00"
+}

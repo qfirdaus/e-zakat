@@ -75,7 +75,7 @@ $tabMeta = [
   ?>
   <link href="<?= base_url('assets/css/pages/audit-center.css') ?>?v=<?= h($version) ?>" rel="stylesheet">
 </head>
-<body data-topbar-color="<?= h($_SESSION['theme.topbar'] ?? 'light') ?>" data-menu-color="<?= h($_SESSION['theme.sidebar'] ?? 'dark') ?>" data-layout="vertical" data-sidebar-size="default" class="loading">
+<body data-topbar-color="<?= h($_SESSION['theme.topbar'] ?? 'light') ?>" data-menu-color="<?= h($_SESSION['theme.menu'] ?? $_SESSION['theme.sidebar'] ?? 'dark') ?>" data-layout="vertical" data-sidebar-size="default" class="loading">
 <div class="wrapper audit-center-page">
   <?php include __DIR__ . '/../includes/topbar.php'; ?>
   <?php include __DIR__ . '/../includes/sidebar.php'; ?>

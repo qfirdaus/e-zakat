@@ -1,0 +1,18 @@
+{
+    "km": 373.73,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 5.5167642,
+        "lon": 100.4255309,
+        "display_name": "Kepala Batas, Seberang Perai Utara, Seberang Perai, Pulau Pinang, 13200, Malaysia",
+        "matched_query": "Kepala Batas, Pulau Pinang, 13200, Pulau Pinang, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:33:11+00:00"
+}

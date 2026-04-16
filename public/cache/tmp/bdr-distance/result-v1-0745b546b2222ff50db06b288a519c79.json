@@ -1,0 +1,18 @@
+{
+    "km": 17.04,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9922968,
+        "lon": 101.6536743,
+        "display_name": "Jalan LEP 1/9, Taman Lestari Putra, Majlis Bandaraya Subang Jaya, Petaling, Selangor, 47110, Malaysia",
+        "matched_query": "Jalan Lep 1/9, 43300, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:09:16+00:00"
+}

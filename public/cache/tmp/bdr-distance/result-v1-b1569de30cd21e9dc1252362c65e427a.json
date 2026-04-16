@@ -1,0 +1,18 @@
+{
+    "km": 18.24,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0536173,
+        "lon": 101.6370923,
+        "display_name": "Kesuma Apartment, Bandar Kinrara 3, Bandar Kinrara, Puchong, Majlis Bandaraya Subang Jaya, Petaling, Selangor, Malaysia",
+        "matched_query": "B-4-8 Apartment Kesuma, Bandar Kinrara Puchong, 47180, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:14:44+00:00"
+}

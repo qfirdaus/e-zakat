@@ -1,0 +1,18 @@
+{
+    "km": 453.1,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 6.0940366,
+        "lon": 102.2845137,
+        "display_name": "Kubang Kerian, Kota Bharu, Kelantan, 16150, Malaysia",
+        "matched_query": "Kubang Kerian, Kota Bharu, 16150, Kelantan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:44:30+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 7.36,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0647418,
+        "lon": 101.7546973,
+        "display_name": "Taman Cheras Mewah, Taman Tun Perak, Cheras, Majlis Perbandaran Kajang, Hulu Langat, Selangor, Malaysia",
+        "matched_query": "Cheras, 56000, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:35:22+00:00"
+}

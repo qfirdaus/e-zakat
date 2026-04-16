@@ -1,0 +1,18 @@
+{
+    "km": 216.64,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 4.6112263,
+        "lon": 101.1400876,
+        "display_name": "Tambun, Majlis Bandaraya Ipoh, Kinta, Perak, 31400, Malaysia",
+        "matched_query": "Tambun, Ipoh, 31400, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:47:17+00:00"
+}

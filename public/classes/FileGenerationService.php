@@ -5,6 +5,9 @@ require_once __DIR__ . '/TemplateResolverService.php';
 
 final class FileGenerationService
 {
+    public const ACCESS_MODE_GROUP_MENU = 'group_menu_based';
+    public const ACCESS_MODE_SUPER_ADMIN_ONLY = 'super_admin_only';
+
     private TemplateResolverService $resolver;
     private string $projectRoot;
 
@@ -32,6 +35,7 @@ final class FileGenerationService
             'page_key_prefix' => $normalized['page_key_prefix'],
             'controller_class' => $normalized['controller_class'],
             'page_icon' => $normalized['page_icon'],
+            'access_mode' => $normalized['access_mode'],
             'titles' => [
                 'ms' => $normalized['page_title_ms'],
                 'en' => $normalized['page_title_en'],
@@ -66,6 +70,7 @@ final class FileGenerationService
             'page_key_prefix' => $filesResult['page_key_prefix'],
             'controller_class' => $filesResult['controller_class'],
             'page_icon' => $filesResult['page_icon'],
+            'access_mode' => $filesResult['access_mode'],
             'files_created' => [
                 ...$filesResult['files_created'],
                 ...$langResult['lang_files_updated'],
@@ -109,6 +114,7 @@ final class FileGenerationService
             'page_key_prefix' => $normalized['page_key_prefix'],
             'controller_class' => $normalized['controller_class'],
             'page_icon' => $normalized['page_icon'],
+            'access_mode' => $normalized['access_mode'],
             'files_created' => [
                 $outputPaths['page'],
                 $outputPaths['controller'],
@@ -177,6 +183,7 @@ final class FileGenerationService
         $pageTitleMs = trim((string)($input['page_title_ms'] ?? ''));
         $pageTitleEn = trim((string)($input['page_title_en'] ?? ''));
         $pageIcon = trim((string)($input['page_icon'] ?? ''));
+        $accessMode = trim((string)($input['access_mode'] ?? self::ACCESS_MODE_GROUP_MENU));
 
         if ($pageName === '') {
             throw new InvalidArgumentException('Page name is required.');
@@ -199,6 +206,10 @@ final class FileGenerationService
             $pageIcon = 'ri-file-list-line';
         }
 
+        if (!in_array($accessMode, [self::ACCESS_MODE_GROUP_MENU, self::ACCESS_MODE_SUPER_ADMIN_ONLY], true)) {
+            throw new InvalidArgumentException('Invalid access mode for generated page.');
+        }
+
         return [
             'page_name' => $pageName,
             'page_slug' => $pageSlug,
@@ -206,6 +217,7 @@ final class FileGenerationService
             'page_title_ms' => $pageTitleMs,
             'page_title_en' => $pageTitleEn,
             'page_icon' => $pageIcon,
+            'access_mode' => $accessMode,
             'controller_class' => $this->buildControllerClassName($pageSlug),
         ];
     }

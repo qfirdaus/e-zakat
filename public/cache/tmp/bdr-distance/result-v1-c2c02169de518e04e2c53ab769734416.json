@@ -1,0 +1,18 @@
+{
+    "km": 9.98,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0357896,
+        "lon": 101.6968406,
+        "display_name": "Jalan Mawar, Taman Bukit Serdang Seksyen 9, Bukit Serdang, Seri Kembangan, Majlis Bandaraya Subang Jaya, Petaling, Selangor, 43300, Malaysia",
+        "matched_query": "Jalan Mawar, Seri Kembangan, 43300, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:56:13+00:00"
+}

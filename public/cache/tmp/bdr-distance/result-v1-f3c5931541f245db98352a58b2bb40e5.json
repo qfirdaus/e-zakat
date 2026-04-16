@@ -1,0 +1,18 @@
+{
+    "km": 16.45,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1403656,
+        "lon": 101.7374143,
+        "display_name": "Residensi Pandanmas 2, Maluri, Kampung Pandan, Kuala Lumpur, Malaysia",
+        "matched_query": "C-08-09, Residensi Pandanmas 2, Kampung Pandan, 55100, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:48:52+00:00"
+}

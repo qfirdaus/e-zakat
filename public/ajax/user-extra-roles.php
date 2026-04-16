@@ -35,7 +35,7 @@ try {
     $data = json_decode($rawInput, true);
     if (!is_array($data)) {
         http_response_code(400);
-        echo json_encode(['error' => true, 'message' => 'Data tidak sah.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => (string)__('userList_ajax_invalid_data')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -45,7 +45,7 @@ try {
     $userID = (int)($data['userID'] ?? 0);
     if ($userID <= 0) {
         http_response_code(422);
-        echo json_encode(['error' => true, 'message' => 'Parameter tidak lengkap.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => (string)__('userList_err_param')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -68,7 +68,7 @@ try {
     $userRow = $stmtU->fetch(PDO::FETCH_ASSOC);
     if (!$userRow) {
         http_response_code(404);
-        echo json_encode(['error' => true, 'message' => 'Pengguna tidak ditemui.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => (string)__('userList_ajax_user_not_found')], JSON_UNESCAPED_UNICODE);
         exit;
     }
     $targetUserID = (int)($userRow['f_userID'] ?? 0);
@@ -76,6 +76,36 @@ try {
     $targetStafID = trim((string)($userRow['f_stafID'] ?? ''));
     $primaryGroupId = (int)($userRow['f_groupID'] ?? 0);
     $targetCategory = strtoupper(trim((string)($userRow['f_categoryUser'] ?? '')));
+    if (isProtectedStaffAccount($targetStafID) && !canSelfManageProtectedStaffAccount($targetStafID)) {
+        try {
+            $logger = new AuditLogger($pdo);
+            $logger->logEvent([
+                'event_type'  => 'UPDATE',
+                'severity'    => 'WARN',
+                'outcome'     => 'DENIED',
+                'target_type' => 'role_assignment',
+                'target_id'   => (string)$userID,
+                'target_label'=> 'PROTECTED_ACCOUNT',
+                'message'     => 'Blocked attempt to change extra roles for protected account',
+                'session_id'  => session_id() ?: null,
+                'user_id'     => !empty($_SESSION['f_nopekerja']) && is_numeric($_SESSION['f_nopekerja']) ? (int)$_SESSION['f_nopekerja'] : null,
+                'actor_label' => ($_SESSION['user']['f_nama'] ?? $_SESSION['f_nama'] ?? null),
+                'meta'        => [
+                    'reason' => 'protected_staff_account',
+                    'target_userID' => $targetUserID,
+                    'target_loginID' => $targetLoginID !== '' ? $targetLoginID : null,
+                    'target_stafID' => $targetStafID,
+                    'performed_by' => ($_SESSION['f_stafID'] ?? null),
+                ]
+            ]);
+        } catch (Throwable $e) {
+            error_log('[user-extra-roles] Protected account audit failed: ' . $e->getMessage());
+        }
+
+        http_response_code(403);
+        echo json_encode(['error' => true, 'message' => (string)__('userList_protected_self_manage_only')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     if ($targetCategory === 'PELAJAR' && function_exists('is_student_mode_enabled') && !is_student_mode_enabled()) {
         http_response_code(403);
         echo json_encode(['error' => true, 'message' => (string)__('studentSearch_mode_disabled')], JSON_UNESCAPED_UNICODE);
@@ -83,7 +113,7 @@ try {
     }
     if ($targetUserID <= 0) {
         http_response_code(422);
-        echo json_encode(['error' => true, 'message' => 'Maklumat pengguna tidak sah.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => (string)__('userList_ajax_invalid_user_param')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -131,7 +161,7 @@ try {
 
     if ($action !== 'save') {
         http_response_code(400);
-        echo json_encode(['error' => true, 'message' => 'Aksi tidak sah.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => (string)__('userList_ajax_invalid_action')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -299,12 +329,12 @@ try {
 
     echo json_encode([
         'error' => false,
-        'message' => 'Peranan tambahan berjaya dikemas kini.',
+        'message' => (string)__('userList_success_update_roles'),
         'added' => $toAdd,
         'removed' => $toRemove
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     error_log('[user-extra-roles] Error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['error' => true, 'message' => 'Ralat sistem semasa mengemas kini peranan.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['error' => true, 'message' => (string)__('userList_ajax_roles_update_failed')], JSON_UNESCAPED_UNICODE);
 }

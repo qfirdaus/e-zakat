@@ -1,0 +1,18 @@
+{
+    "km": 30.17,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.2200465,
+        "lon": 101.6414749,
+        "display_name": "Jalan Metro Perdana Barat, Taman Metropolitan Kepong, Kepong, Kuala Lumpur, 52100, Malaysia",
+        "matched_query": "Jalan Metro Perdana Barat, Taman Metropolitan Kepong, 52100, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:35:16+00:00"
+}

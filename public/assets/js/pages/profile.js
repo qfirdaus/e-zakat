@@ -6,6 +6,7 @@
   const I18N = pageConfig.i18n || {};
   const URLS = pageConfig.urls || {};
   const DT = pageConfig.datatables || {};
+  const PERMISSIONS = pageConfig.permissions || {};
 
   const ProfilePage = {
     loginActivityDT: null,
@@ -87,6 +88,19 @@
       setTimeout(() => {
         toast.classList.remove('show');
       }, CONFIG.TOAST_DURATION || 2500);
+    },
+
+    showMetadataForbiddenAlert: async function () {
+      if (window.Swal && typeof Swal.fire === 'function') {
+        await Swal.fire({
+          icon: 'warning',
+          title: I18N.metadata_forbidden_title || 'Paparan Terhad',
+          text: I18N.metadata_forbidden_text || 'Metadata jejak audit hanya tersedia untuk semakan Super Admin.',
+          confirmButtonText: I18N.swal_ok || 'OK'
+        });
+        return;
+      }
+      this.toast(I18N.metadata_forbidden_text || 'Metadata jejak audit hanya tersedia untuk semakan Super Admin.', 'warning');
     },
 
     showLoading: function (selector) {
@@ -534,15 +548,43 @@
       const modalId = 'auditMetaDynamic-' + (eventId || Date.now());
       const prettyMeta = metaObj ? JSON.stringify(metaObj, null, 2) : '';
       const prettyCs = csObj ? JSON.stringify(csObj, null, 2) : '';
+      const metaFieldCount = metaObj && typeof metaObj === 'object' ? Object.keys(metaObj).length : 0;
+      const changeSetCount = Array.isArray(csObj) ? csObj.length : (csObj && typeof csObj === 'object' ? Object.keys(csObj).length : 0);
+      const changeFieldCount = (() => {
+        if (!csObj) return 0;
+        if (Array.isArray(csObj)) return csObj.length;
+        if (typeof csObj === 'object') return Object.keys(csObj).length;
+        return 0;
+      })();
 
       const modalHtml = `
         <div class="modal fade audit-meta-modal" id="${modalId}" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content">
               <div class="modal-header">
-                <div>
-                  <h5 class="modal-title mb-0">${this._escapeHtml(I18N.audit_title)}</h5>
-                  <div class="audit-subtitle">${this._escapeHtml(I18N.audit_event_id)}: ${this._escapeHtml(String(eventId || '—'))}</div>
+                <div class="audit-header-main">
+                  <div class="audit-header-icon">
+                    <i class="ri-file-search-line"></i>
+                  </div>
+                  <div class="audit-header-copy">
+                    <div class="audit-kicker">${this._escapeHtml(I18N.audit_tab_summary)}</div>
+                    <h5 class="modal-title mb-0">${this._escapeHtml(I18N.audit_title)}</h5>
+                    <div class="audit-subtitle">${this._escapeHtml(I18N.audit_event_id)}: ${this._escapeHtml(String(eventId || '—'))}</div>
+                  </div>
+                </div>
+                <div class="audit-header-stats">
+                  <div class="audit-mini-stat">
+                    <span class="audit-mini-stat-label">Meta</span>
+                    <strong>${this._escapeHtml(String(metaFieldCount))}</strong>
+                  </div>
+                  <div class="audit-mini-stat">
+                    <span class="audit-mini-stat-label">Set</span>
+                    <strong>${this._escapeHtml(String(changeSetCount))}</strong>
+                  </div>
+                  <div class="audit-mini-stat">
+                    <span class="audit-mini-stat-label">Diff</span>
+                    <strong>${this._escapeHtml(String(changeFieldCount))}</strong>
+                  </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="${this._escapeHtml(I18N.close_label)}"></button>
               </div>
@@ -552,21 +594,30 @@
                   <div class="col-lg-5 audit-left">
                     <div class="p-4">
                       <div class="audit-title">${this._escapeHtml(I18N.audit_summary_short)}</div>
-                      <div class="table-responsive">
-                        <table class="table table-sm audit-meta-table mb-0">
-                          <tbody>
-                            ${(() => {
-                              try {
-                                if (!metaObj || typeof metaObj !== 'object') return '<tr><td class="text-muted">' + this._escapeHtml(I18N.audit_no_info) + '</td><td>—</td></tr>';
-                                const keys = ['occurred_at', 'module', 'action', 'ip', 'user_agent', 'device', 'browser', 'user_id', 'nopek'];
-                                const present = keys.filter((k) => metaObj[k] !== undefined).concat(Object.keys(metaObj).filter((k) => keys.indexOf(k) === -1));
-                                return present.slice(0, 20).map((k) => '<tr><td>' + this._escapeHtml(k) + '</td><td>' + this._escapeHtml(String(metaObj[k] === undefined || metaObj[k] === null || metaObj[k] === '' ? '—' : (typeof metaObj[k] === 'object' ? JSON.stringify(metaObj[k]) : metaObj[k]))) + '</td></tr>').join('');
-                              } catch (e) {
-                                return '<tr><td class="text-muted">' + this._escapeHtml(I18N.data_label) + '</td><td>—</td></tr>';
-                              }
-                            })()}
-                          </tbody>
-                        </table>
+                      <div class="audit-summary-card audit-summary-shell mb-3">
+                        <div class="audit-summary-strip">
+                          <span class="audit-chip"><i class="ri-database-2-line"></i> ${this._escapeHtml(I18N.audit_extra_info)}</span>
+                          <span class="audit-chip"><i class="ri-loop-left-line"></i> ${this._escapeHtml(I18N.audit_tab_changes)}</span>
+                        </div>
+                        <div class="audit-summary-note">${this._escapeHtml(I18N.audit_no_info && metaFieldCount === 0 ? I18N.audit_no_info : I18N.audit_summary_short)}</div>
+                      </div>
+                      <div class="audit-summary-card">
+                        <div class="table-responsive">
+                          <table class="table table-sm audit-meta-table mb-0">
+                            <tbody>
+                              ${(() => {
+                                try {
+                                  if (!metaObj || typeof metaObj !== 'object') return '<tr><td class="text-muted">' + this._escapeHtml(I18N.audit_no_info) + '</td><td>—</td></tr>';
+                                  const keys = ['occurred_at', 'module', 'action', 'ip', 'user_agent', 'device', 'browser', 'user_id', 'nopek'];
+                                  const present = keys.filter((k) => metaObj[k] !== undefined).concat(Object.keys(metaObj).filter((k) => keys.indexOf(k) === -1));
+                                  return present.slice(0, 12).map((k) => '<tr><td>' + this._escapeHtml(k) + '</td><td>' + this._escapeHtml(String(metaObj[k] === undefined || metaObj[k] === null || metaObj[k] === '' ? '—' : (typeof metaObj[k] === 'object' ? JSON.stringify(metaObj[k]) : metaObj[k]))) + '</td></tr>').join('');
+                                } catch (e) {
+                                  return '<tr><td class="text-muted">' + this._escapeHtml(I18N.data_label) + '</td><td>—</td></tr>';
+                                }
+                              })()}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -584,6 +635,7 @@
                         <div class="tab-pane fade show active" id="${modalId}-summary" role="tabpanel">
                           <div class="audit-pane-card">
                             <div class="audit-title">${this._escapeHtml(I18N.audit_primary_changes)}</div>
+                            <div class="audit-section-subtitle">${this._escapeHtml(I18N.audit_tab_changes)}</div>
                             <div id="${modalId}-summary-changes">${renderChangeSetsTable(csObj)}</div>
                           </div>
                         </div>
@@ -603,6 +655,7 @@
                         <div class="tab-pane fade" id="${modalId}-extra" role="tabpanel">
                           <div class="audit-pane-card">
                             <div class="audit-title">${this._escapeHtml(I18N.audit_extra_info)}</div>
+                            <div class="audit-section-subtitle">${this._escapeHtml(I18N.audit_summary_short)}</div>
                             <div class="json-block">${this._escapeHtml(prettyMeta)}</div>
                           </div>
                         </div>
@@ -805,6 +858,10 @@
         if (!btn) return;
         e.preventDefault();
         e.stopPropagation();
+        if (!PERMISSIONS.canViewAuditMetadata) {
+          void this.showMetadataForbiddenAlert();
+          return;
+        }
         const payload = btn.getAttribute('data-event-payload') || '';
         if (!payload) return;
         try {
@@ -824,6 +881,10 @@
         if (!btn) return;
         e.preventDefault();
         e.stopPropagation();
+        if (!PERMISSIONS.canViewAuditMetadata) {
+          void this.showMetadataForbiddenAlert();
+          return;
+        }
         const eventId = btn.getAttribute('data-event-id') || btn.dataset.eventId || '';
         if (!eventId) return;
 

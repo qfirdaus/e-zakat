@@ -1,0 +1,18 @@
+{
+    "km": 1798.32,
+    "source": "straight",
+    "route_provider": "",
+    "route_points": [],
+    "home_coords": {
+        "lat": 4.2435206,
+        "lon": 117.885331,
+        "display_name": "Tawau, Bahagian Tawau, Sabah, 91007, Malaysia",
+        "matched_query": "Tawau, 91042, Sabah, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:27:51+00:00"
+}

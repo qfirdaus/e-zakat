@@ -1,0 +1,18 @@
+{
+    "km": 20.88,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9753484,
+        "lon": 101.8030997,
+        "display_name": "Awana Seri Mewah, Kajang 2, Majlis Perbandaran Kajang, Hulu Langat, Selangor, Malaysia",
+        "matched_query": "Awana Seri Mewah, Kajang, 43000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:51:59+00:00"
+}

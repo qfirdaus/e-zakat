@@ -1,0 +1,18 @@
+{
+    "km": 333.54,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 5.2180903,
+        "lon": 100.69166,
+        "display_name": "Selama (Perak), Selama, Larut, Matang dan Selama, Perak, 34100, Malaysia",
+        "matched_query": "43000, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:27:46+00:00"
+}

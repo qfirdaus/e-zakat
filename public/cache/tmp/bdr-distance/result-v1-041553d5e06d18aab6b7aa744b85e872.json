@@ -1,0 +1,18 @@
+{
+    "km": 78.14,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.5497085,
+        "lon": 101.811874,
+        "display_name": "Jalan Kerapu, Rumah Rakyat Kampung Paya, Kampung Paya, Port Dickson, Negeri Sembilan, 71000, Malaysia",
+        "matched_query": "Jalan Kerapu, Port Dickson, 71000, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:33:48+00:00"
+}

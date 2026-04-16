@@ -1,0 +1,18 @@
+{
+    "km": 16.09,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1398073,
+        "lon": 101.7531605,
+        "display_name": "Jalan Cempaka 11, Taman Cempaka, Pandan Indah, Ampang, Majlis Perbandaran Ampang Jaya, Hulu Langat, Selangor, 68000, Malaysia",
+        "matched_query": "No 1 Jalan Cempaka 11, Taman Cempaka, 68000 Ampang, Selangor, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:25:46+00:00"
+}

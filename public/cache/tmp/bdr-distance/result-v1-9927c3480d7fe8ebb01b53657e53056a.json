@@ -1,0 +1,18 @@
+{
+    "km": 28.5,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.2037519,
+        "lon": 101.7314038,
+        "display_name": "Seksyen 1, Wangsa Maju, Kuala Lumpur, Malaysia",
+        "matched_query": "1-201, Seksyen 1, Wangsa Maju, 53300, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:41:30+00:00"
+}

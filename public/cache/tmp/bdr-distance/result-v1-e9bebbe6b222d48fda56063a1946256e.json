@@ -1,0 +1,18 @@
+{
+    "km": 70.08,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.3783939,
+        "lon": 101.3976001,
+        "display_name": "Jalan Sri Pelangi 1/2, Taman Pancaran, Bestari Jaya, Kuala Selangor, Selangor, 45600, Malaysia",
+        "matched_query": "Jalan Sri Pelangi 1/2, 45600 Bestari Jaya, Selangor, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:12:24+00:00"
+}

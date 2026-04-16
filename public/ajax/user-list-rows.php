@@ -54,7 +54,7 @@ try {
 
     if (!function_exists('normalize_identity_value')) {
         function normalize_identity_value(?string $value): string {
-            return str_replace('-', '', trim((string)$value));
+            return normalizeIdentityValue($value);
         }
     }
 
@@ -127,6 +127,8 @@ try {
             $f_flag  = (int)($u['f_flag'] ?? 1);
             $f_nopekerja = (string)($u['f_nopekerja'] ?? '');
             $avatarUrl = $userModel->resolveAvatarUrl($u);
+            $isAutoProvisioned = (int)($u['f_isAutoProvisioned'] ?? 0) === 1;
+            $identitySource = strtoupper(trim((string)($u['f_identitySource'] ?? '')));
             $isCurrentLoggedInUser = is_current_logged_in_user_target(
                 $userID,
                 $stafID,
@@ -135,8 +137,10 @@ try {
                 $currentUserStafIdNormalized,
                 $currentUserNoPekerjaNormalized
             );
-            $canEditGroup = $isADM_SA;
-            $canDeleteUser = $isADM_SA && !$isCurrentLoggedInUser;
+            $isProtectedAccount = isProtectedStaffAccount($stafID);
+            $canManageProtectedSelf = canSelfManageProtectedStaffAccount($stafID);
+            $canEditGroup = $isADM_SA && (!$isProtectedAccount || $canManageProtectedSelf);
+            $canDeleteUser = $isADM_SA && !$isCurrentLoggedInUser && !$isProtectedAccount;
             
             $style = prestasi_group_ui_resolve($groupUiMaps, $gId, $gKod);
             $badgeClass = (string)($style['badgeClass'] ?? 'bg-secondary');
@@ -153,6 +157,8 @@ try {
                 'f_handphone' => $phone,
                 'f_nokp' => $nokp,
                 'f_categoryUser' => (string)($u['f_categoryUser'] ?? ''),
+                'f_isAutoProvisioned' => $isAutoProvisioned ? 1 : 0,
+                'f_identitySource' => $identitySource,
                 'f_namajabatan' => $jabatan,
                 'f_jawatan' => $jawatan,
                 'f_groupID' => $gId,
@@ -167,6 +173,7 @@ try {
                 'f_nopekerja' => $f_nopekerja,
                 'avatarUrl' => $avatarUrl,
                 'is_current_logged_in_user' => $isCurrentLoggedInUser,
+                'is_protected_account' => $isProtectedAccount,
                 'can_edit_group' => $canEditGroup,
                 'can_delete_user' => $canDeleteUser
             ];

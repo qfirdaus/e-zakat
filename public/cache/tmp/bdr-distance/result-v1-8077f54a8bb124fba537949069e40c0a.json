@@ -1,0 +1,18 @@
+{
+    "km": 30.19,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9636229,
+        "lon": 101.5458272,
+        "display_name": "Jalan Tanjung Penawar 30/127, Seksyen 30, Shah Alam, Klang, Selangor, 40460, Malaysia",
+        "matched_query": "Jalan Tanjung Penawar 30/127, Seksyen 30 Shah Alam, 40460, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:58:28+00:00"
+}

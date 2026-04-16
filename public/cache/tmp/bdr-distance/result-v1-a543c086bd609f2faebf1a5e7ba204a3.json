@@ -1,0 +1,18 @@
+{
+    "km": 152.47,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 4.1013085,
+        "lon": 101.2893053,
+        "display_name": "Jalan Impian, Kampung Baru Bidor, Taman Batang Padang, Bidor, Batang Padang, Perak, 35500, Malaysia",
+        "matched_query": "Jalan Impian Jaya 4, Taman Impian Jaya, 43000, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:13:04+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 263.26,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.7568625,
+        "lon": 103.3056811,
+        "display_name": "Lorong Pinggiran Putra 2/82, Kampung Pak Mahat, Kuantan, Pahang, 25100, Malaysia",
+        "matched_query": "Lorong 2/37, Kuantan, 25100, Pahang, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:00:22+00:00"
+}

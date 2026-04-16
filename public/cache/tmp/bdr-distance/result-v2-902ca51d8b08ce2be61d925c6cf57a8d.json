@@ -1,0 +1,19 @@
+{
+    "km": 5.41,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0295511,
+        "lon": 101.7472591,
+        "display_name": "Kampung Baru Balakong, Majlis Perbandaran Kajang, Hulu Langat, Selangor, Malaysia",
+        "matched_query": "Kampung Baru Balakong, 43300, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "match_quality": "OK",
+    "cached_at": "2026-04-04T02:28:49+00:00"
+}

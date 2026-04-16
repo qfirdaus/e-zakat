@@ -1,0 +1,18 @@
+{
+    "km": 1623.77,
+    "source": "straight",
+    "route_provider": "",
+    "route_points": [],
+    "home_coords": {
+        "lat": 5.9834413,
+        "lon": 116.0755243,
+        "display_name": "Jalan Jati, Kota Kinabalu, Bahagian Pantai Barat, Sabah, 88804, Malaysia",
+        "matched_query": "Jalan Jati 14, 71800, Sabah, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:39:56+00:00"
+}

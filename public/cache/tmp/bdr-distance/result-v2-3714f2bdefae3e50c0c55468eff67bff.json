@@ -1,0 +1,19 @@
+{
+    "km": 276.01,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 4.8168937,
+        "lon": 100.7026777,
+        "display_name": "Taman Palong Maju, Kampung Simpang, Taiping, Larut, Matang dan Selama, Perak, 34700, Malaysia",
+        "matched_query": "Lorong 2, Taman Palong Maju, Simpang, 34700, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "match_quality": "OK",
+    "cached_at": "2026-04-04T02:36:19+00:00"
+}

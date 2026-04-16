@@ -594,6 +594,7 @@ class TetapanSistemController {
         $_SESSION['theme.topbar'] = $topbar;
         $_SESSION['theme.menu']   = $sidebar;
         $_SESSION['theme.layout'] = $layout;
+        $_SESSION['theme.sidebar'] = $sidebar;
         $summaryLabels = $this->getThemeChangeSummary($oldTheme, $themeSetting);
         $summaryText = !empty($summaryLabels)
           ? sprintf(
@@ -1437,6 +1438,10 @@ class TetapanSistemController {
       'auth.login_enable_staf' => ['field' => 'auth_login_enable_staf', 'type' => 'bool'],
       'auth.login_enable_pelajar' => ['field' => 'auth_login_enable_pelajar', 'type' => 'bool'],
       'auth.login_enable_umum' => ['field' => 'auth_login_enable_umum', 'type' => 'bool'],
+      'auth.auto_provision_staf_sso' => ['field' => 'auth_auto_provision_staf_sso', 'type' => 'bool'],
+      'auth.auto_provision_pelajar_sso' => ['field' => 'auth_auto_provision_pelajar_sso', 'type' => 'bool'],
+      'auth.default_group_staff_code' => ['field' => 'auth_default_group_staff_code', 'type' => 'string'],
+      'auth.default_group_student_code' => ['field' => 'auth_default_group_student_code', 'type' => 'string'],
       'auth.password_min_length' => ['field' => 'auth_password_min_length', 'type' => 'int', 'min' => 8, 'max_value' => 128],
       'auth.password_expiry_days' => ['field' => 'auth_password_expiry_days', 'type' => 'int', 'min' => 1, 'max_value' => 365],
       'auth.password_history_count' => ['field' => 'auth_password_history_count', 'type' => 'int', 'min' => 0, 'max_value' => 24],
@@ -1497,6 +1502,10 @@ class TetapanSistemController {
       'auth.login_enable_staf' => $this->tr('config_auth_login_enable_staf', 'Enable Staff Login'),
       'auth.login_enable_pelajar' => $this->tr('config_auth_login_enable_pelajar', 'Enable Student Login'),
       'auth.login_enable_umum' => $this->tr('config_auth_login_enable_umum', 'Enable Public Login'),
+      'auth.auto_provision_staf_sso' => $this->tr('config_auth_auto_provision_staf_sso', 'Enable Staff SSO Auto Provision'),
+      'auth.auto_provision_pelajar_sso' => $this->tr('config_auth_auto_provision_pelajar_sso', 'Enable Student SSO Auto Provision'),
+      'auth.default_group_staff_code' => $this->tr('config_auth_default_group_staff_code', 'Default Staff Group Code'),
+      'auth.default_group_student_code' => $this->tr('config_auth_default_group_student_code', 'Default Student Group Code'),
       'auth.password_min_length' => $this->tr('config_auth_password_min_length', 'Minimum Password Length'),
       'auth.password_expiry_days' => $this->tr('config_auth_password_expiry_days', 'Password Expiry (Days)'),
       'auth.password_history_count' => $this->tr('config_auth_password_history_count', 'Password History Count'),
@@ -1634,6 +1643,10 @@ class TetapanSistemController {
       'auth.login_enable_staf' => auth_normalize_bool($data['auth.login_enable_staf'] ?? null, true) ? '1' : '0',
       'auth.login_enable_pelajar' => auth_normalize_bool($data['auth.login_enable_pelajar'] ?? null, true) ? '1' : '0',
       'auth.login_enable_umum' => auth_normalize_bool($data['auth.login_enable_umum'] ?? null, true) ? '1' : '0',
+      'auth.auto_provision_staf_sso' => auth_normalize_bool($data['auth.auto_provision_staf_sso'] ?? null, false) ? '1' : '0',
+      'auth.auto_provision_pelajar_sso' => auth_normalize_bool($data['auth.auto_provision_pelajar_sso'] ?? null, false) ? '1' : '0',
+      'auth.default_group_staff_code' => auth_normalize_group_code($data['auth.default_group_staff_code'] ?? null, 'ADM-STAF'),
+      'auth.default_group_student_code' => auth_normalize_group_code($data['auth.default_group_student_code'] ?? null, 'ADM-STUDENT'),
       'auth.password_min_length' => (string)auth_normalize_int($data['auth.password_min_length'] ?? null, 8, 8, 128),
       'auth.password_expiry_days' => (string)auth_normalize_int($data['auth.password_expiry_days'] ?? null, 90, 1, 365),
       'auth.password_history_count' => (string)auth_normalize_int($data['auth.password_history_count'] ?? null, 5, 0, 24),
@@ -1665,6 +1678,10 @@ class TetapanSistemController {
       'login_enable_staf' => $data['auth.login_enable_staf'] ?? null,
       'login_enable_pelajar' => $data['auth.login_enable_pelajar'] ?? null,
       'login_enable_umum' => $data['auth.login_enable_umum'] ?? null,
+      'auto_provision_staf_sso' => $data['auth.auto_provision_staf_sso'] ?? null,
+      'auto_provision_pelajar_sso' => $data['auth.auto_provision_pelajar_sso'] ?? null,
+      'default_group_staff_code' => $data['auth.default_group_staff_code'] ?? null,
+      'default_group_student_code' => $data['auth.default_group_student_code'] ?? null,
       'password_min_length' => $data['auth.password_min_length'] ?? null,
       'password_expiry_days' => $data['auth.password_expiry_days'] ?? null,
       'password_history_count' => $data['auth.password_history_count'] ?? null,
@@ -1691,6 +1708,7 @@ class TetapanSistemController {
   private function flattenAuthSettingsForComparison(array $settings): array {
     $sso = (array)($settings['sso'] ?? []);
     $hybrid = (array)($sso['hybrid'] ?? []);
+    $provisioning = (array)($settings['provisioning'] ?? []);
     $integration = (array)($settings['integration'] ?? []);
     $password = (array)($settings['password'] ?? []);
     $loginSecurity = (array)($settings['login_security'] ?? []);
@@ -1700,6 +1718,10 @@ class TetapanSistemController {
       'auth.login_enable_staf' => !empty($settings['categories']['staf']) ? '1' : '0',
       'auth.login_enable_pelajar' => !empty($settings['categories']['pelajar']) ? '1' : '0',
       'auth.login_enable_umum' => !empty($settings['categories']['umum']) ? '1' : '0',
+      'auth.auto_provision_staf_sso' => !empty($provisioning['staf_sso_enabled']) ? '1' : '0',
+      'auth.auto_provision_pelajar_sso' => !empty($provisioning['pelajar_sso_enabled']) ? '1' : '0',
+      'auth.default_group_staff_code' => (string)($provisioning['default_group_staff_code'] ?? 'ADM-STAF'),
+      'auth.default_group_student_code' => (string)($provisioning['default_group_student_code'] ?? 'ADM-STUDENT'),
       'auth.password_min_length' => (string)($password['min_length'] ?? 8),
       'auth.password_expiry_days' => (string)($password['expiry_days'] ?? 90),
       'auth.password_history_count' => (string)($password['history_count'] ?? 5),

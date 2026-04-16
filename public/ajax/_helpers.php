@@ -99,6 +99,56 @@ function checkRateLimit(string $key, int $maxRequests = 30, int $windowSeconds =
 }
 
 /**
+ * Normalize identity values like staff ID / employee number for strict comparison.
+ */
+function normalizeIdentityValue(?string $value): string {
+    return preg_replace('/[^a-zA-Z0-9]/', '', strtoupper(trim((string)$value))) ?? '';
+}
+
+/**
+ * Determine whether the given staff ID belongs to a protected account.
+ */
+function isProtectedStaffAccount(?string $stafID): bool {
+    $normalized = normalizeIdentityValue($stafID);
+    if ($normalized === '') {
+        return false;
+    }
+
+    $protectedStaffIds = defined('PRESTASI_PROTECTED_STAFF_IDS') && is_array(PRESTASI_PROTECTED_STAFF_IDS)
+        ? PRESTASI_PROTECTED_STAFF_IDS
+        : [];
+
+    foreach ($protectedStaffIds as $candidate) {
+        if ($normalized === normalizeIdentityValue((string)$candidate)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Normalized current session staff ID.
+ */
+function currentSessionStaffIdNormalized(): string {
+    return normalizeIdentityValue((string)($_SESSION['f_stafID'] ?? $_SESSION['user']['f_stafID'] ?? ''));
+}
+
+/**
+ * Whether the current session is the same protected account being targeted.
+ */
+function canSelfManageProtectedStaffAccount(?string $targetStafID): bool {
+    if (!isProtectedStaffAccount($targetStafID)) {
+        return false;
+    }
+
+    $current = currentSessionStaffIdNormalized();
+    $target = normalizeIdentityValue($targetStafID);
+
+    return $current !== '' && $target !== '' && $current === $target;
+}
+
+/**
  * Check if user has permission to manage groups
  * SECURITY CRITICAL – DO NOT MODIFY: UI gating helper for group management
  * @param PDO $pdo Database connection
@@ -218,9 +268,15 @@ function clearGroupUiCaches(?int $groupId = null): void {
     if ($groupId !== null && $groupId > 0) {
         GroupDataCache::clear('group_perms_' . $groupId);
         GroupDataCache::clear('group_access_' . $groupId);
+        unset($_SESSION['page_access_map_' . $groupId]);
     } else {
         GroupDataCache::clear('group_perms_');
         GroupDataCache::clear('group_access_');
+        foreach (array_keys($_SESSION) as $key) {
+            if (str_starts_with((string)$key, 'page_access_map_')) {
+                unset($_SESSION[$key]);
+            }
+        }
     }
 }
 

@@ -1,0 +1,18 @@
+{
+    "km": 31.02,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.2224795,
+        "lon": 101.7174447,
+        "display_name": "Jalan Delima, Taman Perwira 1, Gombak, Majlis Perbandaran Selayang, Gombak, Selangor, 53100, Malaysia",
+        "matched_query": "E118 Jalan Delima, Taman Perwira, Gombak, 53100, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:22:13+00:00"
+}

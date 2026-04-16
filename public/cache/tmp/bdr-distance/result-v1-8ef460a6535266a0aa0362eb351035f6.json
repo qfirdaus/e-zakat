@@ -1,0 +1,18 @@
+{
+    "km": 38.98,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.8456674,
+        "lon": 101.7801058,
+        "display_name": "Universiti Sains Islam Malaysia, Jalan BBN 9/1A, Seremban, Negeri Sembilan, 77188, Malaysia",
+        "matched_query": "62300, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:11:34+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 28.35,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9202372,
+        "lon": 101.8105087,
+        "display_name": "Jalan Serene 6/3, Serene Heights, Kampung Batu Tiga, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43600, Malaysia",
+        "matched_query": "No:1, Jalan Serene 6/3, Serene Heights, 43500 Selangor, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:19:38+00:00"
+}

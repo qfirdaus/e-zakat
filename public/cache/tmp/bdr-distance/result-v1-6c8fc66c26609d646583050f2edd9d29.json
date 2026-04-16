@@ -1,0 +1,18 @@
+{
+    "km": 13.13,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0749239,
+        "lon": 101.7179307,
+        "display_name": "Tasik Heights Apartment (Opposite), Jalan Tasik Selatan 31, Bandar Tasik Selatan, Sungai Besi, Kuala Lumpur, 57000, Malaysia",
+        "matched_query": "Tasik Heights Apartment, Bandar Tasik Selatan, 57000, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:31:16+00:00"
+}

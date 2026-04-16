@@ -1,0 +1,19 @@
+{
+    "km": 25.98,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.179767,
+        "lon": 101.7396544,
+        "display_name": "Jalan Setiawangsa 2A, Taman Setiawangsa, Setiawangsa, Kuala Lumpur, 54200, Malaysia",
+        "matched_query": "5, Jalan Setiawangsa 2A, Taman Setiawangsa, 54200, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "match_quality": "OK",
+    "cached_at": "2026-04-04T02:32:24+00:00"
+}

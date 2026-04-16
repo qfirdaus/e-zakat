@@ -1,0 +1,18 @@
+{
+    "km": 326.31,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 1.3579299,
+        "lon": 103.555292,
+        "display_name": "Flextronics Shah Alam Sdn. Bhd., Jalan Tanjung Kupang, Kampung Tanjong Adang, Iskandar Puteri, Johor Bahru, Johor, 81550, Malaysia",
+        "matched_query": "Shah Alam, 40150, Johor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:26:00+00:00"
+}

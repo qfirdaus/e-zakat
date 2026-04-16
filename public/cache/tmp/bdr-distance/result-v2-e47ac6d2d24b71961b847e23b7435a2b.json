@@ -1,0 +1,19 @@
+{
+    "km": 23.22,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.1627747,
+        "lon": 101.7387827,
+        "display_name": "Perwakilan Perdagangan Persekutuan Russi Di Malaysia, 5, Jalan Nipah, Ampang Hilir, Kampung Datuk Keramat, Ulu Kelang, Kuala Lumpur, Gombak, Selangor, 50538, Malaysia",
+        "matched_query": "Kuala Lumpur, 51000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "match_quality": "OK",
+    "cached_at": "2026-04-04T02:30:54+00:00"
+}

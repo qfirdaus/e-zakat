@@ -1,0 +1,18 @@
+{
+    "km": 224.69,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 4.6766912,
+        "lon": 101.1178757,
+        "display_name": "Taman Klebang Jaya, Klebang, Majlis Bandaraya Ipoh, Kinta, Perak, Malaysia",
+        "matched_query": "Taman Klebang Jaya, 31200 Ipoh, Perak, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T20:53:53+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 47.37,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.7394999,
+        "lon": 101.8858885,
+        "display_name": "Bandar Ainsdale, Lebuhraya Utara–Selatan, Seremban, Negeri Sembilan, 71900, Malaysia",
+        "matched_query": "Bandar Seremban Selatan, 71450, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:36:55+00:00"
+}

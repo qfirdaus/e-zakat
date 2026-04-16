@@ -1,0 +1,18 @@
+{
+    "km": 5.03,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.0540625,
+        "lon": 101.7388209,
+        "display_name": "Jalan Damai Perdana 6/1F, Bandar Damai Perdana, Cheras, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 56000, Malaysia",
+        "matched_query": "Jalan Damai Perdana 1/4J, Bandar Damai Perdana, 56000 Kuala Lumpur, Wilayah Persekutuan Kuala Lumpur, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-04T00:15:18+00:00"
+}

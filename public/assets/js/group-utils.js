@@ -8,8 +8,10 @@
 const GroupUtils = {
   // Base path projek yang betul di semua environment
   getBasePath() {
-    return document.querySelector('meta[name="base-path"]')?.getAttribute('content') ||
+    const rawBase = document.querySelector('meta[name="base-path"]')?.getAttribute('content') ||
            (location.pathname.replace(/\/(pages|ajax)(\/.*)?$/, '') || '');
+    const base = String(rawBase || '').replace(/\/+$/, '');
+    return base === '/' ? '' : base;
   },
   
   getAjaxBase() {
@@ -47,7 +49,14 @@ const GroupUtils = {
   
   // Safe JSON fetch
   async fetchJSONSafe(url, opts) {
-    const r = await fetch(url, Object.assign({ headers: { 'Accept': 'application/json' } }, opts || {}));
+    const requestOpts = Object.assign({}, opts || {});
+    requestOpts.headers = Object.assign(
+      { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      (opts && opts.headers) || {}
+    );
+    requestOpts.credentials = requestOpts.credentials || 'same-origin';
+
+    const r = await fetch(url, requestOpts);
     const txt = await r.text();
     try {
       return JSON.parse(txt);
@@ -112,7 +121,6 @@ document.addEventListener('show.bs.modal', function (e) {
 
 // Export untuk global access
 window.GroupUtils = GroupUtils;
-
 
 
 

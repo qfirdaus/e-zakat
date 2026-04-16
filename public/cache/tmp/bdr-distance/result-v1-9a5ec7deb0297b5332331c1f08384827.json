@@ -1,0 +1,18 @@
+{
+    "km": 30.9,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.9130855,
+        "lon": 101.8690781,
+        "display_name": "Kelab Rukun Tetangga Bandar Tasik Kesuma Fasa 4, Jalan Kesuma 4C, Bandar Tasik Kesuma Fasa 4, Bandar Tasik Kesuma, Kampung Rinching Hulu, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43700, Malaysia",
+        "matched_query": "Bandar Tasik Kesuma, Beranang, 43700, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T22:24:31+00:00"
+}

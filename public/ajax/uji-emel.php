@@ -10,6 +10,11 @@ if (!function_exists('tetapan_uji_emel_debug')) {
             return;
         }
 
+        $enabled = $_ENV['TETAPAN_AJAX_DEBUG_LOG_ENABLED'] ?? getenv('TETAPAN_AJAX_DEBUG_LOG_ENABLED');
+        if (!is_string($enabled) || !in_array(strtolower(trim($enabled)), ['1', 'true', 'yes', 'on'], true)) {
+            return;
+        }
+
         $logPath = __DIR__ . '/../log/tetapan-sistem-ajax-debug.log';
         $payload = array_merge([
             'timestamp' => date('c'),
@@ -19,7 +24,7 @@ if (!function_exists('tetapan_uji_emel_debug')) {
             'session_id' => session_id(),
             'login_id' => (string)($_SESSION['f_loginID'] ?? $_SESSION['user']['f_loginID'] ?? ''),
         ], $context);
-        @file_put_contents($logPath, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL, FILE_APPEND);
+        @file_put_contents($logPath, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL, FILE_APPEND | LOCK_EX);
     }
 }
 

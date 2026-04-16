@@ -10,6 +10,23 @@ require_once __DIR__ . '/../classes/User.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+if (!function_exists('role_switch_roles_trace_log')) {
+    function role_switch_roles_trace_log(string $message): void
+    {
+        $enabled = $_ENV['ACCESS_TRACE_LOG_ENABLED'] ?? getenv('ACCESS_TRACE_LOG_ENABLED');
+        if (!is_string($enabled) || !in_array(strtolower(trim($enabled)), ['1', 'true', 'yes', 'on'], true)) {
+            return;
+        }
+
+        $logDir = realpath(__DIR__ . '/../log') ?: (__DIR__ . '/../log');
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0777, true);
+        }
+        $traceFile = rtrim($logDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'access-trace.log';
+        @file_put_contents($traceFile, '[' . date('Y-m-d H:i:s') . '] ' . trim($message) . PHP_EOL, FILE_APPEND | LOCK_EX);
+    }
+}
+
 try {
     $pdo = Database::getInstance('mysql')->getConnection();
     $userModel = new User($pdo);
@@ -80,8 +97,23 @@ try {
         }, $roles),
     ];
 
+    role_switch_roles_trace_log(sprintf(
+        '[role_switch_roles] default_group=%d active_group=%d roles=%s login_id=%s staf_id=%s',
+        $defaultGroupId,
+        $activeGroupId,
+        json_encode(array_map(static function ($r) {
+            return [
+                'id' => (int)($r['f_groupID'] ?? 0),
+                'name' => (string)($r['f_groupName'] ?? ''),
+            ];
+        }, $roles), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        (string)($_SESSION['f_loginID'] ?? ''),
+        (string)($_SESSION['f_stafID'] ?? '')
+    ));
+
     echo json_encode($out, JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
+    role_switch_roles_trace_log('[role_switch_roles] exception ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => true, 'message' => 'Ralat pelayan.'], JSON_UNESCAPED_UNICODE);
 }

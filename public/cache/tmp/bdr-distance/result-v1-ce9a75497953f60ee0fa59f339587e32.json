@@ -1,0 +1,18 @@
+{
+    "km": 272.73,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 4.9797415,
+        "lon": 101.1783971,
+        "display_name": "Kampung Orang Asli Kajang, Kuala Kangsar, Perak, Malaysia",
+        "matched_query": "Kajang, 43000, Perak, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:57:50+00:00"
+}

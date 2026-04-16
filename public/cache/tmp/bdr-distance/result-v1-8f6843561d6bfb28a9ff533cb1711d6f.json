@@ -1,0 +1,18 @@
+{
+    "km": 333.91,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 1.5243958,
+        "lon": 103.8961898,
+        "display_name": "Universiti Kuala Lumpur (UNIKL), Jalan Alam Sitrin 12, Citrine Residenz, Bandar Seri Alam, Pasir Gudang, Johor Bahru, Johor, 81700, Malaysia",
+        "matched_query": "Kuala Lumpur, 54000, Johor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:24:58+00:00"
+}

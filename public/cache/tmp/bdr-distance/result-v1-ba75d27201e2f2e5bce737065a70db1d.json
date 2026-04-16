@@ -1,0 +1,18 @@
+{
+    "km": 28.89,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.887301,
+        "lon": 101.7970716,
+        "display_name": "Jalan BM 2/6, Bukit Mahkota, Bangi Lama, Majlis Perbandaran Kajang, Hulu Langat, Selangor, 43600, Malaysia",
+        "matched_query": "Jalan Bm 6/10B, Bukit Mahkota, 43000, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T23:17:52+00:00"
+}

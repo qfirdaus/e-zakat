@@ -96,6 +96,11 @@ final class SystemTemplateCreationService
             }
         }
 
+        $normalized['access_mode'] = trim((string)($input['access_mode'] ?? FileGenerationService::ACCESS_MODE_GROUP_MENU));
+        if (!in_array($normalized['access_mode'], [FileGenerationService::ACCESS_MODE_GROUP_MENU, FileGenerationService::ACCESS_MODE_SUPER_ADMIN_ONLY], true)) {
+            throw new InvalidArgumentException('Invalid template access mode.');
+        }
+
         return $normalized;
     }
 
@@ -110,6 +115,7 @@ final class SystemTemplateCreationService
             'page_title_ms' => $normalized['page_title_ms'],
             'page_title_en' => $normalized['page_title_en'],
             'page_icon' => $normalized['page_icon'],
+            'access_mode' => $normalized['access_mode'],
         ];
     }
 
@@ -156,6 +162,7 @@ final class SystemTemplateCreationService
                 'template_key' => $filesResult['template'] ?? $input['template_key'],
                 'template_version' => $filesResult['template_version'] ?? 1,
                 'page_icon' => $input['page_icon'],
+                'access_mode' => $input['access_mode'],
                 'files_created' => $filesResult['files_created'] ?? [],
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'status' => 'GENERATED',

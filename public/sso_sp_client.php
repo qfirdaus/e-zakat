@@ -26,7 +26,8 @@ $detect_host = (function (): string {
 })();
 $base_path = (function (): string {
     $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
-    $dir = rtrim(dirname($script), '/');
+    $dir = str_replace('\\', '/', dirname($script));
+    $dir = rtrim($dir, '/');
     // Drop trailing /pages or /ajax to anchor at app root
     $dir = preg_replace('#/(pages|ajax)(/.*)?$#', '', $dir);
     return ($dir === '/' ? '' : $dir);
@@ -148,6 +149,10 @@ define('SSO_SP_LOGINPAGE', str_replace(':/','://', trim(preg_replace('/\/+/', '/
 define('SSO_SP_DASHBOARD', str_replace(':/','://', trim(preg_replace('/\/+/', '/', $SSO_SP_DASHBOARD), '/')));
 date_default_timezone_set("Asia/Kuala_Lumpur");
 $SP_current_page = GET_CURRENT_PAGE_URI();
+function SSO_REDIRECT($url): void {
+	header('Location: ' . $url);
+	exit;
+}
 if (!defined('SSO_SP_CLIENT_NOAUTO')) {
 	if(!isset($_COOKIE['sso_cre'])) {
   //Check if have new SSO token to be publish to browser
@@ -162,13 +167,13 @@ if (!defined('SSO_SP_CLIENT_NOAUTO')) {
 			case "1": //normal
 				switch($API_REQUEST_RESULT['respond']){
 					case "0": //Invalid
-			  			header('Location: '.SSO_IDP_DOMAIN.'/?site_id='.$site_id); 
+			  			SSO_REDIRECT(SSO_IDP_DOMAIN.'/?site_id='.$site_id);
 					break;
 					case "1": //Valid					
 						//Set the sso_cre token to cookies
 						COOKIE_SETTER($_GET['new_sso_cre'],$API_REQUEST_RESULT['respond_user_packet']);
 						LOCAL_SESSION_HANDLER($API_REQUEST_RESULT['respond_user_packet']);
-	  					header('Location: '.SSO_SP_DASHBOARD); 
+	  					SSO_REDIRECT(SSO_SP_DASHBOARD);
 					break; 
 				}
 			break;
@@ -176,12 +181,12 @@ if (!defined('SSO_SP_CLIENT_NOAUTO')) {
 			echo "X";
 			break;
 			default:
-	  			header('Location: '.SSO_IDP_DOMAIN.'/?site_id='.$site_id); 			
+	  			SSO_REDIRECT(SSO_IDP_DOMAIN.'/?site_id='.$site_id);
 			break;
 		}
 	}else{
 	  //Go to IDP
-	  header('Location: '.SSO_IDP_DOMAIN.'/?site_id='.$site_id); 
+	  SSO_REDIRECT(SSO_IDP_DOMAIN.'/?site_id='.$site_id);
 	}
 }else{
 		$cookie = json_decode( $_COOKIE["sso_cre"] );
@@ -215,7 +220,7 @@ if (!defined('SSO_SP_CLIENT_NOAUTO')) {
 											COOKIE_SETTER($_GET['new_sso_cre'],$API_REQUEST_RESULT['respond_user_packet']);
 											if(SSO_SP_LOGINPAGE == $SP_current_page){
 												LOCAL_SESSION_HANDLER($API_REQUEST_RESULT['respond_user_packet']);						
-						  						header('Location: '.SSO_SP_DASHBOARD); 
+						  						SSO_REDIRECT(SSO_SP_DASHBOARD);
 											}	
 										break; 
 									}
@@ -224,18 +229,18 @@ if (!defined('SSO_SP_CLIENT_NOAUTO')) {
 								echo "X";
 								break;
 								default:
-						  			header('Location: '.SSO_IDP_DOMAIN.'/?site_id='.$site_id); 			
+						  			SSO_REDIRECT(SSO_IDP_DOMAIN.'/?site_id='.$site_id);
 								break;
 							}
 						}else{
-			  				header('Location: '.SSO_IDP_DOMAIN.'/?site_id='.$site_id); 
+			  				SSO_REDIRECT(SSO_IDP_DOMAIN.'/?site_id='.$site_id);
 						}
 					break;
 					case "1": //Valid
 						COOKIE_SETTER($cookie->sso_cre,$API_REQUEST_RESULT['respond_user_packet']);
 						if(SSO_SP_LOGINPAGE == $SP_current_page){
 							LOCAL_SESSION_HANDLER($API_REQUEST_RESULT['respond_user_packet']);	
-							header('Location: '.SSO_SP_DASHBOARD); 
+							SSO_REDIRECT(SSO_SP_DASHBOARD);
 						}	
 					break; 
 				}
@@ -244,11 +249,11 @@ if (!defined('SSO_SP_CLIENT_NOAUTO')) {
 				COOKIE_SETTER($API_REQUEST_RESULT['respond_new_token'],$API_REQUEST_RESULT['respond_user_packet']);
 				if(SSO_SP_LOGINPAGE == $SP_current_page){
 					LOCAL_SESSION_HANDLER($API_REQUEST_RESULT['respond_user_packet']);	
-					header('Location: '.SSO_SP_DASHBOARD); 
+					SSO_REDIRECT(SSO_SP_DASHBOARD);
 				}	
 			break;
 			default:
-	  			header('Location: '.SSO_IDP_DOMAIN.'/?site_id='.$site_id); 			
+	  			SSO_REDIRECT(SSO_IDP_DOMAIN.'/?site_id='.$site_id);
 			break;
 		}
 	}
@@ -283,13 +288,22 @@ function COOKIE_SETTER($sso_cre,$respond_user_packet){
 }
 
 function GET_CURRENT_PAGE_URI(){
-	$protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";  
-	$CurPageURL = $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];  
-	return str_replace(':/','://', trim(preg_replace('/\/+/', '/', strtok($CurPageURL, '?')), '/'));  
+	$forwardedProto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
+	$protoCandidate = trim(explode(',', (string)$forwardedProto)[0]);
+	if ($protoCandidate === 'https' || $protoCandidate === 'http') {
+		$protocol = $protoCandidate . '://';
+	} else {
+		$serverPort = (int)($_SERVER['SERVER_PORT'] ?? 80);
+		$protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') || $serverPort === 443) ? "https://" : "http://";
+	}
+	$host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+	$host = trim(explode(',', (string)$host)[0]);
+	$uri = strtok((string)($_SERVER['REQUEST_URI'] ?? '/'), '?');
+	return rtrim($protocol . $host . '/' . ltrim((string)$uri, '/'), '/');
 }
 
 function SSO_LOGOUT(){
-	header('Location: '.SSO_IDP_DOMAIN); 
+	SSO_REDIRECT(SSO_IDP_DOMAIN);
 }
 
 

@@ -1,0 +1,18 @@
+{
+    "km": 318.13,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 1.4778656,
+        "lon": 103.6128578,
+        "display_name": "Jalan Prisma 1, Rumah Iskandar Malaysia, Pulai, Iskandar Puteri, Johor Bahru, Johor, 79100, Malaysia",
+        "matched_query": "Jalan 671B, 60000, Johor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:26:55+00:00"
+}

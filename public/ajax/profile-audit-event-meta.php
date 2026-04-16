@@ -43,7 +43,7 @@ try {
         http_response_code(403);
         echo json_encode([
             'error' => 'forbidden',
-            'message' => 'Hanya Super Admin dibenarkan melihat metadata audit.'
+            'message' => __('profile_metadata_forbidden_text') ?: 'Metadata jejak audit hanya tersedia untuk semakan Super Admin.'
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

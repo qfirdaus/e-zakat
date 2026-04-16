@@ -1,0 +1,18 @@
+{
+    "km": 54.34,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.7043408,
+        "lon": 101.9048817,
+        "display_name": "Green Street Homes, Seremban 2, Seremban, Negeri Sembilan, Malaysia",
+        "matched_query": "Green Street Homes, 70300, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:10:38+00:00"
+}

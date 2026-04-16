@@ -1,0 +1,18 @@
+{
+    "km": 35.85,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 2.8467334,
+        "lon": 101.8060602,
+        "display_name": "PEI Malaysia Sdn. Bhd., 26, Nilai Impian, Nilai, Seremban, Negeri Sembilan, 71800, Malaysia",
+        "matched_query": "Nilai Impian, Nilai, 71800, Negeri Sembilan, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:09:54+00:00"
+}

@@ -1,0 +1,18 @@
+{
+    "km": 30.75,
+    "source": "route",
+    "route_provider": "osrm",
+    "route_points": [],
+    "home_coords": {
+        "lat": 3.2449309,
+        "lon": 101.6689776,
+        "display_name": "Pos Malaysia Selayang Baru, Jalan Besar Selayang Baru, Jalan Besar Selayang Baru, Kampung Lembah Indah, Kampung Selayang Baru, Batu Caves, Majlis Perbandaran Selayang, Gombak, Selangor, 68100, Malaysia",
+        "matched_query": "68100 Batu Caves Selangor, Selangor, Malaysia"
+    },
+    "office_coords": {
+        "lat": 3.052805,
+        "lon": 101.7233,
+        "display_name": "UNIVERSITI PERTAHANAN NASIONAL MALAYSIA, KEM SUNGAI BESI, 57000 KUALA LUMPUR, WILAYAH PERSEKUTUAN KUALA LUMPUR, MALAYSIA"
+    },
+    "cached_at": "2026-04-03T21:20:02+00:00"
+}
