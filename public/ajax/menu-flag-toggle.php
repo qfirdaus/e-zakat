@@ -13,14 +13,14 @@ header('Content-Type: application/json; charset=UTF-8');
 $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
 if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfHeader)) {
   http_response_code(403);
-  echo json_encode(['error' => true, 'message' => 'CSRF token tidak sah.'], JSON_UNESCAPED_UNICODE);
+  echo json_encode(['error' => true, 'message' => __('userGroup_csrf_invalid')], JSON_UNESCAPED_UNICODE);
   exit;
 }
 
 // Rate limiting: max 30 requests per 60 seconds
 if (!checkRateLimit('menu_flag_toggle', 30, 60)) {
   http_response_code(429);
-  echo json_encode(['error' => true, 'message' => 'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE);
+  echo json_encode(['error' => true, 'message' => __('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE);
   exit;
 }
 
@@ -28,7 +28,7 @@ if (!checkRateLimit('menu_flag_toggle', 30, 60)) {
 $pdo = Database::getInstance('mysql')->getConnection();
 if (!hasGroupManagePermission($pdo)) {
   http_response_code(403);
-  echo json_encode(['error' => true, 'message' => 'Anda tidak mempunyai kebenaran untuk mengubah status menu.'], JSON_UNESCAPED_UNICODE);
+  echo json_encode(['error' => true, 'message' => __('userGroup_menu_status_permission_denied')], JSON_UNESCAPED_UNICODE);
   exit;
 }
 
@@ -42,7 +42,7 @@ $flag   = ($flag === 1) ? 1 : 0;
 
 if ($menuID <= 0) {
   http_response_code(400);
-  echo json_encode(['error' => true, 'message' => 'ID menu tidak sah.']);
+  echo json_encode(['error' => true, 'message' => __('userGroup_menu_invalid_id')], JSON_UNESCAPED_UNICODE);
   exit;
 }
 
@@ -56,7 +56,7 @@ try {
   $oldData = $oldStmt->fetch(PDO::FETCH_ASSOC);
   if (!$oldData) {
     http_response_code(404);
-    echo json_encode(['error' => true, 'message' => 'Menu tidak ditemui.']);
+    echo json_encode(['error' => true, 'message' => __('userGroup_menu_not_found')], JSON_UNESCAPED_UNICODE);
     exit;
   }
   $oldFlag = (int)($oldData['f_flag'] ?? 0);
@@ -120,5 +120,5 @@ try {
   echo json_encode(['ok' => true, 'menuID' => $menuID, 'flag' => $flag], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
   http_response_code(500);
-  echo json_encode(['error' => true, 'message' => 'Gagal kemas kini: ' . $e->getMessage()]);
+  echo json_encode(['error' => true, 'message' => __('userGroup_server_error_prefix') . ' ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

@@ -113,7 +113,9 @@ function is_profile_empty(array $profile): bool {
 }
 
 // Initialize controller and load sidebar data
-$currentFile = basename($_SERVER['PHP_SELF'] ?? '');
+$currentFile = isset($currentFile) && is_string($currentFile) && $currentFile !== ''
+    ? basename($currentFile)
+    : basename($_SERVER['PHP_SELF'] ?? '');
 $sidebarController = new SidebarController();
 $sidebarController->loadSidebarData($currentFile);
 
@@ -285,6 +287,21 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
 .side-nav .sidebar-logout-icon:hover {
     opacity: 1;
 }
+.side-nav .side-nav-primary-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: calc(100% - 12px);
+    margin: 0 6px;
+    padding: var(--ct-menu-item-padding-y) calc(var(--ct-menu-item-padding-x) * 3) var(--ct-menu-item-padding-y) var(--ct-menu-item-padding-x);
+}
+.side-nav .side-nav-primary-link > i:first-child {
+    flex: 0 0 auto;
+}
+.side-nav .side-nav-primary-link > span {
+    flex: 1 1 auto;
+    padding-right: calc(var(--ct-menu-item-padding-x) * 0.6);
+}
 .side-nav .side-nav-toggle-btn {
     position: relative;
     display: flex;
@@ -411,7 +428,7 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
             <!-- Dashboard -->
             <li class="side-nav-title mt-1"><?= __('sidebar_main') ?></li>
             <li class="side-nav-item">
-                <a href="<?= base_path($defaultHome) ?>" class="side-nav-link">
+                <a href="<?= base_path($defaultHome) ?>" class="side-nav-link side-nav-primary-link">
                     <i class="ri-dashboard-fill"></i>
                     <span><?= __('sidebar_dashboard') ?></span>
                     <i class="ri-bar-chart-line sidebar-chart-icon" title="<?= __('sidebar_dashboard_stats') ?: 'Statistik' ?>"></i>
@@ -419,7 +436,7 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
             </li>
             <?php if (!empty($manualMenuUrl)): ?>
             <li class="side-nav-item">
-                <a href="<?= htmlspecialchars($manualMenuUrl, ENT_QUOTES, 'UTF-8') ?>" class="side-nav-link" target="_blank" rel="noopener">
+                <a href="<?= htmlspecialchars($manualMenuUrl, ENT_QUOTES, 'UTF-8') ?>" class="side-nav-link side-nav-primary-link" target="_blank" rel="noopener">
                     <i class="ri-book-open-line"></i>
                     <span><?= __('sidebar_user_manual') ?: 'Manual Pengguna' ?></span>
                     <i class="ri-external-link-line sidebar-manual-icon" title="<?= __('sidebar_user_manual') ?: 'Manual Pengguna' ?>"></i>
@@ -484,7 +501,7 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
             <!-- Kawalan Sistem -->
             <li class="side-nav-title mt-2"><?= __('sidebar_kawalan') ?></li>
             <li class="side-nav-item">
-                <a href="javascript:void(0);" onclick="confirmLogout();" class="side-nav-link text-danger">
+                <a href="javascript:void(0);" onclick="return confirmLogout(event);" data-no-loader class="side-nav-link side-nav-primary-link text-danger">
                     <i class="ri-logout-box-r-fill"></i>
                     <span><?= __('sidebar_keluar') ?></span>
                     <i class="ri-logout-box-r-line sidebar-logout-icon" title="<?= __('sidebar_keluar') ?>"></i>

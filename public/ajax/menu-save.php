@@ -10,20 +10,20 @@ header('Content-Type: application/json; charset=UTF-8');
 $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
 if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfHeader)) {
   http_response_code(403);
-  echo json_encode(['error' => true, 'message' => 'CSRF token tidak sah.'], JSON_UNESCAPED_UNICODE); exit;
+  echo json_encode(['error' => true, 'message' => __('userGroup_csrf_invalid')], JSON_UNESCAPED_UNICODE); exit;
 }
 
 // Rate limiting: max 20 requests per 60 seconds (write operation)
 if (!checkRateLimit('menu_save', 20, 60)) {
   http_response_code(429);
-  echo json_encode(['error' => true, 'message' => 'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE); exit;
+  echo json_encode(['error' => true, 'message' => __('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE); exit;
 }
 
 // Permission check
 $pdo = Database::getInstance('mysql')->getConnection();
 if (!hasGroupManagePermission($pdo)) {
   http_response_code(403);
-  echo json_encode(['error' => true, 'message' => 'Anda tidak mempunyai kebenaran untuk mengubah menu.'], JSON_UNESCAPED_UNICODE); exit;
+  echo json_encode(['error' => true, 'message' => __('userGroup_menu_update_permission_denied')], JSON_UNESCAPED_UNICODE); exit;
 }
 
 $raw = file_get_contents('php://input');
@@ -46,7 +46,7 @@ if (!in_array($domain, $allowedDomains, true)) {
 $showStaffOnly = $showStaffOnly === 1 ? 1 : 0;
 
 try {
-  if ($menuID <= 0 || $modulID <= 0 || $path === '') throw new Exception('Parameter tidak lengkap.');
+  if ($menuID <= 0 || $modulID <= 0 || $path === '') throw new Exception((string)__('userGroup_invalid_payload'));
 
   $pdo = Database::getInstance('mysql')->getConnection();
   $pdo->beginTransaction();
@@ -55,7 +55,7 @@ try {
   $curStmt = $pdo->prepare("SELECT f_menuID, f_modulID, f_order, f_path, f_flag, f_menuName_ms, f_menuName_en, COALESCE(f_domain,'SHARED') AS f_domain, COALESCE(f_show_staff_only,1) AS f_show_staff_only FROM tbl_m_menu WHERE f_menuID = ? FOR UPDATE");
   $curStmt->execute([$menuID]);
   $cur = $curStmt->fetch(PDO::FETCH_ASSOC);
-  if (!$cur) throw new Exception('Menu tidak ditemui.');
+  if (!$cur) throw new Exception((string)__('userGroup_menu_not_found'));
   
   // Store old values untuk audit
   $oldData = [
@@ -71,7 +71,7 @@ try {
 
   $modStmt = $pdo->prepare("SELECT f_modulID FROM tbl_m_modul WHERE f_modulID = ? LIMIT 1");
   $modStmt->execute([$modulID]);
-  if (!$modStmt->fetch(PDO::FETCH_ASSOC)) throw new Exception('Modul sasaran tidak ditemui.');
+  if (!$modStmt->fetch(PDO::FETCH_ASSOC)) throw new Exception((string)__('userGroup_target_module_not_found'));
 
   $oldModul = (int)$cur['f_modulID'];
   $oldOrder = (int)($cur['f_order'] ?? 0);
@@ -79,7 +79,7 @@ try {
   // Path unik dalam modul sasaran
   $dupe = $pdo->prepare("SELECT f_menuID FROM tbl_m_menu WHERE f_modulID = ? AND f_path = ? AND f_menuID <> ? LIMIT 1");
   $dupe->execute([$modulID, $path, $menuID]);
-  if ($dupe->fetch()) throw new Exception('Path telah digunakan dalam modul ini.');
+  if ($dupe->fetch()) throw new Exception((string)__('userGroup_menu_path_duplicate'));
 
   $newOrder = $oldOrder;
 
@@ -214,9 +214,9 @@ try {
   GroupDataCache::clear('group_access_');
   clearSidebarNavigationCaches();
   
-  echo json_encode(['ok'=>true, 'menuID'=>$menuID, 'modulID'=>$modulID, 'order'=>$newOrder], JSON_UNESCAPED_UNICODE);
+  echo json_encode(['ok'=>true, 'message'=>(string)__('userGroup_menu_save_success_update'), 'menuID'=>$menuID, 'modulID'=>$modulID, 'order'=>$newOrder], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
   if (!empty($pdo) && $pdo->inTransaction()) $pdo->rollBack();
   http_response_code(400);
-  echo json_encode(['error'=>true, 'message'=>$e->getMessage()]);
+  echo json_encode(['error'=>true, 'message'=>$e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

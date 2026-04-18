@@ -248,6 +248,70 @@ final class GroupDataCache {
 }
 
 /**
+ * Resolve the current active group name for UI payloads.
+ */
+function resolveActiveGroupNameForUi(PDO $pdo, ?int $groupId = null): string {
+    $groupId = $groupId ?? (int)($_SESSION['group_active_id'] ?? 0);
+    if ($groupId <= 0) {
+        return '';
+    }
+
+    try {
+        $stmt = $pdo->prepare("SELECT f_groupName FROM tbl_m_group WHERE f_groupID = :gid LIMIT 1");
+        $stmt->execute([':gid' => $groupId]);
+        return (string)($stmt->fetchColumn() ?: '');
+    } catch (Throwable $e) {
+        error_log('[resolveActiveGroupNameForUi] ' . $e->getMessage());
+        return '';
+    }
+}
+
+/**
+ * Render sidebar HTML fragment for access UI updates.
+ */
+function renderSidebarHtmlFragment(string $currentFile): string {
+    ob_start();
+    include __DIR__ . '/../includes/sidebar.php';
+    return (string)ob_get_clean();
+}
+
+/**
+ * Build a standardized backend UI payload for access-related updates.
+ *
+ * @param array<string,mixed> $options
+ * @return array<string,mixed>
+ */
+function buildAccessUiPayload(PDO $pdo, array $options = []): array {
+    $activeGroupId = (int)($options['activeGroupId'] ?? $_SESSION['group_active_id'] ?? 0);
+    $roleName = (string)($options['roleName'] ?? resolveActiveGroupNameForUi($pdo, $activeGroupId));
+    $currentPagePath = (string)($options['currentPagePath'] ?? '');
+    $currentPageAllowed = $options['currentPageAllowed'] ?? null;
+    $redirectUrl = $options['redirectUrl'] ?? null;
+    $sidebarHtml = null;
+
+    if (!empty($options['includeSidebar'])) {
+        $currentFile = (string)($options['currentFile'] ?? basename($_SERVER['PHP_SELF'] ?? ''));
+        $sidebarHtml = renderSidebarHtmlFragment($currentFile);
+    }
+
+    return [
+        'activeGroupId' => $activeGroupId,
+        'role' => [
+            'id' => $activeGroupId,
+            'name' => $roleName,
+        ],
+        'currentPage' => [
+            'path' => $currentPagePath,
+            'allowed' => is_bool($currentPageAllowed) ? $currentPageAllowed : null,
+            'redirectUrl' => $redirectUrl,
+        ],
+        'sidebar' => [
+            'html' => $sidebarHtml,
+        ],
+    ];
+}
+
+/**
  * Clear caches that can affect group UI/style resolution.
  * - GroupDataCache (permissions/access)
  * - User list session cache key used by pages/senarai-pengguna.php

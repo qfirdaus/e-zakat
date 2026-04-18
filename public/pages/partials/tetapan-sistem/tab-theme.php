@@ -279,7 +279,7 @@ $themeSections = [
                   <div class="text-muted small">
                     <i class="ri-palette-line me-1"></i> <?= __('config_tab_tema_actions_note') ?? 'Simpan hanya selepas kombinasi layout, topbar, dan sidebar benar-benar sesuai.' ?>
                   </div>
-                  <button type="button" class="btn btn-primary px-4" id="btn-simpan-tema" onclick="return window.__tetapanAjaxSubmit(event, document.getElementById('form-tema-aktif'), 'btn-simpan-tema');">
+                  <button type="submit" class="btn btn-primary px-4" id="btn-simpan-tema">
                     <i class="ri-save-3-line me-2"></i> <?= __('config_tab_db_simpan_tetapan_tema') ?? 'Simpan Tetapan Tema' ?>
                   </button>
                 </div>

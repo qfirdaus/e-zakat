@@ -192,28 +192,28 @@ $systemVersion = app_current_version();
  * @param {string} [confirmText] - Text for the confirm button (default: logout alert title)
  * @param {string|null} [redirectUrl] - URL to redirect to on confirm (optional)
  * @param {Function|null} [onConfirm] - Callback function to execute on confirm (optional)
- * @returns {void}
+ * @returns {boolean}
  */
 function set_confirm(message, confirmText = <?= json_encode(__('logout_alert_title')) ?>, redirectUrl = null, onConfirm = null) {
   // Input validation
   if (typeof message !== 'string' || message.trim() === '') {
     console.error('[Footer] set_confirm: message must be a non-empty string');
-    return;
+    return false;
   }
   
   if (confirmText !== null && typeof confirmText !== 'string') {
     console.error('[Footer] set_confirm: confirmText must be a string or null');
-    return;
+    return false;
   }
   
   if (redirectUrl !== null && typeof redirectUrl !== 'string') {
     console.error('[Footer] set_confirm: redirectUrl must be a string or null');
-    return;
+    return false;
   }
   
   if (onConfirm !== null && typeof onConfirm !== 'function') {
     console.error('[Footer] set_confirm: onConfirm must be a function or null');
-    return;
+    return false;
   }
   
   const run = () => {
@@ -261,6 +261,8 @@ function set_confirm(message, confirmText = <?= json_encode(__('logout_alert_tit
   } else {
     run();
   }
+
+  return false;
 }
 
 /**
@@ -268,9 +270,17 @@ function set_confirm(message, confirmText = <?= json_encode(__('logout_alert_tit
  * 
  * Displays a confirmation dialog before logging out.
  * 
- * @returns {void}
+ * @param {Event|undefined} event
+ * @returns {boolean}
  */
-function confirmLogout() {
+function confirmLogout(event) {
+  if (event && typeof event.preventDefault === 'function') {
+    event.preventDefault();
+  }
+  if (event && typeof event.stopPropagation === 'function') {
+    event.stopPropagation();
+  }
+
   return set_confirm(
     <?= json_encode(__('logout_alert_text')) ?>,
     <?= json_encode(__('logout_alert_yes')) ?>,

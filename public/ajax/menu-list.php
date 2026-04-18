@@ -10,13 +10,13 @@ require_once __DIR__ . '/../classes/Database.php';
 try {
   if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
-    echo json_encode(['error'=>true,'message'=>'Method not allowed'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true,'message'=>(string)__('userGroup_method_not_allowed')], JSON_UNESCAPED_UNICODE); exit;
   }
   
   // Rate limiting: max 30 requests per 60 seconds (read operation)
   if (!checkRateLimit('menu_list', 30, 60)) {
     http_response_code(429);
-    echo json_encode(['error'=>true,'message'=>'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true,'message'=>(string)__('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE); exit;
   }
   
   // Check cache (10 min TTL untuk menu list - lebih kerap berubah)
@@ -70,5 +70,5 @@ try {
   echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
   http_response_code(500);
-  echo json_encode(['error'=>true,'message'=>$e->getMessage()], JSON_UNESCAPED_UNICODE);
+  echo json_encode(['error'=>true,'message'=>(string)__('userGroup_server_error_prefix') . ' ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

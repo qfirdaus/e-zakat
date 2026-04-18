@@ -11,8 +11,6 @@ define('ACCESS_POLICY_CONSTANTS_INCLUDED', true);
  */
 if (!defined('ACCESS_POLICY_PUBLIC_PAGE_ALLOWLIST')) {
     define('ACCESS_POLICY_PUBLIC_PAGE_ALLOWLIST', [
-        'pages/bdr-daily-report-print.php',
-        'pages/bdr-notification-confirm.php',
         'pages/dashboard.php',
         'pages/profile.php',
         'pages/soalan-lazim.php',
@@ -28,11 +26,8 @@ if (!defined('ACCESS_POLICY_SUPER_ADMIN_ONLY_PAGES')) {
         'pages/access.php',
         'pages/audit-center.php',
         'pages/carian-pelajar.php',
-        'pages/data-pelajar-tab-test.php',
-        'pages/data-staf-test.php',
         'pages/kumpulan-pengguna.php',
         'pages/senarai-pengguna.php',
-        'pages/tab-management-test.php',
         'pages/template-emel.php',
         'pages/template-generator.php',
         'pages/tetapan-sistem.php',
@@ -75,7 +70,6 @@ if (!defined('ACCESS_POLICY_SUPER_ADMIN_ONLY_AJAX')) {
         'ajax/audit-center-export.php',
         'ajax/audit-center-meta.php',
         'ajax/audit-center-panel.php',
-        'ajax/clear-dashcache.php',
         'ajax/email-template-preview.php',
         'ajax/email-template-test-send.php',
         'ajax/group-access.php',
@@ -129,6 +123,5 @@ if (!defined('ACCESS_POLICY_CUSTOM_GUARD_AJAX')) {
  */
 if (!defined('ACCESS_POLICY_AUTHENTICATED_ACTIONS')) {
     define('ACCESS_POLICY_AUTHENTICATED_ACTIONS', [
-        'actions/send_reminder.php',
     ]);
 }

@@ -159,7 +159,7 @@ const ModuleAccess = {
           html += '<div>' + GroupUtils.esc(me.nama || me.menuName || me.kod || '-') + '</div>';
           if (me.path || me.f_path) html += '<div class="menu-path">' + GroupUtils.esc(me.path || me.f_path) + '</div>';
           html += '</div>';
-          html += '<div class="btn-group reorder-group" role="group" aria-label="Reorder">';
+          html += '<div class="btn-group reorder-group" role="group" aria-label="' + GroupUtils.esc(this.T.reorder_label || this.T.col_reorder || '') + '">';
           html += '<button type="button" class="btn btn-outline-primary btn-sm btn-move-up" title="' + GroupUtils.esc(this.T.move_up) + '"><i class="ri-arrow-up-line"></i></button>';
           html += '<button type="button" class="btn btn-outline-primary btn-sm btn-move-down" title="' + GroupUtils.esc(this.T.move_down) + '"><i class="ri-arrow-down-line"></i></button>';
           html += '</div>';

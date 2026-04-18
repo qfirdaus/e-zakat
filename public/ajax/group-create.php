@@ -89,18 +89,18 @@ try {
   $csrf = $headers['X-CSRF-Token'] ?? $headers['x-csrf-token'] ?? '';
   if (!$csrf || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf)) {
     http_response_code(400);
-    echo json_encode(['error'=>true,'message'=>'CSRF token tidak sah'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true,'message'=>(string)__('userGroup_csrf_invalid')], JSON_UNESCAPED_UNICODE); exit;
   }
 
   if (!checkRateLimit('group_create', 10, 60)) {
     http_response_code(429);
-    echo json_encode(['error'=>true,'message'=>'Terlalu banyak permintaan'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true,'message'=>(string)__('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE); exit;
   }
 
   $db = Database::getInstance('mysql')->getConnection();
   if (!hasGroupManagePermission($db)) {
     http_response_code(403);
-    echo json_encode(['error'=>true,'message'=>'Anda tidak mempunyai kebenaran untuk menambah kumpulan'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_create_permission_denied')], JSON_UNESCAPED_UNICODE); exit;
   }
 
   $json = json_decode(file_get_contents('php://input'), true) ?: [];
@@ -130,7 +130,7 @@ try {
 
   if ($kod === '' || $nama === '' || $categoryUser === '') {
     http_response_code(422);
-    echo json_encode(['error'=>true,'message'=>'Kod, Nama dan Kategori Kumpulan diperlukan'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_create_required')], JSON_UNESCAPED_UNICODE); exit;
   }
 
   // Server-safe fallback:
@@ -144,7 +144,7 @@ try {
       $groupID = (int)($rowsByKod[0]['f_groupID'] ?? 0);
     } elseif (count($rowsByKod) > 1) {
       http_response_code(409);
-      echo json_encode(['error'=>true,'message'=>'Kod Kumpulan bertindan. Sila hubungi pentadbir sistem.'], JSON_UNESCAPED_UNICODE); exit;
+      echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_code_conflict')], JSON_UNESCAPED_UNICODE); exit;
     }
   }
 
@@ -159,7 +159,7 @@ try {
       $dup->execute([':kod' => $kod, ':gid' => $groupID]);
       if ($dup->fetchColumn()) {
         http_response_code(409);
-        echo json_encode(['error'=>true,'message'=>'Kod Kumpulan sudah wujud'], JSON_UNESCAPED_UNICODE); exit;
+        echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_code_duplicate')], JSON_UNESCAPED_UNICODE); exit;
       }
 
       $stmt = $db->prepare("
@@ -200,7 +200,7 @@ try {
   } catch (PDOException $e) {
     if ($e->getCode() === '23000') {
       http_response_code(409);
-      echo json_encode(['error'=>true,'message'=>'Kod Kumpulan sudah wujud'], JSON_UNESCAPED_UNICODE); exit;
+      echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_code_duplicate')], JSON_UNESCAPED_UNICODE); exit;
     }
     throw $e;
   }
@@ -262,5 +262,5 @@ try {
 
 } catch (Throwable $e) {
   http_response_code(500);
-  echo json_encode(['error'=>true,'message'=>'Ralat server: '.$e->getMessage()], JSON_UNESCAPED_UNICODE);
+  echo json_encode(['error'=>true,'message'=>(string)__('userGroup_server_error_prefix') . ' ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

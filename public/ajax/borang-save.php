@@ -1,0 +1,111 @@
+<?php
+declare(strict_types=1);
+
+ob_start();
+
+require_once __DIR__ . '/../includes/init.php';
+require_once __DIR__ . '/_helpers.php';
+require_login();
+
+$pdo = Database::getInstance('mysql')->getConnection();
+ensureAjaxGroupManagePermission($pdo, (string) __('formList_error_no_permission'));
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    jsonErrorResponse((string) __('formList_error_invalid_method'), 405);
+}
+
+if (!isValidCsrfToken()) {
+    jsonErrorResponse((string) __('formList_error_invalid_csrf'), 419);
+}
+
+$id = (int) ($_POST['borangID'] ?? 0);
+$namaMs = trim((string) ($_POST['nama_ms'] ?? ''));
+$namaEn = trim((string) ($_POST['nama_en'] ?? ''));
+$kategoriID = (int) ($_POST['kategoriID'] ?? 0);
+$path = ltrim(str_replace('\\', '/', trim((string) ($_POST['path'] ?? ''))), '/');
+$icon = trim((string) ($_POST['icon'] ?? 'ri-file-line')) ?: 'ri-file-line';
+$flag = (int) ($_POST['flag'] ?? 1);
+
+if ($namaMs === '' || $path === '' || $kategoriID <= 0) {
+    jsonErrorResponse((string) __('formList_error_required_fields'), 422);
+}
+
+try {
+    $dupSql = "
+        SELECT 1
+        FROM tbl_m_borang
+        WHERE LOWER(TRIM(f_nama_ms)) = LOWER(TRIM(:nama))
+    ";
+    $params = [':nama' => $namaMs];
+    if ($id > 0) {
+        $dupSql .= ' AND f_borangID != :id';
+        $params[':id'] = $id;
+    }
+    $dupSql .= ' LIMIT 1';
+
+    $dupStmt = $pdo->prepare($dupSql);
+    $dupStmt->execute($params);
+    if ($dupStmt->fetch()) {
+        jsonErrorResponse((string) __('formList_error_duplicate_name'), 409);
+    }
+
+    if ($id <= 0) {
+        $orderStmt = $pdo->query('SELECT COALESCE(MAX(f_order), 0) + 1 FROM tbl_m_borang');
+        $nextOrder = (int) $orderStmt->fetchColumn();
+
+        $stmt = $pdo->prepare(
+            "
+            INSERT INTO tbl_m_borang
+                (f_nama_ms, f_nama_en, f_kategoriID, f_path, f_icon, f_flag, f_order)
+            VALUES
+                (:nama_ms, :nama_en, :kategoriID, :path, :icon, :flag, :order)
+            "
+        );
+        $stmt->execute([
+            ':nama_ms' => $namaMs,
+            ':nama_en' => $namaEn !== '' ? $namaEn : null,
+            ':kategoriID' => $kategoriID,
+            ':path' => $path,
+            ':icon' => $icon,
+            ':flag' => $flag,
+            ':order' => max(1, $nextOrder),
+        ]);
+
+        jsonSuccessResponse(['message' => (string) __('formList_success_created')]);
+    }
+
+    $currentStmt = $pdo->prepare('SELECT f_order FROM tbl_m_borang WHERE f_borangID = :id LIMIT 1');
+    $currentStmt->execute([':id' => $id]);
+    $currentOrder = (int) ($currentStmt->fetchColumn() ?: 1);
+
+    $stmt = $pdo->prepare(
+        "
+        UPDATE tbl_m_borang
+        SET
+            f_nama_ms = :nama_ms,
+            f_nama_en = :nama_en,
+            f_kategoriID = :kategoriID,
+            f_path = :path,
+            f_icon = :icon,
+            f_flag = :flag,
+            f_order = :order
+        WHERE f_borangID = :id
+        LIMIT 1
+        "
+    );
+    $stmt->execute([
+        ':nama_ms' => $namaMs,
+        ':nama_en' => $namaEn !== '' ? $namaEn : null,
+        ':kategoriID' => $kategoriID,
+        ':path' => $path,
+        ':icon' => $icon,
+        ':flag' => $flag,
+        ':order' => max(1, $currentOrder),
+        ':id' => $id,
+    ]);
+
+    jsonSuccessResponse(['message' => (string) __('formList_success_updated')]);
+} catch (Throwable $e) {
+    error_log('[borang-save] ' . $e->getMessage());
+    jsonErrorResponse((string) __('formList_error_generic'), 500);
+}

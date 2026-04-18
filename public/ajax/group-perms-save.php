@@ -11,27 +11,27 @@ try{
   $csrfHdr = $headers['X-CSRF-Token'] ?? $headers['x-csrf-token'] ?? '';
   if (!$csrfHdr || !hash_equals($_SESSION['csrf_token'] ?? '', $csrfHdr)) {
     http_response_code(400);
-    echo json_encode(['error'=>true, 'message'=>'CSRF token tidak sah'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true, 'message'=>(string)__('userGroup_csrf_invalid')], JSON_UNESCAPED_UNICODE); exit;
   }
   
   // Rate limiting: max 20 requests per 60 seconds (write operation)
   if (!checkRateLimit('group_perms_save', 20, 60)) {
     http_response_code(429);
-    echo json_encode(['error'=>true, 'message'=>'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true, 'message'=>(string)__('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE); exit;
   }
   
   // Permission check
   $db = Database::getInstance('mysql')->getConnection();
   if (!hasGroupManagePermission($db)) {
     http_response_code(403);
-    echo json_encode(['error'=>true, 'message'=>'Anda tidak mempunyai kebenaran untuk mengubah permissions kumpulan.'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true, 'message'=>(string)__('userGroup_group_permissions_not_allowed')], JSON_UNESCAPED_UNICODE); exit;
   }
 
   $json = json_decode(file_get_contents('php://input'), true) ?: [];
   $gid  = (int)($json['groupID'] ?? 0);
   $mods = $json['modulIDs'] ?? [];
   $menus= $json['menuIDs'] ?? [];
-  if ($gid<=0) { http_response_code(422); echo json_encode(['error'=>true,'message'=>'groupID tidak sah']); exit; }
+  if ($gid<=0) { http_response_code(422); echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_invalid_id')], JSON_UNESCAPED_UNICODE); exit; }
 
   $norm = function($arr){
     $out=[]; foreach ((array)$arr as $v) { if ($v !== '' && is_numeric($v)) $out[] = (int)$v; }
@@ -44,7 +44,7 @@ try{
   $oldPerms = $oldStmt->fetch(PDO::FETCH_ASSOC);
   if (!$oldPerms) {
     http_response_code(404);
-    echo json_encode(['error'=>true,'message'=>'Kumpulan tidak ditemui'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_not_found')], JSON_UNESCAPED_UNICODE); exit;
   }
 
   $newMods = $norm($mods);
@@ -117,5 +117,5 @@ try{
 
 } catch(Throwable $e){
   http_response_code(500);
-  echo json_encode(['error'=>true,'message'=>'Ralat server: '.$e->getMessage()]);
+  echo json_encode(['error'=>true,'message'=>(string)__('userGroup_server_error_prefix') . ' ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

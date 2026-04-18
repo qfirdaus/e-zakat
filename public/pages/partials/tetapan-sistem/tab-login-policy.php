@@ -838,10 +838,9 @@
       <div class="text-muted small">
         <i class="ri-information-line me-1"></i><?= __('config_auth_actions_note') ?? 'Changes here prepare the policy foundation only. Runtime login enforcement will be enabled in the next implementation phase.' ?>
       </div>
-      <button type="button"
+            <button type="submit"
               class="btn btn-primary px-4"
-              id="btn-simpan-auth"
-              onclick="return window.__tetapanAjaxSubmit(event, document.getElementById('form-auth-aktif'), 'btn-simpan-auth', 'auth');">
+              id="btn-simpan-auth">
         <i class="ri-save-3-line me-2"></i><?= __('config_auth_save') ?? 'Save Login Policy' ?>
       </button>
     </div>

@@ -12,7 +12,7 @@ header('Content-Type: application/json; charset=utf-8');
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
         http_response_code(405);
-        echo json_encode(['error' => true, 'message' => 'Method tidak dibenarkan.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => __('userGroup_method_not_allowed')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -20,20 +20,20 @@ try {
     $csrfHdr = $headers['X-CSRF-Token'] ?? $headers['x-csrf-token'] ?? '';
     if ($csrfHdr === '' || !hash_equals((string)($_SESSION['csrf_token'] ?? ''), (string)$csrfHdr)) {
         http_response_code(400);
-        echo json_encode(['error' => true, 'message' => 'CSRF token tidak sah.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => __('userGroup_csrf_invalid')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     if (!checkRateLimit('group_delete', 10, 60)) {
         http_response_code(429);
-        echo json_encode(['error' => true, 'message' => 'Terlalu banyak permintaan.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => __('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     $pdo = Database::getInstance('mysql')->getConnection();
     if (!hasGroupManagePermission($pdo)) {
         http_response_code(403);
-        echo json_encode(['error' => true, 'message' => 'Anda tidak mempunyai kebenaran untuk memadam kumpulan.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => __('userGroup_group_delete_permission_denied')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -41,7 +41,7 @@ try {
     $groupID = (int)($json['groupID'] ?? 0);
     if ($groupID <= 0) {
         http_response_code(422);
-        echo json_encode(['error' => true, 'message' => 'ID kumpulan tidak sah.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => __('userGroup_group_invalid_id')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -55,7 +55,7 @@ try {
     $group = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     if (!$group) {
         http_response_code(404);
-        echo json_encode(['error' => true, 'message' => 'Kumpulan tidak ditemui.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => __('userGroup_group_not_found')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -67,7 +67,7 @@ try {
     // Safety: only allow deletion when both access fields are empty.
     if ($modulAccess !== '' || $menuAccess !== '') {
         http_response_code(422);
-        echo json_encode(['error' => true, 'message' => 'Kumpulan yang masih mempunyai akses modul/menu tidak boleh dipadam.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => __('userGroup_delete_group_fail')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -99,7 +99,7 @@ try {
         }
 
         http_response_code(422);
-        echo json_encode(['error' => true, 'message' => 'Kumpulan sistem tidak boleh dipadam.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => __('userGroup_group_system_protected')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -133,7 +133,7 @@ try {
         http_response_code(409);
         echo json_encode([
             'error' => true,
-            'message' => 'Masih terdapat pengguna yang ditetapkan kepada kumpulan ini. Sila pindahkan pengguna terlebih dahulu sebelum memadam kumpulan.',
+            'message' => __('userGroup_group_users_assigned'),
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -142,7 +142,7 @@ try {
     $del->execute([':gid' => $groupID]);
     if ($del->rowCount() <= 0) {
         http_response_code(500);
-        echo json_encode(['error' => true, 'message' => 'Gagal memadam kumpulan.'], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['error' => true, 'message' => __('userGroup_delete_group_fail')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -170,8 +170,8 @@ try {
         error_log('[group-delete] Audit failed: ' . $e->getMessage());
     }
 
-    echo json_encode(['error' => false, 'message' => 'Kumpulan berjaya dipadam.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['error' => false, 'message' => __('userGroup_delete_group_success')], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['error' => true, 'message' => 'Ralat server: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['error' => true, 'message' => __('userGroup_server_error_prefix') . ' ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

@@ -118,7 +118,7 @@
                     <button type="button" class="btn btn-outline-secondary px-4" id="btn-uji-emel" onclick="return window.__tetapanOpenEmailTest(event);">
                       <i class="ri-mail-send-line me-2"></i> <?= __('config_tab_emel_uji_emel') ?? 'Uji Sambungan Emel' ?>
                     </button>
-                    <button type="button" class="btn btn-primary px-4" id="btn-simpan-emel" onclick="return window.__tetapanAjaxSubmit(event, document.getElementById('form-emel-aktif'), 'btn-simpan-emel');">
+                    <button type="submit" class="btn btn-primary px-4" id="btn-simpan-emel">
                       <i class="ri-save-3-line me-2"></i> <?= __('config_tab_emel_simpan_tetapan_emel') ?? 'Simpan Tetapan Emel' ?>
                     </button>
                   </div>

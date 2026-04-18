@@ -742,10 +742,6 @@ if (is_file($langFileForJs)) {
       return submitHandler(targetForm, button);
     };
 
-    window.__tetapanSubmitGeneralForm = function (event, form) {
-      return window.__tetapanAjaxSubmit(event, form, 'btn-simpan-general');
-    };
-
     window.__tetapanOpenEmailTest = function (event) {
       function showInlineError(message) {
         if (window.Swal && typeof window.Swal.fire === 'function') {

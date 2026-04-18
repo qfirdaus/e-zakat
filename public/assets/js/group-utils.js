@@ -6,6 +6,18 @@
 // 🔧 KONFIG: Base path detection
 // =========================================================
 const GroupUtils = {
+  getTranslations() {
+    return window.GroupPageT || window.T || {};
+  },
+
+  t(key, fallback = '') {
+    const translations = this.getTranslations();
+    const value = translations && Object.prototype.hasOwnProperty.call(translations, key)
+      ? translations[key]
+      : undefined;
+    return value !== undefined && value !== null && value !== '' ? value : fallback;
+  },
+
   // Base path projek yang betul di semua environment
   getBasePath() {
     const rawBase = document.querySelector('meta[name="base-path"]')?.getAttribute('content') ||
@@ -62,7 +74,7 @@ const GroupUtils = {
       return JSON.parse(txt);
     } catch (e) {
       const snippet = txt.slice(0, 240).replace(/\s+/g, ' ').trim();
-      throw new Error('Server did not return JSON. Preview: ' + snippet);
+      throw new Error(this.t('non_json_response', 'Server did not return JSON. Preview:') + ' ' + snippet);
     }
   },
   

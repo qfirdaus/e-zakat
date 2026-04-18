@@ -20,7 +20,7 @@
             ?>
             <!-- Tab 0: Umum -->
             <div class="tab-pane fade <?= (($_GET['tab'] ?? '') === 'general' || !isset($_GET['tab'])) ? 'show active' : '' ?>" id="general-tab" role="tabpanel">
-              <form method="POST" id="form-general-aktif" action="<?= htmlspecialchars(url_with_param('tab', 'general'), ENT_QUOTES, 'UTF-8') ?>" data-native-submit="1" data-no-loader="1" novalidate onsubmit="return window.__tetapanSubmitGeneralForm(event, this);">
+              <form method="POST" id="form-general-aktif" action="<?= htmlspecialchars(url_with_param('tab', 'general'), ENT_QUOTES, 'UTF-8') ?>" data-no-loader="1" novalidate onsubmit="return window.__tetapanAjaxSubmit(event, this, 'btn-simpan-general', 'general');">
                 <input type="hidden" name="form_type" value="general_settings" />
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>" />
                 <div class="card general-settings-card">
@@ -263,7 +263,7 @@
                   <div class="text-muted small">
                     <i class="ri-database-2-line me-1"></i> <?= __('config_general_actions_note') ?? 'Perubahan di sini akan override nilai asas settings.php tanpa menulis semula fail asal.' ?>
                   </div>
-                  <button type="button" class="btn btn-primary px-4" id="btn-simpan-general" onclick="return window.__tetapanAjaxSubmit(event, document.getElementById('form-general-aktif'), 'btn-simpan-general');">
+                  <button type="submit" class="btn btn-primary px-4" id="btn-simpan-general">
                     <i class="ri-save-3-line me-2"></i> <?= __('config_general_save') ?? 'Simpan Tetapan Umum' ?>
                   </button>
                 </div>

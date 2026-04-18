@@ -11,12 +11,12 @@ try{
   ensureAjaxGroupManagePermission($db);
 
   $gid = isset($_GET['groupID']) ? (int)$_GET['groupID'] : 0;
-  if ($gid <= 0) { http_response_code(400); echo json_encode(['error'=>true,'message'=>'groupID tidak sah'], JSON_UNESCAPED_UNICODE); exit; }
+  if ($gid <= 0) { http_response_code(400); echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_invalid_id')], JSON_UNESCAPED_UNICODE); exit; }
   
   // Rate limiting: max 30 requests per 60 seconds (read operation)
   if (!checkRateLimit('group_perms_get', 30, 60)) {
     http_response_code(429);
-    echo json_encode(['error'=>true,'message'=>'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE); exit;
+    echo json_encode(['error'=>true,'message'=>(string)__('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE); exit;
   }
   
   // Check cache (30 min TTL)
@@ -35,7 +35,7 @@ try{
   $stmt = $db->prepare("SELECT f_groupID, f_groupKod, f_groupName, COALESCE(f_modulAccess,'') AS f_modulAccess, COALESCE(f_menuAccess,'') AS f_menuAccess FROM tbl_m_group WHERE f_groupID=:g LIMIT 1");
   $stmt->execute([':g'=>$gid]);
   $grp = $stmt->fetch(PDO::FETCH_ASSOC);
-  if (!$grp){ echo json_encode(['error'=>true,'message'=>'Kumpulan tidak ditemui.']); exit; }
+  if (!$grp){ echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_not_found')], JSON_UNESCAPED_UNICODE); exit; }
 
   $toInts = function(string $csv){ $out=[]; foreach (explode(',', $csv) as $v){ $v=trim($v); if ($v!=='' && ctype_digit($v)) $out[]=(int)$v; } return array_values(array_unique($out)); };
   $modulIDs = $toInts($grp['f_modulAccess']);
@@ -75,5 +75,5 @@ try{
 
 } catch(Throwable $e){
   http_response_code(500);
-  echo json_encode(['error'=>true,'message'=>'Ralat server: '.$e->getMessage()], JSON_UNESCAPED_UNICODE);
+  echo json_encode(['error'=>true,'message'=>(string)__('userGroup_server_error_prefix') . ' ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

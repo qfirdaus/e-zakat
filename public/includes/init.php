@@ -501,15 +501,12 @@ ini_set('display_startup_errors', $__IS_DEV ? '1' : '0');
 error_reporting($__IS_DEV ? E_ALL : E_ALL & ~E_DEPRECATED & ~E_STRICT);
 
 // 8.1) Ensure application log directory exists and route PHP error_log there
-$__LOG_DIR = realpath(__DIR__ . '/../log') ?: (__DIR__ . '/../log');
-if (!is_dir($__LOG_DIR)) {
-    @mkdir($__LOG_DIR, 0777, true);
-}
-$__APP_LOG_FILE = rtrim($__LOG_DIR, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'app.log';
-// Prefer app-level error log so error_log() writes end up in project folder
-@ini_set('error_log', $__APP_LOG_FILE);
 // Provide a simple helper for application code to write structured logs
 require_once __DIR__ . '/logger.php';
+$__LOG_DIR = app_log_directory();
+$__APP_LOG_FILE = app_log_file_path();
+// Prefer app-level error log so error_log() writes end up in project folder
+@ini_set('error_log', $__APP_LOG_FILE);
 
 // 9) CSRF token
 if (empty($_SESSION['csrf_token'])) {

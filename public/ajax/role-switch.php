@@ -52,6 +52,7 @@ try {
     }
 
     $groupID = (int)($data['groupID'] ?? 0);
+    $requestedCurrentPath = prestasi_normalize_menu_path((string)($data['currentPath'] ?? ''));
     role_switch_trace_log(sprintf(
         '[role_switch] request group_id=%d session_active_before=%s session_default=%s login_id=%s staf_id=%s',
         $groupID,
@@ -138,19 +139,51 @@ try {
         $defaultGroupId
     ));
 
-    // Store flash for UI message after reload
+    // Ensure subsequent partial UI refreshes read fresh access/sidebar state.
+    clearSidebarNavigationCaches();
+    unset($_SESSION['page_access_map_' . $oldGroupId], $_SESSION['page_access_map_' . $groupID]);
+
+    $newGroupName = '';
     try {
         $stmtName = $pdo->prepare("SELECT f_groupName FROM tbl_m_group WHERE f_groupID = :gid LIMIT 1");
         $stmtName->execute([':gid' => $groupID]);
         $rowName = $stmtName->fetch(PDO::FETCH_ASSOC);
-        $_SESSION['role_switch_success'] = [
-            'group_id' => $groupID,
-            'group_name' => (string)($rowName['f_groupName'] ?? '')
-        ];
+        $newGroupName = (string)($rowName['f_groupName'] ?? '');
     } catch (Throwable $e) {
+        $newGroupName = '';
+    }
+
+    $currentPagePath = $requestedCurrentPath !== '' ? $requestedCurrentPath : prestasi_current_page_relative_path();
+    $currentPageAllowed = true;
+    if ($currentPagePath !== '' && str_starts_with($currentPagePath, 'pages/')) {
+        $policy = prestasi_resolve_page_access_policy($currentPagePath, $pdo);
+        $isSuperAdmin = is_user_super_admin($profile, $pdo);
+        if ($policy === 'super_admin_only') {
+            $currentPageAllowed = $isSuperAdmin;
+        } elseif ($policy === 'custom_guard') {
+            $currentPageAllowed = false;
+        } elseif ($policy === 'group_menu_based') {
+            if ($isSuperAdmin) {
+                $currentPageAllowed = true;
+            } else {
+                $allowedPaths = prestasi_load_allowed_page_paths($pdo, $groupID);
+                $basename = basename($currentPagePath);
+                $currentPageAllowed = isset($allowedPaths[$currentPagePath])
+                    || ($basename !== '' && isset($allowedPaths[$basename]));
+            }
+        }
+    }
+
+    $redirectUrl = $currentPageAllowed
+        ? null
+        : base_url(app_config('site.default_home', 'pages/dashboard.php'));
+
+    if ($currentPageAllowed) {
+        unset($_SESSION['role_switch_success']);
+    } else {
         $_SESSION['role_switch_success'] = [
             'group_id' => $groupID,
-            'group_name' => ''
+            'group_name' => $newGroupName,
         ];
     }
 
@@ -186,7 +219,6 @@ try {
                 } catch (Throwable $e) {}
             }
 
-            $newGroupName = (string)($_SESSION['role_switch_success']['group_name'] ?? '');
             $message = function_exists('audit_format_message')
                 ? audit_format_message('Role switched', $actorLabel)
                 : ('Role switched' . ($actorLabel ? (' by ' . $actorLabel) : ''));
@@ -216,7 +248,27 @@ try {
         error_log('[role-switch] Audit logging failed: ' . $e->getMessage());
     }
 
-    echo json_encode(['error' => false, 'message' => 'Peranan berjaya dikemas kini.'], JSON_UNESCAPED_UNICODE);
+    $ui = buildAccessUiPayload($pdo, [
+        'activeGroupId' => $groupID,
+        'roleName' => $newGroupName,
+        'currentFile' => basename($currentPagePath),
+        'currentPagePath' => $currentPagePath,
+        'currentPageAllowed' => $currentPageAllowed,
+        'redirectUrl' => $redirectUrl,
+        'includeSidebar' => $currentPageAllowed,
+    ]);
+
+    echo json_encode([
+        'error' => false,
+        'message' => 'Peranan berjaya dikemas kini.',
+        'ui' => $ui,
+        'active_group_id' => $groupID,
+        'group_name' => $newGroupName,
+        'current_page' => $currentPagePath,
+        'current_page_allowed' => $currentPageAllowed,
+        'redirect_url' => $redirectUrl,
+        'html' => $ui['sidebar']['html'] ?? null,
+    ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     role_switch_trace_log('[role_switch] exception ' . $e->getMessage());
     error_log('[role-switch] Error: ' . $e->getMessage());

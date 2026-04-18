@@ -296,7 +296,7 @@
                   <div class="text-muted small">
                     <i class="ri-database-2-line me-1"></i> <?= __('config_tab_db_actions_note') ?? 'Pastikan pilihan Sybase diuji dan disahkan sebelum disimpan.' ?>
                   </div>
-                  <button type="button" class="btn btn-primary px-4" id="btn-simpan-db" onclick="return window.__tetapanAjaxSubmit(event, document.getElementById('form-db-aktif'), 'btn-simpan-db');">
+                  <button type="submit" class="btn btn-primary px-4" id="btn-simpan-db">
                     <i class="ri-save-3-line me-2"></i> <?= __('config_tab_db_simpan_tetapan_db') ?? 'Simpan Tetapan Pangkalan Data' ?>
                   </button>
                 </div>

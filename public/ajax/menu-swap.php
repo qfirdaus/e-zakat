@@ -16,29 +16,29 @@ try {
   
   // Rate limiting: max 30 requests per 60 seconds
   if (!checkRateLimit('menu_swap', 30, 60)) {
-    bad((string)(__('userList_rate_limit_text') ?: 'Sila tunggu sebentar sebelum cuba lagi.'), 429);
+    bad((string)__('userGroup_rate_limit_text'), 429);
   }
   
   // Permission check
   $pdo = Database::getInstance('mysql')->getConnection();
-  ensureAjaxGroupManagePermission($pdo, (string)(__('userList_err_no_permission') ?: 'Anda tidak mempunyai kebenaran untuk melakukan tindakan ini.'));
+  ensureAjaxGroupManagePermission($pdo, (string)__('userGroup_group_permissions_not_allowed'));
 
   $in = json_decode(file_get_contents('php://input') ?: '[]', true);
   $aID = isset($in['aID']) ? (int)$in['aID'] : 0;
   $bID = isset($in['bID']) ? (int)$in['bID'] : 0;
-  if ($aID<=0 || $bID<=0) bad('Invalid payload (aID/bID diperlukan)');
+  if ($aID<=0 || $bID<=0) bad((string)__('userGroup_invalid_payload'));
   $pdo->beginTransaction();
 
   // Ambil dua rekod & lock
   $st = $pdo->prepare("SELECT f_menuID, f_modulID, f_order FROM tbl_m_menu WHERE f_menuID IN (?, ?) FOR UPDATE");
   $st->execute([$aID, $bID]);
   $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-  if (count($rows) !== 2) { $pdo->rollBack(); bad('Menu tidak ditemui', 404); }
+  if (count($rows) !== 2) { $pdo->rollBack(); bad((string)__('userGroup_menu_not_found'), 404); }
 
   // Pastikan kedua-dua dalam modul yang sama (guna data DB, abaikan modulID dari client)
   $modA = (int)$rows[0]['f_modulID'];
   $modB = (int)$rows[1]['f_modulID'];
-  if ($modA !== $modB) { $pdo->rollBack(); bad('Menu tidak dalam modul yang sama'); }
+  if ($modA !== $modB) { $pdo->rollBack(); bad((string)__('userGroup_menu_not_same_module')); }
   $modulID = $modA;
 
   // Pastikan tiada NULL/duplicate: renumber 10,20,30...
@@ -77,7 +77,7 @@ try {
       $menuB = $r;
     }
   }
-  if ($oa === null || $ob === null) { $pdo->rollBack(); bad('Ralat bacaan order'); }
+  if ($oa === null || $ob === null) { $pdo->rollBack(); bad((string)__('userGroup_menu_read_order_error')); }
 
   $u = $pdo->prepare("UPDATE tbl_m_menu SET f_order=? WHERE f_menuID=?");
   $u->execute([$ob, $aID]);
@@ -144,9 +144,9 @@ try {
   GroupDataCache::clear('menu_list_');
   GroupDataCache::clear('group_access_');
   
-  echo json_encode(['error'=>false, 'message'=>'OK', 'modulID'=>$modulID, 'swapped'=>['a'=>$aID,'b'=>$bID]], JSON_UNESCAPED_UNICODE);
+  echo json_encode(['error'=>false, 'message'=>(string)__('userGroup_ok'), 'modulID'=>$modulID, 'swapped'=>['a'=>$aID,'b'=>$bID]], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e){
   if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
   http_response_code(500);
-  echo json_encode(['error'=>true,'message'=>$e->getMessage()]);
+  echo json_encode(['error'=>true,'message'=>(string)__('userGroup_server_error_prefix') . ' ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

@@ -12,12 +12,12 @@ $lang   = $_SESSION['lang'] ?? 'ms';
 // Rate limiting: max 30 requests per 60 seconds (read operation)
 if (!checkRateLimit('menu_get', 30, 60)) {
   http_response_code(429);
-  echo json_encode(['error' => true, 'message' => 'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE);
+  echo json_encode(['error' => true, 'message' => __('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE);
   exit;
 }
 
 try {
-  if ($menuID <= 0) throw new Exception('Parameter tidak lengkap.');
+  if ($menuID <= 0) throw new Exception((string)__('userGroup_invalid_payload'));
 
   $pdo = Database::getInstance('mysql')->getConnection();
 
@@ -34,7 +34,7 @@ try {
   );
   $menuStmt->execute([$menuID]);
   $menu = $menuStmt->fetch(PDO::FETCH_ASSOC);
-  if (!$menu) throw new Exception('Menu tidak ditemui.');
+  if (!$menu) throw new Exception((string)__('userGroup_menu_not_found'));
 
   // Senarai modul (nama ikut bahasa)
   $modStmt = $pdo->query("

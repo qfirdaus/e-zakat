@@ -21,20 +21,20 @@ try {
     }
     if (!$csrf || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf)) {
         http_response_code(400);
-        echo json_encode(['error'=>true,'message'=>'CSRF token tidak sah'], JSON_UNESCAPED_UNICODE); exit;
+        echo json_encode(['error'=>true,'message'=>(string)__('userGroup_csrf_invalid')], JSON_UNESCAPED_UNICODE); exit;
     }
     
     // Rate limiting: max 20 requests per 60 seconds (write operation)
     if (!checkRateLimit('menu_create', 20, 60)) {
         http_response_code(429);
-        echo json_encode(['error'=>true,'message'=>'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE); exit;
+        echo json_encode(['error'=>true,'message'=>(string)__('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE); exit;
     }
     
     // Permission check
     $db = Database::getInstance('mysql')->getConnection();
     if (!hasGroupManagePermission($db)) {
         http_response_code(403);
-        echo json_encode(['error'=>true,'message'=>'Anda tidak mempunyai kebenaran untuk menambah menu.'], JSON_UNESCAPED_UNICODE); exit;
+        echo json_encode(['error'=>true,'message'=>(string)__('userGroup_menu_create_permission_denied')], JSON_UNESCAPED_UNICODE); exit;
     }
 
     // ===== Input =====
@@ -58,7 +58,7 @@ try {
 
     if ($groupID <= 0 || $modulID <= 0 || $path === '') {
         http_response_code(422);
-        echo json_encode(['error'=>true,'message'=>'Sila pilih Kumpulan, Modul dan isi Path.']); exit;
+        echo json_encode(['error'=>true,'message'=>(string)__('userGroup_err_group_modul_path_required')], JSON_UNESCAPED_UNICODE); exit;
     }
 
     $db = Database::getInstance('mysql')->getConnection();
@@ -71,7 +71,7 @@ try {
     $grp = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$grp) {
         http_response_code(404);
-        echo json_encode(['error'=>true,'message'=>'Kumpulan tidak ditemui.']); 
+        echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_not_found')], JSON_UNESCAPED_UNICODE); 
         $db->rollBack(); exit;
     }
 
@@ -80,7 +80,7 @@ try {
     $stmt->execute([':mid'=>$modulID]);
     if (!$stmt->fetchColumn()) {
         http_response_code(404);
-        echo json_encode(['error'=>true,'message'=>'Modul tidak ditemui.']);
+        echo json_encode(['error'=>true,'message'=>(string)__('userGroup_target_module_not_found')], JSON_UNESCAPED_UNICODE);
         $db->rollBack(); exit;
     }
 
@@ -216,5 +216,5 @@ try {
         $db->rollBack();
     }
     http_response_code(500);
-    echo json_encode(['error'=>true,'message'=>'Ralat server: '.$e->getMessage()]);
+    echo json_encode(['error'=>true,'message'=>(string)__('userGroup_server_error_prefix') . ' ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

@@ -46,20 +46,19 @@ $peranan_pengguna  = $profile['f_groupName'] ?? 'Pengguna';
 $avatarUrl         = $profile['avatar_url'] ?? $profile['avatar'] ?? base_url('assets/images/no-image.jpg');
 $lang              = $_SESSION['lang'] ?? 'ms';
 
-// CSRF for AJAX actions in topbar
 if (empty($_SESSION['csrf_token'])) {
   $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
 }
 $csrfToken = $_SESSION['csrf_token'];
 
-// Role switching: determine default/active role in session
-$defaultGroupId = (int)($profile['f_groupID'] ?? 0);
+$defaultGroupId = (int)($_SESSION['group_default_id'] ?? ($profile['f_groupID'] ?? 0));
 if (!isset($_SESSION['group_default_id']) && $defaultGroupId > 0) {
   $_SESSION['group_default_id'] = $defaultGroupId;
 }
 if (!isset($_SESSION['group_active_id']) && $defaultGroupId > 0) {
   $_SESSION['group_active_id'] = $defaultGroupId;
 }
+$defaultGroupId = (int)($_SESSION['group_default_id'] ?? $defaultGroupId);
 $activeGroupId = (int)($_SESSION['group_active_id'] ?? $defaultGroupId);
 
 // Fetch active group name for display (do not change user default role)
@@ -85,37 +84,11 @@ try {
   $stafRaw = trim($stafID);
   $stafNorm = str_replace('-', '', $stafRaw);
   if ($userID > 0 || $stafRaw !== '' || $stafNorm !== '') {
-    // Lightweight eligibility check
-    $stmtHas = $pdo_mysql->prepare("
-      SELECT 1
-      FROM tbl_ref_access a
-      WHERE a.f_status = 1
-        AND (
-          a.f_userID = :uid
-          OR (
-            :uid_zero = 0
-            AND (TRIM(a.f_stafID) = :staf OR REPLACE(TRIM(a.f_stafID), '-', '') = :staf_norm)
-          )
-        )
-      LIMIT 1
-    ");
+    $stmtHas = $pdo_mysql->prepare("\n      SELECT 1\n      FROM tbl_ref_access a\n      WHERE a.f_status = 1\n        AND (\n          a.f_userID = :uid\n          OR (\n            :uid_zero = 0\n            AND (TRIM(a.f_stafID) = :staf OR REPLACE(TRIM(a.f_stafID), '-', '') = :staf_norm)\n          )\n        )\n      LIMIT 1\n    ");
     $stmtHas->execute([':uid' => $userID, ':uid_zero' => $userID, ':staf' => $stafRaw, ':staf_norm' => $stafNorm]);
     $hasExtraRole = (bool)$stmtHas->fetchColumn();
 
-    $stmtRoles = $pdo_mysql->prepare("
-      SELECT a.f_groupID, g.f_groupKod, g.f_groupName
-      FROM tbl_ref_access a
-      JOIN tbl_m_group g ON g.f_groupID = a.f_groupID
-      WHERE a.f_status = 1
-        AND (
-          a.f_userID = :uid
-          OR (
-            :uid_zero = 0
-            AND (TRIM(a.f_stafID) = :staf OR REPLACE(TRIM(a.f_stafID), '-', '') = :staf_norm)
-          )
-        )
-      ORDER BY g.f_groupName ASC, g.f_groupKod ASC
-    ");
+    $stmtRoles = $pdo_mysql->prepare("\n      SELECT a.f_groupID, g.f_groupKod, g.f_groupName\n      FROM tbl_ref_access a\n      JOIN tbl_m_group g ON g.f_groupID = a.f_groupID\n      WHERE a.f_status = 1\n        AND (\n          a.f_userID = :uid\n          OR (\n            :uid_zero = 0\n            AND (TRIM(a.f_stafID) = :staf OR REPLACE(TRIM(a.f_stafID), '-', '') = :staf_norm)\n          )\n        )\n      ORDER BY g.f_groupName ASC, g.f_groupKod ASC\n    ");
     $stmtRoles->execute([':uid' => $userID, ':uid_zero' => $userID, ':staf' => $stafRaw, ':staf_norm' => $stafNorm]);
     $allowedRoles = $stmtRoles->fetchAll(PDO::FETCH_ASSOC) ?: [];
   }
@@ -330,7 +303,7 @@ if ($roleSwitchFlash !== null) {
           </span>
           <span class="d-lg-flex flex-column gap-1 d-none">
             <h5 class="my-0"><?= h($nama_pengguna) ?></h5>
-            <h6 class="my-0 fw-normal"><?= h($peranan_pengguna) ?></h6>
+            <h6 class="my-0 fw-normal" id="topbarCurrentRoleLabel"><?= h($peranan_pengguna) ?></h6>
           </span>
         </a>
         <div class="dropdown-menu dropdown-menu-end dropdown-menu-animated profile-dropdown" data-bs-auto-close="outside">
@@ -349,7 +322,7 @@ if ($roleSwitchFlash !== null) {
 
           <!-- Logout -->
           <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item text-danger" onclick="return confirmLogout();">
+          <a href="#" class="dropdown-item text-danger" onclick="return confirmLogout(event);" data-no-loader>
             <i class="ri-logout-box-fill me-1"></i> <?= __('topbar_keluar') ?>
           </a>
 
@@ -460,60 +433,6 @@ if ($roleSwitchFlash !== null) {
     flex: 0 0 auto;
     width: 18px;
     height: auto;
-    border-radius: 2px;
-  }
-  .topbar-language-item-label {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-  .topbar-language-item-check {
-    flex: 0 0 auto;
-    margin-left: 0.25rem;
-    font-size: 0.95rem;
-  }
-  .topbar-language-menu .topbar-language-item.active,
-  .topbar-language-menu .topbar-language-item:active {
-    color: #0f172a !important;
-    background: rgba(241, 245, 249, 0.96);
-  }
-  .topbar-language-menu .topbar-language-item:hover,
-  .topbar-language-menu .topbar-language-item:focus {
-    color: #0f172a !important;
-    background: rgba(241, 245, 249, 0.96);
-  }
-  html[data-bs-theme=dark] .topbar-language-menu .topbar-language-item.active,
-  html[data-bs-theme=dark] .topbar-language-menu .topbar-language-item:active,
-  html[data-topbar-color=dark] .topbar-language-menu .topbar-language-item.active,
-  html[data-topbar-color=dark] .topbar-language-menu .topbar-language-item:active,
-  html[data-topbar-color=brand] .topbar-language-menu .topbar-language-item.active,
-  html[data-topbar-color=brand] .topbar-language-menu .topbar-language-item:active,
-  html[data-topbar-color=emerald] .topbar-language-menu .topbar-language-item.active,
-  html[data-topbar-color=emerald] .topbar-language-menu .topbar-language-item:active,
-  html[data-topbar-color=navy] .topbar-language-menu .topbar-language-item.active,
-  html[data-topbar-color=navy] .topbar-language-menu .topbar-language-item:active,
-  html[data-topbar-color=sunset] .topbar-language-menu .topbar-language-item.active,
-  html[data-topbar-color=sunset] .topbar-language-menu .topbar-language-item:active,
-  html[data-topbar-color=strawberry] .topbar-language-menu .topbar-language-item.active,
-  html[data-topbar-color=strawberry] .topbar-language-menu .topbar-language-item:active,
-  html[data-topbar-color=matcha] .topbar-language-menu .topbar-language-item.active,
-  html[data-topbar-color=matcha] .topbar-language-menu .topbar-language-item:active,
-  html[data-bs-theme=dark] .topbar-language-menu .topbar-language-item:hover,
-  html[data-bs-theme=dark] .topbar-language-menu .topbar-language-item:focus,
-  html[data-topbar-color=dark] .topbar-language-menu .topbar-language-item:hover,
-  html[data-topbar-color=dark] .topbar-language-menu .topbar-language-item:focus,
-  html[data-topbar-color=brand] .topbar-language-menu .topbar-language-item:hover,
-  html[data-topbar-color=brand] .topbar-language-menu .topbar-language-item:focus,
-  html[data-topbar-color=emerald] .topbar-language-menu .topbar-language-item:hover,
-  html[data-topbar-color=emerald] .topbar-language-menu .topbar-language-item:focus,
-  html[data-topbar-color=navy] .topbar-language-menu .topbar-language-item:hover,
-  html[data-topbar-color=navy] .topbar-language-menu .topbar-language-item:focus,
-  html[data-topbar-color=sunset] .topbar-language-menu .topbar-language-item:hover,
-  html[data-topbar-color=sunset] .topbar-language-menu .topbar-language-item:focus,
-  html[data-topbar-color=strawberry] .topbar-language-menu .topbar-language-item:hover,
-  html[data-topbar-color=strawberry] .topbar-language-menu .topbar-language-item:focus,
-  html[data-topbar-color=matcha] .topbar-language-menu .topbar-language-item:hover,
-  html[data-topbar-color=matcha] .topbar-language-menu .topbar-language-item:focus {
-      color: #0f172a !important;
       background: rgba(241, 245, 249, 0.96);
     }
 
@@ -887,6 +806,24 @@ if ($roleSwitchFlash !== null) {
     let listEl = null;
     let emptyEl = null;
     let primaryNameEl = null;
+    const successTitleTpl = <?= json_encode(__('topbar_switch_role_success_title') ?? 'Peranan {role}', JSON_UNESCAPED_UNICODE) ?>;
+    const successTextTpl = <?= json_encode(__('topbar_switch_role_success_text') ?? 'Paparan dan akses sistem telah dikemas kini mengikut pilihan peranan baru iaitu <strong>{role}</strong>.', JSON_UNESCAPED_UNICODE) ?>;
+    const fallbackRedirectUrl = <?= json_encode(base_url(app_config('site.default_home', 'pages/dashboard.php')), JSON_UNESCAPED_UNICODE) ?>;
+
+    function showRoleSwitchSuccess(roleName){
+      const safeRole = String(roleName || 'peranan').trim() || 'peranan';
+      const title = String(successTitleTpl || '').replace('{role}', safeRole);
+      const html = String(successTextTpl || '').replace('{role}', safeRole);
+      if (window.Swal && typeof Swal.fire === 'function') {
+        Swal.fire({
+          icon: 'success',
+          title: title,
+          html: html,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#198754'
+        });
+      }
+    }
 
     function initRoleSwitch(){
       btn = document.getElementById('btnSwitchRole');
@@ -944,23 +881,53 @@ if ($roleSwitchFlash !== null) {
         const originalHtml = saveBtn.innerHTML;
       saveBtn.innerHTML = '<i class=\"ri-loader-4-line ri-spin me-1\"></i> <?= h(__('topbar_switch_role_saving') ?? 'Menyimpan...') ?>';
         try {
-          const r = await fetch('<?= h(base_url('ajax/role-switch.php')) ?>', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'X-CSRF-Token': csrf
-            },
-            body: JSON.stringify({ groupID })
-          });
-          const text = await r.text();
-          let j = null;
-          try { j = JSON.parse(text); } catch (e) {}
-          if (!r.ok || !j || j.error) {
-            throw new Error((j && j.message) || 'Gagal menukar peranan.');
+          const runRoleSwitch = async () => {
+            const r = await fetch('<?= h(base_url('ajax/role-switch.php')) ?>', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-Token': csrf
+              },
+              body: JSON.stringify({
+                groupID,
+                currentPath: window.AccessUiSync && typeof window.AccessUiSync.inferCurrentPagePath === 'function'
+                  ? window.AccessUiSync.inferCurrentPagePath()
+                  : ''
+              })
+            });
+            const text = await r.text();
+            let j = null;
+            try { j = JSON.parse(text); } catch (e) {}
+            if (!r.ok || !j || j.error) {
+              throw new Error((j && j.message) || 'Gagal menukar peranan.');
+            }
+            modal.hide();
+
+            const roleName = String(j.group_name || '').trim();
+            if (window.AccessUiSync && typeof window.AccessUiSync.applyAccessState === 'function') {
+              const result = await window.AccessUiSync.applyAccessState(j, {
+                refreshSidebar: true,
+                redirectOnDenied: true,
+                onRedirect: ({ redirectUrl }) => {
+                  window.location.href = String(redirectUrl || fallbackRedirectUrl || window.location.href);
+                }
+              });
+              if (result && result.redirected) {
+                return;
+              }
+            } else {
+              window.location.href = String(j.redirect_url || fallbackRedirectUrl || window.location.href);
+              return;
+            }
+            showRoleSwitchSuccess(roleName || selected.closest('.role-item')?.textContent || 'peranan');
+          };
+
+          if (window.AccessUiSync && typeof window.AccessUiSync.runExclusive === 'function') {
+            await window.AccessUiSync.runExclusive(runRoleSwitch);
+          } else {
+            await runRoleSwitch();
           }
-          modal.hide();
-          window.location.reload();
         } catch (e) {
           showErr(e.message || 'Gagal menukar peranan.');
         } finally {

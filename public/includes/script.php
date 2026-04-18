@@ -71,6 +71,8 @@ $baseUrl = rtrim(base_url(''), '/');
   window.csrfToken = <?= json_encode($csrfToken, JSON_UNESCAPED_UNICODE) ?>;
   window.BASE_URL = <?= json_encode($baseUrl, JSON_UNESCAPED_UNICODE) ?>;
 </script>
+<script src="<?= base_url('assets/js/group-sidebar-sync.js') ?>?v=<?= $version ?>"></script>
+<script src="<?= base_url('assets/js/access-ui-sync.js') ?>?v=<?= $version ?>"></script>
 <script>
 (function () {
   'use strict';

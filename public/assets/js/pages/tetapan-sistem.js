@@ -255,6 +255,7 @@
     const baseUrl = typeof config.baseUrl === 'string' ? config.baseUrl : '';
     const initialDbSelection = config.initialDbSelection || {};
     const pageUiHelper = window.PageUiHelper || {};
+    const formRuntimeState = new WeakMap();
     const buildAssetUrl = function (assetPath) {
       const cleanPath = String(assetPath || '').trim().replace(/^\/+/, '');
       if (!cleanPath) {
@@ -272,6 +273,359 @@
         const leftbarUser = document.querySelector('.leftbar-user');
         if (leftbarUser) {
           leftbarUser.style.backgroundImage = 'url("' + buildAssetUrl(sidebarUserImage) + '")';
+        }
+      }
+
+      if (generalSettings['site.title']) {
+        document.title = String(generalSettings['site.title']);
+      }
+    };
+
+    const getFormState = function (form) {
+      if (!formRuntimeState.has(form)) {
+        formRuntimeState.set(form, {
+          snapshot: '',
+          pending: false,
+          lastState: 'idle'
+        });
+      }
+      return formRuntimeState.get(form);
+    };
+
+    const serializeFormState = function (form) {
+      const entries = [];
+      const formData = new FormData(form);
+      formData.forEach(function (value, key) {
+        if (key === 'csrf_token' || key === 'ajax') {
+          return;
+        }
+        if (value instanceof File) {
+          entries.push([key, value.name || '']);
+          return;
+        }
+        entries.push([key, String(value)]);
+      });
+      entries.sort(function (a, b) {
+        if (a[0] === b[0]) {
+          return a[1].localeCompare(b[1]);
+        }
+        return a[0].localeCompare(b[0]);
+      });
+      return JSON.stringify(entries);
+    };
+
+    const captureFormSnapshot = function (form) {
+      const state = getFormState(form);
+      state.snapshot = serializeFormState(form);
+      return state.snapshot;
+    };
+
+    const getSaveFeedbackHost = function (form, button) {
+      var existing = form.querySelector('[data-settings-save-feedback="1"]');
+      if (existing) {
+        return existing;
+      }
+
+      var actions = (button && button.closest('.general-settings-actions, .email-settings-actions, .auth-settings-actions, .db-settings-actions, .theme-settings-actions, .lang-settings-actions'))
+        || form.querySelector('.general-settings-actions, .email-settings-actions, .auth-settings-actions, .db-settings-actions, .theme-settings-actions, .lang-settings-actions');
+      if (!actions) {
+        return null;
+      }
+
+      var feedback = document.createElement('div');
+      feedback.className = 'tetapan-save-feedback d-inline-flex align-items-center gap-2 small ms-auto me-2';
+      feedback.setAttribute('data-settings-save-feedback', '1');
+      feedback.setAttribute('aria-live', 'polite');
+      feedback.innerHTML = ''
+        + '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" data-save-feedback-badge>Belum simpan</span>'
+        + '<span class="text-muted" data-save-feedback-text>Belum ada perubahan.</span>';
+
+      var buttonGroup = button && button.parentElement && button.parentElement !== actions && button.parentElement.classList.contains('d-flex')
+        ? button.parentElement
+        : null;
+
+      if (buttonGroup && buttonGroup.parentElement === actions) {
+        actions.insertBefore(feedback, buttonGroup);
+      } else if (button && button.parentElement === actions) {
+        actions.insertBefore(feedback, button);
+      } else {
+        actions.appendChild(feedback);
+      }
+
+      return feedback;
+    };
+
+    const setSaveFeedbackState = function (form, button, tone, message) {
+      var host = getSaveFeedbackHost(form, button);
+      if (!host) {
+        return;
+      }
+
+      var badge = host.querySelector('[data-save-feedback-badge]');
+      var text = host.querySelector('[data-save-feedback-text]');
+      var badgeMap = {
+        idle: {
+          badge: 'Belum simpan',
+          className: 'badge bg-secondary-subtle text-secondary border border-secondary-subtle',
+          textClass: 'text-muted'
+        },
+        dirty: {
+          badge: 'Perubahan',
+          className: 'badge bg-warning-subtle text-warning border border-warning-subtle',
+          textClass: 'text-warning-emphasis'
+        },
+        saving: {
+          badge: 'Menyimpan',
+          className: 'badge bg-primary-subtle text-primary border border-primary-subtle',
+          textClass: 'text-primary-emphasis'
+        },
+        success: {
+          badge: 'Disimpan',
+          className: 'badge bg-success-subtle text-success border border-success-subtle',
+          textClass: 'text-success-emphasis'
+        },
+        warning: {
+          badge: 'Amaran',
+          className: 'badge bg-warning-subtle text-warning border border-warning-subtle',
+          textClass: 'text-warning-emphasis'
+        },
+        error: {
+          badge: 'Ralat',
+          className: 'badge bg-danger-subtle text-danger border border-danger-subtle',
+          textClass: 'text-danger-emphasis'
+        }
+      };
+
+      var next = badgeMap[tone] || badgeMap.idle;
+      if (badge) {
+        badge.className = next.className;
+        badge.textContent = next.badge;
+      }
+      if (text) {
+        text.className = next.textClass;
+        text.textContent = message || '';
+      }
+
+      getFormState(form).lastState = tone;
+    };
+
+    const refreshDirtyIndicator = function (form, button) {
+      if (!form) {
+        return;
+      }
+
+      var state = getFormState(form);
+      if (state.pending) {
+        return;
+      }
+
+      var dirty = state.snapshot !== serializeFormState(form);
+      if (dirty) {
+        setSaveFeedbackState(form, button, 'dirty', 'Perubahan belum disimpan.');
+        return;
+      }
+
+      if (state.lastState === 'success') {
+        setSaveFeedbackState(form, button, 'success', 'Perubahan terkini sudah disimpan.');
+        return;
+      }
+
+      if (state.lastState === 'warning') {
+        setSaveFeedbackState(form, button, 'warning', 'Tetapan disimpan tetapi ada amaran yang perlu disemak.');
+        return;
+      }
+
+      setSaveFeedbackState(form, button, 'idle', 'Belum ada perubahan baru untuk disimpan.');
+    };
+
+    const syncEmailFormState = function (form, emailSettings) {
+      if (!form || !emailSettings) {
+        return;
+      }
+
+      ['mail_driver', 'mail_host', 'mail_port', 'mail_username', 'mail_encryption', 'mail_from_address', 'mail_from_name'].forEach(function (name) {
+        var field = form.querySelector('[name="' + name + '"]');
+        if (!field) {
+          return;
+        }
+        field.value = emailSettings[name] || '';
+        clearFieldValidationState(field);
+        field.classList.remove('is-valid');
+      });
+
+      var passwordField = form.querySelector('[name="mail_password"]');
+      if (passwordField) {
+        passwordField.value = '';
+        clearFieldValidationState(passwordField);
+        passwordField.classList.remove('is-valid');
+      }
+    };
+
+    const syncThemeFormState = function (form, themeSettings) {
+      if (!form || !themeSettings) {
+        return;
+      }
+
+      var mapping = {
+        layoutMode: 'layout_mode',
+        topbarColor: 'topbar_color',
+        sidebarColor: 'sidebar_color'
+      };
+
+      Object.keys(mapping).forEach(function (key) {
+        var inputName = mapping[key];
+        var expectedValue = String(themeSettings[key] || '');
+        if (!expectedValue) {
+          return;
+        }
+        var target = form.querySelector('input[name="' + inputName + '"][value="' + expectedValue + '"]');
+        if (target) {
+          target.checked = true;
+        }
+      });
+
+      if (typeof window.__tetapanSyncThemeSectionUi === 'function') {
+        window.__tetapanSyncThemeSectionUi();
+      }
+    };
+
+    const syncLanguageSelectionUi = function (form) {
+      if (!form) {
+        return;
+      }
+
+      var languageCheckboxes = Array.from(form.querySelectorAll('input[name="languages[]"]'));
+      var defaultRadios = Array.from(form.querySelectorAll('input[name="default_language"]'));
+      var activeCheckboxes = languageCheckboxes.filter(function (input) {
+        return input.checked;
+      });
+
+      defaultRadios.forEach(function (radio) {
+        var relatedCheckbox = form.querySelector('#lang_' + radio.value);
+        var isActive = !!(relatedCheckbox && relatedCheckbox.checked);
+        radio.disabled = !isActive;
+        if (!isActive) {
+          radio.checked = false;
+        }
+
+        var row = radio.closest('tr');
+        if (!row) {
+          return;
+        }
+
+        row.classList.toggle('table-success', isActive);
+        row.classList.toggle('language-row-active', isActive);
+
+        var badgeHost = row.querySelector('td:nth-child(4) .d-flex.align-items-center');
+        if (!badgeHost) {
+          return;
+        }
+
+        badgeHost.querySelectorAll('.js-language-active-badge, .js-language-default-badge').forEach(function (badge) {
+          badge.remove();
+        });
+
+        if (isActive) {
+          var activeBadge = document.createElement('span');
+          activeBadge.className = 'badge bg-success-subtle text-success border border-success-subtle js-language-active-badge';
+          activeBadge.innerHTML = '<i class="ri-checkbox-circle-fill me-1"></i> ' + ((__('config_tab_bahasa_status_aktif')) || 'Aktif');
+          badgeHost.appendChild(activeBadge);
+        }
+      });
+
+      var selectedDefault = form.querySelector('input[name="default_language"]:checked');
+      if (!selectedDefault && activeCheckboxes.length > 0) {
+        var fallbackRadio = form.querySelector('#default_lang_' + activeCheckboxes[0].value);
+        if (fallbackRadio && !fallbackRadio.disabled) {
+          fallbackRadio.checked = true;
+          selectedDefault = fallbackRadio;
+        }
+      }
+
+      if (selectedDefault) {
+        var selectedRow = selectedDefault.closest('tr');
+        var selectedBadgeHost = selectedRow ? selectedRow.querySelector('td:nth-child(4) .d-flex.align-items-center') : null;
+        if (selectedBadgeHost) {
+          var defaultBadge = document.createElement('span');
+          defaultBadge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle ms-2 js-language-default-badge';
+          defaultBadge.innerHTML = '<i class="ri-star-fill me-1"></i> ' + ((__('config_tab_bahasa_default')) || 'Bahasa Lalai');
+          selectedBadgeHost.appendChild(defaultBadge);
+        }
+        document.documentElement.lang = selectedDefault.value;
+      }
+    };
+
+    const syncLanguageFormState = function (form, languageData) {
+      if (!form || !languageData) {
+        return;
+      }
+
+      var active = Array.isArray(languageData.active) ? languageData.active : [];
+      var defaultLanguage = String(languageData.default || '');
+
+      form.querySelectorAll('input[name="languages[]"]').forEach(function (checkbox) {
+        checkbox.checked = active.indexOf(checkbox.value) !== -1;
+      });
+      form.querySelectorAll('input[name="default_language"]').forEach(function (radio) {
+        radio.checked = defaultLanguage !== '' && radio.value === defaultLanguage;
+      });
+
+      syncLanguageSelectionUi(form);
+    };
+
+    const syncDatabaseFormState = function (form, runtime) {
+      if (!form || !runtime) {
+        return;
+      }
+
+      var environment = String(runtime.dbRenderEnvironment || '');
+      var mode = String(runtime.dbRenderOperationalMode || '');
+
+      if (environment) {
+        var envRadio = form.querySelector('input[name="sybase_environment"][value="' + environment + '"]');
+        if (envRadio) {
+          envRadio.checked = true;
+        }
+      }
+
+      if (mode) {
+        var modeRadio = form.querySelector('input[name="sybase_operational_mode"][value="' + mode + '"]');
+        if (modeRadio) {
+          modeRadio.checked = true;
+        }
+      }
+    };
+
+    const applyPayloadUiSync = function (payload, form) {
+      if (!payload || typeof payload !== 'object') {
+        return;
+      }
+
+      if (payload.tab === 'db' && payload.data && payload.data.dbRuntime) {
+        updateDatabaseRuntimeSummary(payload.data.dbRuntime);
+        syncDatabaseFormState(form, payload.data.dbRuntime);
+      }
+
+      if (payload.tab === 'theme' && payload.data && payload.data.themeSettings) {
+        applySavedThemeSettings(payload.data.themeSettings);
+        syncThemeFormState(form, payload.data.themeSettings);
+      }
+
+      if (payload.tab === 'general' && payload.data && payload.data.generalSettings) {
+        applyGeneralSettings(payload.data.generalSettings);
+      }
+
+      if (payload.tab === 'email' && payload.data && payload.data.emailSettings) {
+        syncEmailFormState(form, payload.data.emailSettings);
+      }
+
+      if (payload.tab === 'lang' && payload.data && payload.data.languageData) {
+        syncLanguageFormState(form, payload.data.languageData);
+      }
+
+      if (payload.tab === 'auth') {
+        if (typeof window.__tetapanRefreshAuthPolicySummary === 'function') {
+          window.__tetapanRefreshAuthPolicySummary();
         }
       }
     };
@@ -478,13 +832,21 @@
         return false;
       }
 
+      var state = getFormState(form);
+      if (state.pending) {
+        return false;
+      }
+
       if (showValidationAlert(form)) {
+        setSaveFeedbackState(form, button, 'error', 'Semak semula input yang ditanda sebelum menyimpan.');
         return false;
       }
 
       if (button) {
         setButtonLoading(button, true);
       }
+      state.pending = true;
+      setSaveFeedbackState(form, button, 'saving', 'Sistem sedang menyimpan perubahan anda...');
 
       const formData = new FormData(form);
       formData.set('ajax', '1');
@@ -533,20 +895,11 @@
             } else {
               window.alert(message);
             }
+            setSaveFeedbackState(form, button, 'error', message);
             return;
           }
 
-          if (payload.tab === 'db' && payload.data && payload.data.dbRuntime) {
-            updateDatabaseRuntimeSummary(payload.data.dbRuntime);
-          }
-
-          if (payload.tab === 'theme' && payload.data && payload.data.themeSettings) {
-            applySavedThemeSettings(payload.data.themeSettings);
-          }
-
-          if (payload.tab === 'general' && payload.data && payload.data.generalSettings) {
-            applyGeneralSettings(payload.data.generalSettings);
-          }
+          applyPayloadUiSync(payload, form);
 
           if (payload.tab) {
             activateTab('#' + payload.tab + '-tab');
@@ -554,23 +907,15 @@
             activateTab(requestedTab);
           }
 
-          if (window.Swal && typeof window.Swal.fire === 'function') {
-            const warnings = payload && Array.isArray(payload.warnings) ? payload.warnings : [];
-            const hasWarnings = warnings.length > 0;
-            window.Swal.fire({
-              icon: hasWarnings ? 'warning' : 'success',
-              title: payload.title || __('config_js_berjaya') || 'Berjaya',
-              text: hasWarnings ? undefined : (payload.message || __('config_js_save_success_default') || 'Tetapan berjaya disimpan.'),
-              html: hasWarnings
-                ? '<div class="text-start mb-2">' + (payload.message || __('config_js_save_success_default') || 'Tetapan berjaya disimpan.') + '</div>'
-                  + '<div class="text-start fw-semibold mb-2">' + (__('config_auth_summary_warnings') || 'Warnings') + '</div>'
-                  + warnings.map(function (item) {
-                      return '<div class="text-start mb-1">• ' + item + '</div>';
-                    }).join('')
-                : undefined,
-              confirmButtonText: __('config_js_btn_ok') || 'OK'
-            });
+          captureFormSnapshot(form);
+
+          var warnings = payload && Array.isArray(payload.warnings) ? payload.warnings : [];
+          if (warnings.length > 0) {
+            setSaveFeedbackState(form, button, 'warning', payload.message || 'Tetapan disimpan dengan amaran.');
+            return;
           }
+
+          setSaveFeedbackState(form, button, 'success', payload.message || __('config_js_save_success_default') || 'Tetapan berjaya disimpan.');
         })
         .catch(function (error) {
           const message = error && error.message ? error.message : __('config_js_save_system_error') || 'Ralat sistem semasa menyimpan tetapan.';
@@ -584,11 +929,14 @@
           } else {
             window.alert(message);
           }
+          setSaveFeedbackState(form, button, 'error', message);
         })
         .finally(function () {
+          state.pending = false;
           if (button) {
             setButtonLoading(button, false);
           }
+          refreshDirtyIndicator(form, button);
         });
 
       return true;
@@ -652,25 +1000,6 @@
       }
       return true;
     };
-
-    function bindAjaxFormSubmit(form, resolveButton, beforeSubmit) {
-      if (!form) {
-        return;
-      }
-
-      form.addEventListener('submit', function (event) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-
-        if (typeof beforeSubmit === 'function' && beforeSubmit(form) === false) {
-          return;
-        }
-
-        const submitter = event.submitter || null;
-        const button = typeof resolveButton === 'function' ? resolveButton(submitter) : submitter;
-        submitFormDirect(form, button);
-      });
-    }
 
     function updateDatabaseRuntimeSummary(runtime) {
       if (!runtime) {
@@ -1121,33 +1450,25 @@
 
     const formGeneral = document.getElementById('form-general-aktif');
     const btnGeneral = document.getElementById('btn-simpan-general');
-    bindAjaxFormSubmit(formGeneral, function () { return btnGeneral; });
-    if (formGeneral && btnGeneral && !formGeneral.hasAttribute('data-native-submit')) {
-      btnGeneral.addEventListener('click', function (e) {
-        e.preventDefault();
-        submitFormDirect(formGeneral, btnGeneral);
-      });
+    if (formGeneral && btnGeneral) {
+      captureFormSnapshot(formGeneral);
+      refreshDirtyIndicator(formGeneral, btnGeneral);
     }
 
     const formAuth = document.getElementById('form-auth-aktif');
     const btnAuth = document.getElementById('btn-simpan-auth');
-    if (formAuth && btnAuth && !formAuth.hasAttribute('data-native-submit')) {
-      btnAuth.addEventListener('click', function (e) {
-        e.preventDefault();
-        window.__tetapanSubmitAuthForm(e, formAuth);
-      });
+    if (formAuth && btnAuth) {
+      captureFormSnapshot(formAuth);
+      refreshDirtyIndicator(formAuth, btnAuth);
     }
 
     initAuthPolicyInteractions();
 
     const formEmel = document.getElementById('form-emel-aktif');
     const btnEmel = document.getElementById('btn-simpan-emel');
-    bindAjaxFormSubmit(formEmel, function () { return btnEmel; });
     if (formEmel && btnEmel) {
-      btnEmel.addEventListener('click', function (e) {
-        e.preventDefault();
-        submitFormDirect(formEmel, btnEmel);
-      });
+      captureFormSnapshot(formEmel);
+      refreshDirtyIndicator(formEmel, btnEmel);
     }
 
     window.__tetapanHandleEmailTestImpl = function () {
@@ -1318,7 +1639,6 @@
 
     const formDB = document.getElementById('form-db-aktif');
     const btnDB = document.getElementById('btn-simpan-db');
-    bindAjaxFormSubmit(formDB, function () { return btnDB; });
     if (formDB && btnDB) {
       const dbOptionRows = Array.from(formDB.querySelectorAll('.db-option-row[data-db-radio]'));
 
@@ -1375,89 +1695,48 @@
       });
 
       syncDbOptionRows();
-
-      btnDB.addEventListener('click', function (e) {
-        e.preventDefault();
-        submitFormDirect(formDB, btnDB);
-      });
+      captureFormSnapshot(formDB);
+      refreshDirtyIndicator(formDB, btnDB);
     }
 
     const formBahasa = document.getElementById('form-bahasa');
     const btnBahasa = document.getElementById('btn-simpan-bahasa');
-    bindAjaxFormSubmit(formBahasa, function () { return btnBahasa; }, window.__tetapanBeforeLanguageSubmit);
     if (formBahasa && btnBahasa) {
-      const languageCheckboxes = Array.from(formBahasa.querySelectorAll('input[name="languages[]"]'));
-      const defaultRadios = Array.from(formBahasa.querySelectorAll('input[name="default_language"]'));
-
-      const syncDefaultLanguageSelection = function () {
-        const activeCheckboxes = languageCheckboxes.filter(function (input) {
-          return input.checked;
-        });
-
-        defaultRadios.forEach(function (radio) {
-          const relatedCheckbox = formBahasa.querySelector('#lang_' + radio.value);
-          const isActive = !!(relatedCheckbox && relatedCheckbox.checked);
-          radio.disabled = !isActive;
-          if (!isActive) {
-            radio.checked = false;
-          }
-
-          const row = radio.closest('tr');
-          if (row) {
-            row.classList.toggle('table-success', isActive);
-            row.classList.toggle('language-row-active', isActive);
-          }
-        });
-
-        const selectedDefault = formBahasa.querySelector('input[name="default_language"]:checked');
-        if (!selectedDefault && activeCheckboxes.length > 0) {
-          const fallbackRadio = formBahasa.querySelector('#default_lang_' + activeCheckboxes[0].value);
-          if (fallbackRadio && !fallbackRadio.disabled) {
-            fallbackRadio.checked = true;
-          }
-        }
-      };
-
-      languageCheckboxes.forEach(function (checkbox) {
-        checkbox.addEventListener('change', syncDefaultLanguageSelection);
-      });
-
-      defaultRadios.forEach(function (radio) {
-        radio.addEventListener('change', function () {
-          const relatedCheckbox = formBahasa.querySelector('#lang_' + radio.value);
-          if (relatedCheckbox && !relatedCheckbox.checked) {
-            relatedCheckbox.checked = true;
-          }
-          syncDefaultLanguageSelection();
-        });
-      });
-
-      syncDefaultLanguageSelection();
-
-      btnBahasa.addEventListener('click', function (e) {
-        e.preventDefault();
-        const checked = formBahasa.querySelectorAll('input[name="languages[]"]:checked');
-        if (checked.length === 0) {
-          Swal.fire({ icon: 'warning', title: __('config_js_tiada_bahasa'), text: __('config_js_pilih_bahasa'), confirmButtonText: __('config_js_btn_ok') });
-          return;
-        }
-        const defaultLang = formBahasa.querySelector('input[name="default_language"]:checked');
-        if (!defaultLang) {
-          Swal.fire({ icon: 'warning', title: __('config_js_tiada_bahasa_default'), text: __('config_js_pilih_bahasa_default'), confirmButtonText: __('config_js_btn_ok') });
-          return;
-        }
-        submitFormDirect(formBahasa, btnBahasa);
-      });
+      syncLanguageSelectionUi(formBahasa);
+      captureFormSnapshot(formBahasa);
+      refreshDirtyIndicator(formBahasa, btnBahasa);
     }
 
     const formTema = document.getElementById('form-tema-aktif');
     const btnTema = document.getElementById('btn-simpan-tema');
-    bindAjaxFormSubmit(formTema, function () { return btnTema; });
     if (formTema && btnTema) {
       initThemeSectionInteractions(formTema);
-      btnTema.addEventListener('click', function (e) {
-        e.preventDefault();
-        submitFormDirect(formTema, btnTema);
+      captureFormSnapshot(formTema);
+      refreshDirtyIndicator(formTema, btnTema);
+    }
+
+    [
+      [formGeneral, btnGeneral],
+      [formAuth, btnAuth],
+      [formEmel, btnEmel],
+      [formDB, btnDB],
+      [formBahasa, btnBahasa],
+      [formTema, btnTema]
+    ].forEach(function (entry) {
+      var form = entry[0];
+      var button = entry[1];
+      if (!form || !button) {
+        return;
+      }
+
+      form.addEventListener('input', function () {
+        refreshDirtyIndicator(form, button);
+      });
+      form.addEventListener('change', function () {
+        if (form === formBahasa) {
+          syncLanguageSelectionUi(formBahasa);
+        }
+        refreshDirtyIndicator(form, button);
       });
     }
   }

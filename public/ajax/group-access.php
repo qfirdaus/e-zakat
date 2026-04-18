@@ -20,14 +20,14 @@ try {
   $gid = isset($_GET['groupID']) ? (int)$_GET['groupID'] : 0;
   if ($gid <= 0) {
     http_response_code(400);
-    echo json_encode(['error' => true, 'message' => 'groupID tidak sah'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['error' => true, 'message' => __('userGroup_group_invalid_id')], JSON_UNESCAPED_UNICODE);
     exit;
   }
   
   // Rate limiting: max 30 requests per 60 seconds (read operation)
   if (!checkRateLimit('group_access', 30, 60)) {
     http_response_code(429);
-    echo json_encode(['error' => true, 'message' => 'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['error' => true, 'message' => __('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE);
     exit;
   }
   

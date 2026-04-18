@@ -2256,6 +2256,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') ==
 </div><!-- /.wrapper -->
 
 <?php include __DIR__ . '/../includes/script.php'; ?>
+<script>
+window.GroupPageRuntime = Object.assign({}, window.GroupPageRuntime || {}, {
+  activeGroupId: <?= json_encode((int)($_SESSION['group_active_id'] ?? ($profile['f_groupID'] ?? 0))) ?>,
+  defaultGroupId: <?= json_encode((int)($_SESSION['group_default_id'] ?? ($profile['f_groupID'] ?? 0))) ?>
+});
+</script>
 <!-- Extracted JavaScript Modules -->
 <script src="<?= base_url('assets/js/helpers/datatables-standard.js') ?>?v=<?= $version ?? date('ymdHis') ?>"></script>
 <script src="<?= base_url('assets/js/group-utils.js') ?>?v=<?= $version ?? date('ymdHis') ?>"></script>
@@ -2360,24 +2366,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') ==
             </div>
             <!-- Removed zh/ta language fields: menu names now only use ms + en -->
             <div class="col-md-6">
-              <label class="form-label"><?= h(__('userGroup_field_menu_domain') ?? 'Domain') ?></label>
+              <label class="form-label"><?= h(__('userGroup_field_menu_domain')) ?></label>
               <select class="form-select" name="domain" id="em_domain">
-                <option value="SHARED"><?= h(__('userGroup_menu_domain_shared') ?? 'SHARED') ?></option>
-                <option value="STAF"><?= h(__('userGroup_menu_domain_staff') ?? 'STAF') ?></option>
-                <option value="PELAJAR"><?= h(__('userGroup_menu_domain_student') ?? 'PELAJAR') ?></option>
-                <option value="UMUM"><?= h(__('userGroup_menu_domain_public') ?? 'UMUM') ?></option>
+                <option value="SHARED"><?= h(__('userGroup_menu_domain_shared')) ?></option>
+                <option value="STAF"><?= h(__('userGroup_menu_domain_staff')) ?></option>
+                <option value="PELAJAR"><?= h(__('userGroup_menu_domain_student')) ?></option>
+                <option value="UMUM"><?= h(__('userGroup_menu_domain_public')) ?></option>
               </select>
-              <div class="form-text"><?= h(__('userGroup_field_menu_domain_help') ?? 'Tentukan domain fungsi menu ini.') ?></div>
+              <div class="form-text"><?= h(__('userGroup_field_menu_domain_help')) ?></div>
             </div>
             <div class="col-md-6">
-              <label class="form-label d-block"><?= h(__('userGroup_field_menu_staff_only_visibility') ?? 'Paparan Semasa Staff Only') ?></label>
-              <div class="btn-group mt-1" role="group" aria-label="<?= h(__('userGroup_field_menu_staff_only_visibility') ?? 'Paparan Semasa Staff Only') ?>">
+              <label class="form-label d-block"><?= h(__('userGroup_field_menu_staff_only_visibility')) ?></label>
+              <div class="btn-group mt-1" role="group" aria-label="<?= h(__('userGroup_field_menu_staff_only_visibility')) ?>">
                 <input type="radio" class="btn-check" name="show_staff_only" id="em_show_staff_only_yes" value="1" checked>
-                <label class="btn btn-outline-primary" for="em_show_staff_only_yes"><?= h(__('userGroup_menu_staff_only_show') ?? 'Papar') ?></label>
+                <label class="btn btn-outline-primary" for="em_show_staff_only_yes"><?= h(__('userGroup_menu_staff_only_show')) ?></label>
                 <input type="radio" class="btn-check" name="show_staff_only" id="em_show_staff_only_no" value="0">
-                <label class="btn btn-outline-secondary" for="em_show_staff_only_no"><?= h(__('userGroup_menu_staff_only_hide') ?? 'Sembunyi') ?></label>
+                <label class="btn btn-outline-secondary" for="em_show_staff_only_no"><?= h(__('userGroup_menu_staff_only_hide')) ?></label>
               </div>
-              <div class="form-text"><?= h(__('userGroup_field_menu_staff_only_visibility_help') ?? 'Kawal sama ada menu ini masih dipaparkan apabila mode Staff Only diaktifkan.') ?></div>
+              <div class="form-text"><?= h(__('userGroup_field_menu_staff_only_visibility_help')) ?></div>
             </div>
             <div class="col-md-6">
               <label class="form-label d-block"><?= h(__('userGroup_field_status')) ?></label>
@@ -2825,12 +2831,61 @@ window.hasDT = function() {
     btn_menu_label: <?= json_encode(__('userGroup_btn_menu_label')) ?>,
     btn_module_label: <?= json_encode(__('userGroup_btn_module_label')) ?>,
     btn_group_label: <?= json_encode(__('userGroup_btn_group_label')) ?>,
+    label_group: <?= json_encode(__('userGroup_label_group')) ?>,
+    col_visibility: <?= json_encode(__('userGroup_col_visibility')) ?>,
+    menu_path_info: <?= json_encode(__('userGroup_menu_path_info')) ?>,
+    menu_staff_only_show: <?= json_encode(__('userGroup_menu_staff_only_show')) ?>,
+    menu_staff_only_hide: <?= json_encode(__('userGroup_menu_staff_only_hide')) ?>,
+    menu_staff_only_show_full: <?= json_encode(__('userGroup_menu_staff_only_show_full')) ?>,
+    menu_staff_only_hide_full: <?= json_encode(__('userGroup_menu_staff_only_hide_full')) ?>,
+    error_update_status: <?= json_encode(__('userGroup_error_update_status')) ?>,
+    modal_summary_title: <?= json_encode(__('userGroup_modal_summary_title')) ?>,
+    pick_module_aria: <?= json_encode(__('userGroup_pick_module_aria')) ?>,
+    pick_menu_button: <?= json_encode(__('userGroup_pick_menu_button')) ?>,
+    pick_menu_none: <?= json_encode(__('userGroup_pick_menu_none')) ?>,
+    pick_menu_on: <?= json_encode(__('userGroup_pick_menu_on')) ?>,
+    pick_menu_off: <?= json_encode(__('userGroup_pick_menu_off')) ?>,
+    summary_load_fail: <?= json_encode(__('userGroup_summary_load_fail')) ?>,
+    summary_empty: <?= json_encode(__('userGroup_summary_empty')) ?>,
+    summary_no_menu: <?= json_encode(__('userGroup_summary_no_menu')) ?>,
+    summary_col_module: <?= json_encode(__('userGroup_summary_col_module')) ?>,
+    summary_col_menu: <?= json_encode(__('userGroup_summary_col_menu')) ?>,
+    error_save: <?= json_encode(__('userGroup_error_save')) ?>,
+    error_load: <?= json_encode(__('userGroup_error_load')) ?>,
+    reorder_label: <?= json_encode(__('userGroup_reorder_label')) ?>,
+    rate_limit_text: <?= json_encode(__('userGroup_rate_limit_text')) ?>,
+    err_server: <?= json_encode(__('userGroup_err_server')) ?>,
+    server_error_prefix: <?= json_encode(__('userGroup_server_error_prefix')) ?>,
+    group_invalid_id: <?= json_encode(__('userGroup_group_invalid_id')) ?>,
+    menu_invalid_id: <?= json_encode(__('userGroup_menu_invalid_id')) ?>,
+    group_not_found: <?= json_encode(__('userGroup_group_not_found')) ?>,
+    menu_not_found: <?= json_encode(__('userGroup_menu_not_found')) ?>,
+    target_module_not_found: <?= json_encode(__('userGroup_target_module_not_found')) ?>,
+    menu_path_duplicate: <?= json_encode(__('userGroup_menu_path_duplicate')) ?>,
+    group_code_duplicate: <?= json_encode(__('userGroup_group_code_duplicate')) ?>,
+    group_code_conflict: <?= json_encode(__('userGroup_group_code_conflict')) ?>,
+    group_create_required: <?= json_encode(__('userGroup_group_create_required')) ?>,
+    group_create_permission_denied: <?= json_encode(__('userGroup_group_create_permission_denied')) ?>,
+    group_delete_permission_denied: <?= json_encode(__('userGroup_group_delete_permission_denied')) ?>,
+    group_permissions_not_allowed: <?= json_encode(__('userGroup_group_permissions_not_allowed')) ?>,
+    menu_create_permission_denied: <?= json_encode(__('userGroup_menu_create_permission_denied')) ?>,
+    menu_update_permission_denied: <?= json_encode(__('userGroup_menu_update_permission_denied')) ?>,
+    menu_delete_permission_denied: <?= json_encode(__('userGroup_menu_delete_permission_denied')) ?>,
+    menu_status_permission_denied: <?= json_encode(__('userGroup_menu_status_permission_denied')) ?>,
+    invalid_payload: <?= json_encode(__('userGroup_invalid_payload')) ?>,
+    menu_not_same_module: <?= json_encode(__('userGroup_menu_not_same_module')) ?>,
+    menu_read_order_error: <?= json_encode(__('userGroup_menu_read_order_error')) ?>,
+    group_system_protected: <?= json_encode(__('userGroup_group_system_protected')) ?>,
+    group_users_assigned: <?= json_encode(__('userGroup_group_users_assigned')) ?>,
+    ok: <?= json_encode(__('userGroup_ok')) ?>,
+    non_json_response: <?= json_encode(__('userGroup_non_json_response')) ?>,
     btn_ok: <?= json_encode(__('config_js_btn_ok')) ?>,
     menu_save_success_create: <?= json_encode(__('userGroup_menu_save_success_create')) ?>,
     menu_save_success_update: <?= json_encode(__('userGroup_menu_save_success_update')) ?>
   };
   // Expose page translations for other script scopes (e.g. second IIFE / DataTable init)
   window.GroupPageT = T;
+  window.T = T;
   window.GroupSwal = window.GroupSwal || {
     fire(options) {
       if (!window.Swal || typeof Swal.fire !== 'function') return Promise.resolve(null);

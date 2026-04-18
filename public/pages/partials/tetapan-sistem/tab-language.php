@@ -104,7 +104,7 @@
                       <div class="text-muted small">
                         <i class="ri-translate-2 me-1"></i> <?= __('config_tab_bahasa_actions_note') ?? 'Pastikan sekurang-kurangnya satu bahasa kekal aktif dan satu bahasa lalai dipilih.' ?>
                       </div>
-                      <button type="button" class="btn btn-primary px-4" id="btn-simpan-bahasa" onclick="return window.__tetapanAjaxSubmit(event, document.getElementById('form-bahasa'), 'btn-simpan-bahasa', 'language');">
+                      <button type="submit" class="btn btn-primary px-4" id="btn-simpan-bahasa">
                         <i class="ri-save-3-line me-2"></i> <?= __('config_tab_bahasa_simpan_tetapan_bahasa') ?? 'Simpan Tetapan Bahasa' ?>
                       </button>
                     </div>

@@ -11,20 +11,20 @@ try {
     $csrf = $headers['X-CSRF-Token'] ?? $headers['x-csrf-token'] ?? '';
     if (!$csrf || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf)) {
         http_response_code(400);
-        echo json_encode(['error'=>true, 'message'=>'CSRF token tidak sah'], JSON_UNESCAPED_UNICODE); exit;
+        echo json_encode(['error'=>true, 'message'=>(string)__('userGroup_csrf_invalid')], JSON_UNESCAPED_UNICODE); exit;
     }
     
     // Rate limiting: max 10 requests per 60 seconds (critical operation)
     if (!checkRateLimit('menu_delete', 10, 60)) {
         http_response_code(429);
-        echo json_encode(['error'=>true, 'message'=>'Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.'], JSON_UNESCAPED_UNICODE); exit;
+        echo json_encode(['error'=>true, 'message'=>(string)__('userGroup_rate_limit_text')], JSON_UNESCAPED_UNICODE); exit;
     }
     
     // Permission check
     $db = Database::getInstance()->getConnection();
     if (!hasGroupManagePermission($db)) {
         http_response_code(403);
-        echo json_encode(['error'=>true, 'message'=>'Anda tidak mempunyai kebenaran untuk memadam menu.'], JSON_UNESCAPED_UNICODE); exit;
+        echo json_encode(['error'=>true, 'message'=>(string)__('userGroup_menu_delete_permission_denied')], JSON_UNESCAPED_UNICODE); exit;
     }
 
     $body      = json_decode(file_get_contents('php://input'), true) ?: [];
@@ -32,7 +32,7 @@ try {
     $groupID   = (int)($body['groupID'] ?? 0); // optional, utk reporting sahaja
     if ($menuID <= 0) {
         http_response_code(422);
-        echo json_encode(['error'=>true,'message'=>'menuID tidak sah']); exit;
+        echo json_encode(['error'=>true,'message'=>(string)__('userGroup_menu_invalid_id')], JSON_UNESCAPED_UNICODE); exit;
     }
 
     $db = Database::getInstance()->getConnection();
@@ -44,7 +44,7 @@ try {
     $menuData = $menuStmt->fetch(PDO::FETCH_ASSOC);
     if (!$menuData) {
         $db->rollBack();
-        echo json_encode(['error'=>true, 'message'=>'Menu tidak ditemui atau sudah dipadam.']); exit;
+        echo json_encode(['error'=>true, 'message'=>(string)__('userGroup_menu_not_found')], JSON_UNESCAPED_UNICODE); exit;
     }
 
     // (Opsyenal) tandakan kalau kumpulan konteks berubah
@@ -84,7 +84,7 @@ try {
     $stDel->execute([':mid' => $menuID]);
     if ($stDel->rowCount() === 0) {
         $db->rollBack();
-        echo json_encode(['error'=>true, 'message'=>'Menu tidak ditemui atau sudah dipadam.']); exit;
+        echo json_encode(['error'=>true, 'message'=>(string)__('userGroup_menu_not_found')], JSON_UNESCAPED_UNICODE); exit;
     }
 
     $db->commit();
@@ -147,5 +147,5 @@ try {
 } catch (Throwable $e) {
     if (!empty($db) && $db->inTransaction()) $db->rollBack();
     http_response_code(500);
-    echo json_encode(['error'=>true, 'message'=>'Ralat server: '.$e->getMessage()]);
+    echo json_encode(['error'=>true, 'message'=>(string)__('userGroup_server_error_prefix') . ' ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }
