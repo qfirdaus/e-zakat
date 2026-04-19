@@ -155,6 +155,7 @@ $uri  = $_SERVER['REQUEST_URI'];
 $configModel = class_exists('Database') ? new Config(Database::getInstance('mysql')->getConnection()) : null;
 $activeLanguages = $configModel ? $configModel->getBahasaAktif() : ['ms', 'en'];
 $defaultLanguage = $configModel ? ($configModel->getDefaultBahasa($activeLanguages[0] ?? 'ms') ?? 'ms') : 'ms';
+$globalThemeSettings = $configModel ? ($configModel->getTema() ?: []) : [];
 if (!in_array($defaultLanguage, $activeLanguages, true)) {
     $defaultLanguage = $activeLanguages[0] ?? 'ms';
 }
@@ -191,12 +192,25 @@ $locked_seconds = $locked_seconds ?? 0;
 $attempts_left  = $attempts_left ?? 3;
 
 $defaultHome      = app_config('site.default_home', 'pages/dashboard.php');
-$loginHeaderLogo  = app_config('branding.login_header_logo', 'assets/images/e-prestasi-logo-upnm.png');
-$loginPanelLogo   = app_config('branding.login_panel_logo', 'assets/images/e-prestasi-logo.png');
+$loginHeaderLogo  = app_config('branding.login_header_logo', 'assets/images/logo-upnm.png');
+$loginPanelLogo   = app_config('branding.login_panel_logo', 'assets/images/upnm30-logo.png');
 $supportEmail     = trim((string)app_config('system.support', ''));
-$systemName       = trim((string)app_config('system.name', 'Base System'));
-$organizationName = trim((string)app_config('organization.name', app_config('system.name', 'Base System')));
+$systemName       = trim((string)app_config('system.name', 'Sistem Pengurusan Fasiliti (e-Facility)'));
+$organizationName = trim((string)app_config('organization.name', app_config('system.name', 'Sistem Pengurusan Fasiliti (e-Facility)')));
 $organizationWebsite = trim((string)app_config('organization.website', ''));
+$sidebarTheme = strtolower(trim((string)($globalThemeSettings['sidebarColor'] ?? $_SESSION['theme.menu'] ?? 'light')));
+$themeStyleMap = [
+  'light' => ['start' => '#6f86a3', 'end' => '#8ea2bb', 'primary' => '#64748b', 'primaryStrong' => '#475569', 'accent' => '#94a3b8', 'primaryRgb' => '100, 116, 139', 'accentRgb' => '148, 163, 184'],
+  'dark' => ['start' => '#111827', 'end' => '#1f2937', 'primary' => '#374151', 'primaryStrong' => '#111827', 'accent' => '#6b7280', 'primaryRgb' => '55, 65, 81', 'accentRgb' => '107, 114, 128'],
+  'brand' => ['start' => '#0b4fd6', 'end' => '#0f9db1', 'primary' => '#0f4fd6', 'primaryStrong' => '#0b3caa', 'accent' => '#0f9db1', 'primaryRgb' => '15, 79, 214', 'accentRgb' => '15, 157, 177'],
+  'emerald' => ['start' => '#0f766e', 'end' => '#34d399', 'primary' => '#10b981', 'primaryStrong' => '#0f766e', 'accent' => '#6ee7b7', 'primaryRgb' => '16, 185, 129', 'accentRgb' => '110, 231, 183'],
+  'navy' => ['start' => '#0c1b32', 'end' => '#173b6b', 'primary' => '#1d4ed8', 'primaryStrong' => '#0c1b32', 'accent' => '#60a5fa', 'primaryRgb' => '29, 78, 216', 'accentRgb' => '96, 165, 250'],
+  'sunset' => ['start' => '#b45309', 'end' => '#f97316', 'primary' => '#ea580c', 'primaryStrong' => '#b45309', 'accent' => '#fb923c', 'primaryRgb' => '234, 88, 12', 'accentRgb' => '251, 146, 60'],
+  'mist' => ['start' => '#475569', 'end' => '#64748b', 'primary' => '#64748b', 'primaryStrong' => '#475569', 'accent' => '#94a3b8', 'primaryRgb' => '100, 116, 139', 'accentRgb' => '148, 163, 184'],
+  'strawberry' => ['start' => '#be185d', 'end' => '#f43f5e', 'primary' => '#e11d48', 'primaryStrong' => '#be185d', 'accent' => '#fb7185', 'primaryRgb' => '225, 29, 72', 'accentRgb' => '251, 113, 133'],
+  'matcha' => ['start' => '#3f6212', 'end' => '#65a30d', 'primary' => '#65a30d', 'primaryStrong' => '#3f6212', 'accent' => '#a3e635', 'primaryRgb' => '101, 163, 13', 'accentRgb' => '163, 230, 53'],
+];
+$activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
 $contactNote = __('login_contact');
 $contactParts = [];
 if ($supportEmail !== '') {
@@ -211,161 +225,207 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= __('login_title') ?> | <?= htmlspecialchars(app_config('site.title', 'e-Prestasi')) ?></title>
+  <title><?= __('login_title') ?> | <?= htmlspecialchars(app_config('site.title', 'Sistem Pengurusan Fasiliti (e-Facility)')) ?></title>
   <link rel="icon" href="<?= base_url(app_config('site.favicon', 'assets/images/default.ico')) ?>" type="image/x-icon">
 
+  <link rel="stylesheet" href="<?= base_url('assets/css/icons.min.css?v=' . $version) ?>">
+  <link rel="stylesheet" href="<?= base_url('assets/css/app.min.css?v=' . $version) ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/output.css?v=' . $version) ?>">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js?v=<?= $version ?>"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11?v=<?= $version ?>"></script>
 
   <style>
     :root {
-      --login-shell-bg:
-        radial-gradient(circle at 0% 0%, rgba(14, 165, 233, 0.18), transparent 32%),
-        radial-gradient(circle at 100% 0%, rgba(15, 118, 110, 0.12), transparent 28%),
-        radial-gradient(circle at 100% 100%, rgba(2, 132, 199, 0.16), transparent 30%),
-        linear-gradient(145deg, #eef6ff 0%, #f8fbff 46%, #f1fbf8 100%);
-      --login-panel-bg: rgba(255, 255, 255, 0.94);
-      --login-panel-soft: rgba(255, 255, 255, 0.72);
-      --login-card-border: rgba(148, 163, 184, 0.16);
-      --login-shadow: 0 28px 64px rgba(15, 23, 42, 0.12);
-      --login-soft-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
-      --login-text: #0f172a;
-      --login-muted: #64748b;
-      --login-accent: #0ea5e9;
-      --login-accent-dark: #0369a1;
-      --login-success: #0f766e;
-      --login-teal: #0f766e;
-      --login-divider: rgba(148, 163, 184, 0.18);
+      --facility-bg: linear-gradient(180deg, #edf2f8 0%, #e3ebf5 100%);
+      --facility-card: #ffffff;
+      --facility-card-soft: #f6f9fc;
+      --facility-card-ink: #0f1e33;
+      --facility-line: rgba(148, 163, 184, 0.24);
+      --facility-line-strong: rgba(100, 116, 139, 0.22);
+      --facility-text: #10213a;
+      --facility-muted: #5b6b82;
+      --facility-primary: <?= htmlspecialchars($activeThemeStyle['primary'], ENT_QUOTES, 'UTF-8') ?>;
+      --facility-primary-strong: <?= htmlspecialchars($activeThemeStyle['primaryStrong'], ENT_QUOTES, 'UTF-8') ?>;
+      --facility-accent: <?= htmlspecialchars($activeThemeStyle['accent'], ENT_QUOTES, 'UTF-8') ?>;
+      --facility-primary-rgb: <?= htmlspecialchars($activeThemeStyle['primaryRgb'], ENT_QUOTES, 'UTF-8') ?>;
+      --facility-accent-rgb: <?= htmlspecialchars($activeThemeStyle['accentRgb'], ENT_QUOTES, 'UTF-8') ?>;
+      --facility-navy: #0c1b32;
+      --facility-navy-soft: #12355f;
+      --facility-shadow: 0 28px 70px rgba(15, 23, 42, 0.12);
+      --facility-soft-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+      --facility-header-start: <?= htmlspecialchars($activeThemeStyle['start'], ENT_QUOTES, 'UTF-8') ?>;
+      --facility-header-end: <?= htmlspecialchars($activeThemeStyle['end'], ENT_QUOTES, 'UTF-8') ?>;
     }
 
-    body {
-      font-family: 'Poppins', sans-serif;
-      font-size: 13px;
+    body.facility-login-page {
+      font-family: 'Plus Jakarta Sans', sans-serif;
       min-height: 100vh;
-      background: var(--login-shell-bg);
-      color: var(--login-text);
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(var(--facility-primary-rgb), 0.12), transparent 28%),
+        radial-gradient(circle at 100% 0%, rgba(var(--facility-accent-rgb), 0.12), transparent 26%),
+        var(--facility-bg);
+      color: var(--facility-text);
+      overflow-x: hidden;
     }
 
-    .login-shell {
-      max-width: 1240px;
+    .facility-auth-shell {
+      min-height: 100vh;
+      padding: 28px;
+      position: relative;
+    }
+
+    .facility-auth-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 320px;
+      background: linear-gradient(135deg, var(--facility-header-start), var(--facility-header-end));
+      z-index: 0;
+      border-bottom-left-radius: 36px;
+      border-bottom-right-radius: 36px;
+    }
+
+    .facility-workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1360px, 100%);
       margin: 0 auto;
-      padding: 30px 20px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
     }
 
-    .login-topbar {
+    .facility-masthead {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 22px;
-      padding: 16px 20px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      border-radius: 12px;
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.58));
-      box-shadow: var(--login-soft-shadow);
-      backdrop-filter: blur(20px);
+      gap: 20px;
+      padding: 10px 4px 0;
+      color: #ffffff;
     }
 
-    .login-brand {
+    .facility-brand-lockup {
       display: flex;
       align-items: center;
       gap: 18px;
       min-width: 0;
     }
 
-    .login-brand-copy {
-      min-width: 0;
-    }
-
-    .login-brand-copy img {
-      width: 158px;
+    .facility-brand-mark {
+      width: 156px;
       max-width: 100%;
       display: block;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 12px 24px rgba(2, 6, 23, 0.18));
     }
 
-    .login-brand-copy p {
-      margin: 10px 0 0;
-      color: var(--login-muted);
-      font-size: 11px;
-      line-height: 1.7;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-    }
-
-    .login-topnav {
+    .facility-brand-meta {
+      min-width: 0;
       display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: flex-end;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    .login-topnav a,
-    .login-topnav button {
-      border: 1px solid rgba(148, 163, 184, 0.16);
-      background: rgba(255, 255, 255, 0.82);
-      color: #0f172a;
-      border-radius: 999px;
-      padding: 10px 16px;
-      font-size: 11px;
-      font-weight: 700;
-      line-height: 1;
-      letter-spacing: .04em;
+    .facility-brand-meta strong {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      color: rgba(255,255,255,0.9);
     }
 
-    .login-topnav a:hover,
-    .login-topnav button:hover {
+    .facility-brand-meta span {
+      font-size: 13px;
+      line-height: 1.7;
+      color: rgba(226, 232, 240, 0.88);
+      max-width: 540px;
+    }
+
+    .facility-masthead-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .facility-version-chip,
+    .facility-top-link,
+    .facility-top-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      backdrop-filter: blur(16px);
+      transition: transform .18s ease, background-color .18s ease, border-color .18s ease;
+    }
+
+    .facility-top-link:hover,
+    .facility-top-button:hover {
+      background: rgba(255,255,255,0.14);
+      border-color: rgba(255,255,255,0.24);
       transform: translateY(-1px);
-      border-color: rgba(14, 165, 233, 0.26);
-      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
     }
 
-    .login-main {
-      margin-top: 24px;
+    .facility-auth-board {
       display: grid;
-      grid-template-columns: minmax(0, 1.24fr) minmax(380px, 432px);
+      grid-template-columns: minmax(0, 1.25fr) minmax(360px, 430px);
       gap: 24px;
       align-items: stretch;
     }
 
-    .login-stage,
-    .login-card {
-      border: 1px solid var(--login-card-border);
-      border-radius: 12px;
-      background: var(--login-panel-bg);
-      box-shadow: var(--login-shadow);
-      backdrop-filter: blur(18px);
+    .facility-overview-panel,
+    .facility-auth-panel {
+      border-radius: 30px;
+      background: var(--facility-card);
+      box-shadow: var(--facility-shadow);
+      border: 1px solid rgba(255,255,255,0.78);
+      overflow: hidden;
     }
 
-    .login-stage {
-      overflow: hidden;
+    .facility-overview-panel {
       display: flex;
       flex-direction: column;
-      min-height: 680px;
-      position: relative;
+      padding: 28px;
+      gap: 22px;
     }
 
-    .login-stage-hero {
+    .facility-visual-panel {
       position: relative;
-      min-height: 376px;
+      min-height: 380px;
+      border-radius: 28px;
       overflow: hidden;
+      background: #0c1b32;
+      box-shadow: var(--facility-soft-shadow);
     }
 
-    .login-stage-hero::after {
-      content: "";
+    .facility-showcase-media,
+    .facility-showcase-media::after {
       position: absolute;
       inset: 0;
+    }
+
+    .facility-showcase-media::after {
+      content: "";
       background:
-        linear-gradient(180deg, rgba(15, 23, 42, 0.02), rgba(15, 23, 42, 0.52)),
-        linear-gradient(135deg, rgba(3, 105, 161, 0.12), rgba(15, 118, 110, 0.18));
+        linear-gradient(90deg, rgba(12,27,50,0.82) 0%, rgba(12,27,50,0.38) 48%, rgba(12,27,50,0.72) 100%),
+        linear-gradient(180deg, rgba(var(--facility-primary-rgb), 0.12), rgba(var(--facility-accent-rgb), 0.26));
+      z-index: 1;
       pointer-events: none;
     }
 
-    .login-stage-hero img {
+    .facility-showcase-media img {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -373,612 +433,652 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       object-fit: cover;
     }
 
-    .login-stage-overlay {
-      position: absolute;
-      inset: auto 30px 28px 30px;
-      z-index: 1;
+    .facility-visual-content {
+      position: relative;
+      z-index: 2;
+      min-height: 380px;
+      padding: 30px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      color: #fff;
+      justify-content: space-between;
+      color: #ffffff;
     }
 
-    .login-stage-badge {
+    .facility-visual-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .facility-system-chip {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      width: max-content;
-      padding: 9px 14px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(15, 23, 42, 0.24);
+      padding: 11px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.16);
+      backdrop-filter: blur(14px);
       font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .12em;
+      font-weight: 800;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      backdrop-filter: blur(12px);
     }
 
-    .login-stage-text {
-      max-width: 640px;
+    .facility-visual-body {
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .facility-visual-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 520px;
+    }
+
+    .facility-visual-copy h2 {
+      margin: 0;
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.05;
+      letter-spacing: -0.05em;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .facility-visual-copy p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.8;
+      color: rgba(241, 245, 249, 0.9);
+      max-width: 440px;
+    }
+
+    .facility-info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .facility-info-card {
+      padding: 20px;
+      border-radius: 24px;
+      background: var(--facility-card-soft);
+      border: 1px solid var(--facility-line);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+
+    .facility-info-card .facility-card-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--facility-primary-strong);
+    }
+
+    .facility-info-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.4;
+      color: var(--facility-card-ink);
+    }
+
+    .facility-info-card p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--facility-muted);
+    }
+
+    .facility-info-card a {
+      color: var(--facility-primary-strong);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .facility-info-card a:hover {
+      text-decoration: underline;
+    }
+
+    .facility-auth-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
+    }
+
+    .facility-auth-card {
+      padding: 26px;
+      border-radius: 26px;
+      background: #ffffff;
+      border: 1px solid rgba(226, 232, 240, 0.92);
+      box-shadow: var(--facility-soft-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .facility-form-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .facility-panel-logo {
+      width: 68px;
+      height: 68px;
+      border-radius: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(var(--facility-primary-rgb), 0.12), rgba(var(--facility-accent-rgb), 0.12));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.8);
+      flex: 0 0 auto;
+    }
+
+    .facility-panel-logo img {
+      max-width: 46px;
+      max-height: 46px;
+    }
+
+    .facility-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      color: var(--facility-primary-strong);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .facility-form-title {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+      color: var(--facility-card-ink);
+    }
+
+    .facility-form-subcopy {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--facility-muted);
+    }
+
+    .facility-auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .facility-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .facility-field label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #334155;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .facility-field-control {
+      position: relative;
+    }
+
+    .facility-field-control i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    .facility-field-control input {
+      width: 100%;
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: #f8fafc;
+      padding: 15px 16px 15px 46px;
+      font-size: 14px;
+      color: #0f172a;
+      transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+    }
+
+    .facility-field-control input:focus {
+      border-color: rgba(var(--facility-primary-rgb), 0.4);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(var(--facility-primary-rgb), 0.12);
+      outline: none;
+    }
+
+    .facility-form-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--facility-muted);
+    }
+
+    .facility-form-meta a {
+      color: var(--facility-primary-strong);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .facility-form-meta a:hover {
+      text-decoration: underline;
+    }
+
+    .facility-submit-btn {
+      border: 0;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--facility-primary-strong), var(--facility-primary) 58%, var(--facility-accent));
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 16px 18px;
+      box-shadow: 0 18px 36px rgba(var(--facility-primary-rgb), 0.22);
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+
+    .facility-submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 40px rgba(var(--facility-primary-rgb), 0.28);
+    }
+
+    .facility-oneid-block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-top: 4px;
+      border-top: 1px dashed rgba(148, 163, 184, 0.28);
+    }
+
+    .facility-oneid-label {
+      color: var(--facility-muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .facility-oneid-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      border-radius: 20px;
+      padding: 15px 16px;
+      background: linear-gradient(135deg, rgba(240,249,255,1), rgba(239,246,255,1));
+      border: 1px solid rgba(19, 181, 200, 0.18);
+      color: #0f172a;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.07);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+
+    .facility-oneid-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 32px rgba(15, 23, 42, 0.1);
+      border-color: rgba(var(--facility-primary-rgb), 0.24);
+    }
+
+    .facility-oneid-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .facility-oneid-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--facility-primary), var(--facility-accent));
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      box-shadow: 0 10px 20px rgba(var(--facility-primary-rgb), 0.18);
+    }
+
+    .facility-oneid-copy strong,
+    .facility-oneid-copy span {
+      display: block;
+    }
+
+    .facility-oneid-copy strong {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .facility-oneid-copy span {
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .facility-support-panel {
+      padding: 20px 22px;
+      border-radius: 24px;
+      background: var(--facility-card-soft);
+      border: 1px solid var(--facility-line);
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
 
-    .login-stage-text-highlight {
-      display: inline-flex;
-      align-items: center;
-      width: max-content;
-      max-width: 100%;
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      background: rgba(255, 255, 255, 0.14);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      backdrop-filter: blur(12px);
-      color: #fff;
-    }
-
-    .login-stage-title {
+    .facility-support-panel h3 {
       margin: 0;
-      font-size: 34px;
-      line-height: 1.08;
-      letter-spacing: -.04em;
-      font-weight: 700;
-      color: #ffffff;
-      max-width: 620px;
-    }
-
-    .login-stage-lead {
-      margin: 0;
-      max-width: 600px;
-      color: rgba(255, 255, 255, 0.84);
       font-size: 13px;
-      line-height: 1.8;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--facility-primary-strong);
     }
 
-    .login-stage-body {
-      padding: 30px;
-      display: block;
-      flex: 1 1 auto;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,250,252,0.96)),
-        radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 40%);
-    }
-
-    .login-stage-panel {
-      display: grid;
-      grid-template-columns: minmax(0, 1.14fr) minmax(240px, 0.86fr);
-      gap: 18px;
-      width: 100%;
-    }
-
-    .login-stage-section {
-      padding: 22px 22px;
-      border-radius: 10px;
-      border: 1px solid rgba(148, 163, 184, 0.14);
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96));
-      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
-    }
-
-    .login-stage-section--full {
-      grid-column: 1 / -1;
-    }
-
-    .login-stage-section h2,
-    .login-stage-section h3 {
-      margin: 0 0 10px;
-      font-size: 16px;
-      font-weight: 700;
-      color: #0f172a;
-      letter-spacing: -.02em;
-    }
-
-    .login-stage-section p {
+    .facility-support-panel p {
       margin: 0;
-      color: var(--login-muted);
-      line-height: 1.74;
-      font-size: 12px;
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--facility-muted);
     }
 
-    .login-stage-section--accent {
-      background:
-        linear-gradient(145deg, rgba(240, 249, 255, 0.98), rgba(236, 253, 245, 0.94));
-      border-color: rgba(14, 165, 233, 0.12);
-    }
-
-    .login-stage-stats {
-      margin-top: 14px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .facility-support-links {
+      display: flex;
+      flex-wrap: wrap;
       gap: 10px;
     }
 
-    .login-stage-stat {
-      border-radius: 8px;
-      border: 1px solid rgba(148, 163, 184, 0.12);
-      background: rgba(255, 255, 255, 0.76);
-      padding: 12px 14px;
-    }
-
-    .login-stage-stat-label {
-      display: block;
-      margin-bottom: 4px;
-      color: #64748b;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-
-    .login-stage-stat-value {
-      color: #0f172a;
-      font-size: 13px;
-      font-weight: 700;
-      line-height: 1.4;
-    }
-
-    .login-contact-lines {
-      margin-top: 14px;
-      display: flex;
-      flex-direction: column;
+    .facility-support-links a {
+      display: inline-flex;
+      align-items: center;
       gap: 8px;
-      color: #334155;
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      color: var(--facility-card-ink);
       font-size: 12px;
-      line-height: 1.65;
-    }
-
-    .login-contact-lines a {
-      color: var(--login-accent-dark);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .login-contact-lines a:hover {
-      text-decoration: underline;
-    }
-
-    .login-card {
-      padding: 30px 28px 24px;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .login-card::before {
-      content: "";
-      position: absolute;
-      inset: 0 0 auto 0;
-      height: 118px;
-      background:
-        radial-gradient(circle at top left, rgba(14, 165, 233, 0.12), transparent 56%),
-        linear-gradient(180deg, rgba(240, 249, 255, 0.74), rgba(255,255,255,0));
-      pointer-events: none;
-    }
-
-    .login-card-head {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 24px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .login-card-logo {
-      width: 62px;
-      height: 62px;
-      border-radius: 10px;
-      background:
-        linear-gradient(135deg, rgba(14,165,233,0.18), rgba(20,184,166,0.14));
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex: 0 0 auto;
-      box-shadow: 0 14px 26px rgba(14, 165, 233, 0.16);
-    }
-
-    .login-card-logo img {
-      max-width: 46px;
-      max-height: 46px;
-    }
-
-    .login-card-title {
-      margin: 0;
-      font-size: 24px;
-      line-height: 1.1;
-      letter-spacing: -.03em;
       font-weight: 700;
-    }
-
-    .login-card-subtitle {
-      margin: 7px 0 0;
-      color: var(--login-muted);
-      font-size: 12px;
-      line-height: 1.65;
-    }
-
-    .login-form {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .login-field {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .login-field label {
-      font-size: 11px;
-      font-weight: 600;
-      color: #334155;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-    }
-
-    .login-field input {
-      width: 100%;
-      border-radius: 8px;
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      background: rgba(248, 250, 252, 0.88);
-      padding: 14px 16px;
-      font-size: 13px;
-      outline: none;
-      transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
-    }
-
-    .login-field input:focus {
-      border-color: rgba(14, 165, 233, 0.46);
-      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
-      background: #fff;
-    }
-
-    .login-inline-meta {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 14px;
-      margin-top: -2px;
-    }
-
-    .login-note-inline {
-      color: var(--login-muted);
-      font-size: 11px;
-      line-height: 1.55;
-    }
-
-    .login-inline-meta a {
-      color: var(--login-accent-dark);
-      font-size: 12px;
-      font-weight: 600;
       text-decoration: none;
     }
 
-    .login-inline-meta a:hover {
-      text-decoration: underline;
+    .facility-support-links a:hover {
+      border-color: rgba(var(--facility-primary-rgb), 0.24);
     }
 
-    .login-submit-btn {
-      width: 100%;
-      border: 0;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #0369a1, #0ea5e9 55%, #14b8a6);
-      color: #fff;
-      padding: 14px 16px;
-      font-weight: 700;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      box-shadow: 0 16px 30px rgba(2, 132, 199, 0.24);
-      transition: transform .18s ease, box-shadow .18s ease;
-    }
+    @media (max-width: 1200px) {
+      .facility-auth-board {
+        grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+      }
 
-    .login-submit-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 20px 34px rgba(2, 132, 199, 0.28);
-    }
+      .facility-visual-body {
+        grid-template-columns: 1fr;
+      }
 
-    .login-alt-divider {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #94a3b8;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      position: relative;
-      z-index: 1;
-    }
-    .login-alt-divider::before,
-    .login-alt-divider::after {
-      content: "";
-      flex: 1 1 auto;
-      height: 1px;
-      background: linear-gradient(90deg, rgba(148, 163, 184, 0), rgba(148, 163, 184, .8), rgba(148, 163, 184, 0));
-    }
-    .login-oneid-btn {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 10px;
-      width: 100%;
-      padding: 0.78rem 0.88rem;
-      border-radius: 8px;
-      border: 1px solid rgba(14, 116, 144, .16);
-      background:
-        linear-gradient(135deg, rgba(240, 249, 255, 1), rgba(236, 253, 245, 1));
-      color: #0f172a;
-      font-weight: 600;
-      font-size: 12px;
-      box-shadow: 0 10px 20px rgba(15, 23, 42, .07);
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-      position: relative;
-      z-index: 1;
-    }
-    .login-oneid-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 14px 24px rgba(15, 23, 42, .1);
-      border-color: rgba(14, 116, 144, .28);
-    }
-    .login-oneid-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 36px;
-      height: 36px;
-      border-radius: 6px;
-      background: linear-gradient(135deg, #0ea5e9, #14b8a6);
-      color: #fff;
-      box-shadow: 0 8px 16px rgba(14, 165, 233, .18);
-      font-weight: 700;
-      font-size: 11px;
-      letter-spacing: .06em;
-    }
-    .login-oneid-caption {
-      margin-top: 8px;
-      color: #64748b;
-      font-size: 10px;
-      line-height: 1.55;
-      position: relative;
-      z-index: 1;
-    }
-
-    .login-card-footer {
-      margin-top: auto;
-      padding-top: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .login-footer-divider {
-      width: 100%;
-      height: 1px;
-      background: linear-gradient(90deg, rgba(148, 163, 184, 0), rgba(148, 163, 184, 0.75), rgba(148, 163, 184, 0));
-    }
-
-    .login-system-meta {
-      color: #94a3b8;
-      font-size: 11px;
-      line-height: 1.45;
-      text-align: center;
-    }
-
-    .login-language-switch {
-      text-align: center;
-      color: var(--login-muted);
-      font-size: 11px;
-      line-height: 1.4;
-    }
-
-    .login-language-switch a {
-      color: var(--login-accent-dark);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .login-language-switch a:hover {
-      text-decoration: underline;
+      .facility-info-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 1024px) {
-      .login-main {
+      .facility-auth-shell {
+        padding: 18px;
+      }
+
+      .facility-masthead,
+      .facility-auth-board,
+      .facility-visual-body {
         grid-template-columns: 1fr;
       }
 
-      .login-stage {
-        min-height: auto;
+      .facility-masthead {
+        flex-direction: column;
+        align-items: flex-start;
       }
 
-      .login-stage-body {
-        display: block;
+      .facility-masthead-actions {
+        justify-content: flex-start;
       }
 
-      .login-stage-panel {
-        grid-template-columns: 1fr;
+      .facility-auth-board {
+        display: grid;
       }
     }
 
     @media (max-width: 768px) {
-      .login-shell {
-        padding: 18px 14px 24px;
+      .facility-auth-shell {
+        padding: 0;
       }
 
-      .login-topbar {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 14px 16px;
+      .facility-auth-shell::before {
+        border-radius: 0;
+        height: 260px;
       }
 
-      .login-topnav {
-        justify-content: flex-start;
+      .facility-workspace {
+        gap: 16px;
       }
 
-      .login-stage-hero {
-        min-height: 300px;
+      .facility-masthead,
+      .facility-overview-panel,
+      .facility-auth-panel {
+        border-radius: 0;
       }
 
-      .login-stage-overlay {
-        inset: auto 18px 18px 18px;
+      .facility-masthead,
+      .facility-overview-panel,
+      .facility-auth-panel,
+      .facility-visual-content {
+        padding-left: 18px;
+        padding-right: 18px;
       }
 
-      .login-stage-title {
-        font-size: 28px;
-      }
-
-      .login-stage-body,
-      .login-card {
-        padding: 20px 18px;
-      }
-
-      .login-inline-meta {
+      .facility-brand-lockup,
+      .facility-form-head,
+      .facility-form-meta {
         flex-direction: column;
         align-items: flex-start;
+      }
+
+      .facility-brand-mark {
+        width: 132px;
+      }
+
+      .facility-overview-panel,
+      .facility-auth-panel {
+        padding-top: 22px;
+        padding-bottom: 22px;
+      }
+
+      .facility-auth-card,
+      .facility-visual-panel,
+      .facility-overview-sidecard,
+      .facility-info-card,
+      .facility-support-panel {
+        border-radius: 22px;
+      }
+
+      .facility-info-grid,
+      .facility-visual-body {
+        grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
-<body class="bg-gray-100" x-data="{}">
-<div class="login-shell">
-  <header class="login-topbar">
-    <div class="login-brand">
-      <div class="login-brand-copy">
-        <img src="<?= base_url($loginHeaderLogo) ?>" alt="UPNM Logo">
-        <p><?= htmlspecialchars($organizationName !== '' ? $organizationName : (app_config('system.name', 'Base System')), ENT_QUOTES, 'UTF-8') ?></p>
+<body class="authentication-bg facility-login-page" x-data="{ active: 0, banners: ['banner1.jpg', 'banner2.jpg', 'banner3.jpg', 'banner4.jpg'] }" x-init="setInterval(() => { active = (active + 1) % banners.length }, 5200)">
+<div class="facility-auth-shell">
+  <div class="facility-workspace">
+    <header class="facility-masthead">
+      <div class="facility-brand-lockup">
+        <img class="facility-brand-mark" src="<?= base_url($loginHeaderLogo) ?>" alt="UPNM Logo">
+        <div class="facility-brand-meta">
+          <strong><?= htmlspecialchars($systemName !== '' ? $systemName : 'Sistem Pengurusan Fasiliti (e-Facility)', ENT_QUOTES, 'UTF-8') ?></strong>
+          <span><?= htmlspecialchars($organizationName !== '' ? $organizationName : ($lang === 'en' ? 'Official digital access for facility operations, service requests, and campus support workflows.' : 'Akses digital rasmi untuk operasi fasiliti, permohonan perkhidmatan, dan aliran sokongan kampus.'), ENT_QUOTES, 'UTF-8') ?></span>
+        </div>
       </div>
-    </div>
-    <nav class="login-topnav" id="navTabs">
-      <button type="button"><?= __('login_nav.home') ?></button>
-      <button type="button" @click="$store.faq?.showFaq?.()"><?= __('login_nav.faq') ?></button>
-      <a href="https://directory.upnm.edu.my" target="_blank" rel="noopener noreferrer"><?= __('login_nav.directory') ?></a>
-    </nav>
-  </header>
 
-  <main class="login-main">
-    <section class="login-stage">
-      <div class="login-stage-hero"
-            x-data="{ active: 0, banners: ['banner3.jpg', 'banner4.jpg'] }"
-            x-init="setInterval(() => { active = (active + 1) % banners.length }, 4500)">
-        <template x-for="(banner, index) in banners" :key="index">
-          <img :src="`<?= base_url('assets/images/') ?>${banner}`"
-               alt="Banner"
-               class="transition-opacity duration-700 ease-in-out"
-               :class="{ 'opacity-0': active !== index, 'opacity-100': active === index }">
-        </template>
-          <div class="login-stage-overlay">
-            <span class="login-stage-badge"><?= htmlspecialchars($systemName !== '' ? $systemName : 'Base System', ENT_QUOTES, 'UTF-8') ?></span>
-            <div class="login-stage-text">
-              <span class="login-stage-text-highlight">
-                <?= htmlspecialchars(
-                  $lang === 'en'
-                    ? 'Welcome to the ' . ($systemName !== '' ? $systemName : 'Base System') . '. Please log in to continue.'
-                    : __('login_info'),
-                  ENT_QUOTES,
-                    'UTF-8'
-                  ) ?>
-              </span>
-              <h1 class="login-stage-title"><?= htmlspecialchars($organizationName !== '' ? $organizationName : ($systemName !== '' ? $systemName : 'Base System'), ENT_QUOTES, 'UTF-8') ?></h1>
-              <p class="login-stage-lead"><?= htmlspecialchars(__('login_contact') ?: 'Sekiranya anda menghadapi sebarang masalah, sila hubungi pentadbir sistem.', ENT_QUOTES, 'UTF-8') ?></p>
+      <div class="facility-masthead-actions">
+        <div class="facility-version-chip">
+          <i class="ri-shield-check-line"></i>
+          <span><?= htmlspecialchars(app_current_version_label(), ENT_QUOTES, 'UTF-8') ?></span>
+        </div>
+        <a class="facility-top-link" href="<?= h(base_url('index.php')) ?>"><i class="ri-home-5-line"></i> <?= __('login_nav.home') ?></a>
+        <button class="facility-top-button" type="button" @click="$store.faq?.showFaq?.()"><i class="ri-question-line"></i> <?= __('login_nav.faq') ?></button>
+        <a class="facility-top-link" href="https://directory.upnm.edu.my" target="_blank" rel="noopener noreferrer"><i class="ri-building-line"></i> <?= __('login_nav.directory') ?></a>
+      </div>
+    </header>
+
+    <div class="facility-auth-board">
+      <section class="facility-overview-panel">
+        <div class="facility-visual-panel">
+          <div class="facility-showcase-media">
+            <template x-for="(banner, index) in banners" :key="index">
+              <img :src="`<?= base_url('assets/images/') ?>${banner}`"
+                   alt="Banner"
+                   class="transition-opacity duration-700 ease-in-out"
+                   :class="{ 'opacity-0': active !== index, 'opacity-100': active === index }">
+            </template>
+          </div>
+
+          <div class="facility-visual-content">
+            <div class="facility-visual-body">
+              <div class="facility-visual-copy">
+                <h2><?= htmlspecialchars($lang === 'en' ? 'Centralized facility access with clearer governance and operational continuity.' : 'Akses fasiliti berpusat dengan tadbir urus dan kesinambungan operasi yang lebih jelas.', ENT_QUOTES, 'UTF-8') ?></h2>
+                <p><?= htmlspecialchars($lang === 'en' ? 'Built to support maintenance coordination, service accountability, and secure sign-in across the institution.' : 'Dibina untuk menyokong penyelarasan penyelenggaraan, akauntabiliti perkhidmatan, dan log masuk selamat merentas institusi.', ENT_QUOTES, 'UTF-8') ?></p>
+              </div>
             </div>
           </div>
         </div>
 
-      <div class="login-stage-body">
-        <div class="login-stage-panel">
-          <div class="login-stage-section login-stage-section--full">
-            <h2><?= __('login_contact_title') ?></h2>
-            <p><?= htmlspecialchars($contactNote, ENT_QUOTES, 'UTF-8') ?></p>
-            <div class="login-contact-lines">
-              <?php if ($organizationName !== ''): ?>
-                <span><strong><?= htmlspecialchars($organizationName, ENT_QUOTES, 'UTF-8') ?></strong></span>
-              <?php endif; ?>
+        <div class="facility-info-grid">
+          <article class="facility-info-card">
+            <span class="facility-card-label"><i class="ri-layout-masonry-line"></i> <?= $lang === 'en' ? 'Platform' : 'Platform' ?></span>
+            <h3><?= htmlspecialchars($systemName !== '' ? $systemName : 'Sistem Pengurusan Fasiliti (e-Facility)', ENT_QUOTES, 'UTF-8') ?></h3>
+            <p><?= htmlspecialchars($lang === 'en' ? 'Designed to consolidate requests, approvals, and service execution within a more controlled institutional channel.' : 'Direka untuk menyatukan permohonan, kelulusan, dan pelaksanaan perkhidmatan dalam saluran institusi yang lebih terkawal.', ENT_QUOTES, 'UTF-8') ?></p>
+          </article>
+
+          <article class="facility-info-card">
+            <span class="facility-card-label"><i class="ri-customer-service-2-line"></i> <?= __('login_contact_title') ?></span>
+            <h3><?= htmlspecialchars($lang === 'en' ? 'Support and reference' : 'Sokongan dan rujukan', ENT_QUOTES, 'UTF-8') ?></h3>
+            <p>
               <?php if (!empty($contactParts)): ?>
-                <span><?= implode(' <span class="text-gray-400">|</span> ', $contactParts) ?></span>
+                <?= implode(' <span aria-hidden="true">|</span> ', $contactParts) ?>
+              <?php else: ?>
+                <?= htmlspecialchars($contactNote, ENT_QUOTES, 'UTF-8') ?>
               <?php endif; ?>
+            </p>
+          </article>
+
+          <article class="facility-info-card">
+            <span class="facility-card-label"><i class="ri-shield-keyhole-line"></i> <?= $lang === 'en' ? 'Security' : 'Keselamatan' ?></span>
+            <h3><?= htmlspecialchars($lang === 'en' ? 'Protected institutional sign-in' : 'Log masuk institusi yang dilindungi', ENT_QUOTES, 'UTF-8') ?></h3>
+            <p><?= htmlspecialchars($lang === 'en' ? 'Session protection, CSRF handling, and identity routing remain enforced behind this interface.' : 'Perlindungan sesi, pengendalian CSRF, dan routing identiti kekal dikuatkuasakan di sebalik antaramuka ini.', ENT_QUOTES, 'UTF-8') ?></p>
+          </article>
+        </div>
+      </section>
+
+      <aside class="facility-auth-panel">
+        <div class="facility-auth-card">
+          <div class="facility-form-head">
+            <div class="facility-panel-logo">
+              <img src="<?= base_url($loginPanelLogo) ?>" alt="Logo">
+            </div>
+            <div>
+              <span class="facility-eyebrow"><i class="ri-login-circle-line"></i> <?= __('login_heading') ?></span>
+              <h2 class="facility-form-title"><?= __('login_title') ?></h2>
+              <p class="facility-form-subcopy"><?= htmlspecialchars($lang === 'en' ? 'Enter your credentials to proceed to the official facility management workspace.' : 'Masukkan kelayakan anda untuk meneruskan ke ruang kerja rasmi pengurusan fasiliti.', ENT_QUOTES, 'UTF-8') ?></p>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
 
-    <aside class="login-card">
-      <div class="login-card-head">
-        <div class="login-card-logo">
-          <img src="<?= base_url($loginPanelLogo) ?>" alt="Logo">
-        </div>
-        <div>
-          <h2 class="login-card-title"><?= __('login_heading') ?></h2>
-          <p class="login-card-subtitle"><?= htmlspecialchars(app_config('site.title', 'Base System'), ENT_QUOTES, 'UTF-8') ?></p>
-        </div>
-      </div>
+          <form method="POST" action="<?= base_url('login.php') ?>" autocomplete="off" class="facility-auth-form">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
 
-      <form method="POST" action="<?= base_url('login.php') ?>" autocomplete="off" class="login-form">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+            <div class="facility-field">
+              <label for="f_loginID"><?= h((__('login_userid_label') ?: 'Login ID')) ?></label>
+              <div class="facility-field-control">
+                <i class="ri-user-3-line"></i>
+                <input id="f_loginID" name="f_loginID" type="text" required
+                       placeholder="<?= htmlspecialchars($loginIdPlaceholder, ENT_QUOTES, 'UTF-8') ?>"
+                       autocomplete="username">
+              </div>
+            </div>
 
-        <div class="login-field">
-          <label for="f_loginID"><?= h((__('login_userid_label') ?: 'Login ID')) ?></label>
-          <input id="f_loginID" name="f_loginID" type="text" required
-                 placeholder="<?= htmlspecialchars($loginIdPlaceholder, ENT_QUOTES, 'UTF-8') ?>"
-                 autocomplete="username">
-        </div>
+            <div class="facility-field">
+              <label for="f_password"><?= __('login_password') ?></label>
+              <div class="facility-field-control">
+                <i class="ri-lock-password-line"></i>
+                <input id="f_password" name="f_password" type="password" required
+                       placeholder="******"
+                       autocomplete="current-password">
+              </div>
+            </div>
 
-        <div class="login-field">
-          <label for="f_password"><?= __('login_password') ?></label>
-          <input id="f_password" name="f_password" type="password" required
-                 placeholder="******"
-                 autocomplete="current-password">
-        </div>
+            <div class="facility-form-meta">
+              <span><?= htmlspecialchars($lang === 'en' ? 'Protected access session' : 'Sesi akses dilindungi', ENT_QUOTES, 'UTF-8') ?></span>
+              <a href="<?= h(base_url('forgot-password.php')) ?>"><?= __('login_forgot') ?></a>
+            </div>
 
-        <div class="login-inline-meta">
-          <a href="<?= h(base_url('forgot-password.php')) ?>"><?= __('login_forgot') ?></a>
-        </div>
+            <button type="submit" class="facility-submit-btn">
+              <?= __('login_btnLogin') ?>
+            </button>
+          </form>
 
-        <button type="submit" class="login-submit-btn">
-          <?= __('login_btnLogin') ?>
-        </button>
-      </form>
-
-      <?php if ($showOneIdButton): ?>
-        <div class="mt-6">
-          <a href="<?= h($oneIdLoginUrl) ?>" class="login-oneid-btn">
-            <span class="login-oneid-badge">ID</span>
-            <span><?= h(__('login_btnOneId') ?: 'OneID Login') ?></span>
-          </a>
-        </div>
-      <?php endif; ?>
-
-      <div class="login-card-footer">
-        <div class="login-footer-divider"></div>
-        <div class="login-system-meta">
-          <?= htmlspecialchars(app_config('system.name', 'e-Prestasi'), ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars(app_config('system.version', '2.0.0'), ENT_QUOTES, 'UTF-8') ?><br>
-          <?= htmlspecialchars(app_config('system.author', 'Hak Cipta © UPNM'), ENT_QUOTES, 'UTF-8') ?>
+          <?php if ($showOneIdButton): ?>
+            <div class="facility-oneid-block">
+              <span class="facility-oneid-label">Alternative Access</span>
+              <a href="<?= h($oneIdLoginUrl) ?>" class="facility-oneid-btn">
+                <span class="facility-oneid-main">
+                  <span class="facility-oneid-badge">ID</span>
+                  <span class="facility-oneid-copy">
+                    <strong><?= h(__('login_btnOneId') ?: 'OneID Login') ?></strong>
+                    <span><?= htmlspecialchars($lang === 'en' ? 'Use central identity authentication when your access path requires single sign-on.' : 'Gunakan autentikasi identiti pusat apabila laluan akses anda memerlukan single sign-on.', ENT_QUOTES, 'UTF-8') ?></span>
+                  </span>
+                </span>
+                <i class="ri-arrow-right-up-line"></i>
+              </a>
+            </div>
+          <?php endif; ?>
         </div>
 
-        <div class="login-language-switch">
-          <?= __('login_language') ?>:
-          <?php foreach ($loginLanguageOptions as $index => $languageCode): ?>
-            <?php
-              $languageLabel = strtoupper($languageCode === 'ms' ? 'BM' : $languageCode);
-              $languageUrl = '?lang=' . rawurlencode($languageCode);
-            ?>
-            <a href="<?= htmlspecialchars($languageUrl, ENT_QUOTES, 'UTF-8') ?>" class="<?= $lang === $languageCode ? 'font-bold' : '' ?>"><?= htmlspecialchars($languageLabel, ENT_QUOTES, 'UTF-8') ?></a><?= $index < count($loginLanguageOptions) - 1 ? ' |' : '' ?>
-          <?php endforeach; ?>
+        <div class="facility-support-panel">
+          <h3><?= htmlspecialchars($lang === 'en' ? 'Official support channels' : 'Saluran sokongan rasmi', ENT_QUOTES, 'UTF-8') ?></h3>
+          <p><?= htmlspecialchars($lang === 'en' ? 'Use the official contact and reference channels below if you require assistance with access or account matters.' : 'Gunakan saluran hubungan dan rujukan rasmi di bawah jika anda memerlukan bantuan berkaitan akses atau akaun.', ENT_QUOTES, 'UTF-8') ?></p>
+          <div class="facility-support-links">
+            <?php if ($supportEmail !== ''): ?>
+              <a href="mailto:<?= htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8') ?>"><i class="ri-mail-line"></i> <?= htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8') ?></a>
+            <?php endif; ?>
+          </div>
         </div>
-      </div>
-    </aside>
-  </main>
+      </aside>
+    </div>
+  </div>
 </div>
 
 <!-- ✅ Alert rendering -->

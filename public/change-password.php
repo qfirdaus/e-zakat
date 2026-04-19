@@ -15,6 +15,7 @@ define('ALLOW_ANON_AJAX', true);
 require_once __DIR__ . '/includes/init.php';
 require_once __DIR__ . '/includes/functions-db.php';
 require_once __DIR__ . '/classes/Database.php';
+require_once __DIR__ . '/classes/Config.php';
 require_once __DIR__ . '/classes/User.php';
 require_once __DIR__ . '/classes/Mailer.php';
 
@@ -249,7 +250,7 @@ if ($requestMethod === 'POST') {
                                 'displayName' => trim((string)($user['f_nama'] ?? $user['f_nickname'] ?? $pendingLoginId)),
                                 'loginId' => trim((string)($user['f_loginID'] ?? $pendingLoginId)),
                                 'changedAt' => (new DateTimeImmutable('now', new DateTimeZone('Asia/Kuala_Lumpur')))->format('Y-m-d H:i:s'),
-                                'siteTitle' => app_config('site.title', 'e-Prestasi'),
+                                'siteTitle' => app_config('site.title', 'Sistem Pengurusan Fasiliti (e-Facility)'),
                             ]);
                             Mailer::quickSend(
                                 $pdo,
@@ -319,86 +320,378 @@ if ($requestMethod === 'POST') {
 }
 
 $version = time();
+$configModel = class_exists('Config') ? new Config(Database::getInstance('mysql')->getConnection()) : null;
+$globalThemeSettings = $configModel ? ($configModel->getTema() ?: []) : [];
+$loginHeaderLogo = app_config('branding.login_header_logo', 'assets/images/logo-upnm.png');
+$loginPanelLogo = app_config('branding.login_panel_logo', 'assets/images/upnm30-logo.png');
+$systemName = trim((string)app_config('system.name', 'Sistem Pengurusan Fasiliti (e-Facility)'));
+$siteTitle = trim((string)app_config('site.title', 'Sistem Pengurusan Fasiliti (e-Facility)'));
+$organizationName = trim((string)app_config('organization.name', $systemName !== '' ? $systemName : $siteTitle));
+$pageLang = (string)($_SESSION['lang'] ?? 'ms');
+$sidebarTheme = strtolower(trim((string)($globalThemeSettings['sidebarColor'] ?? $_SESSION['theme.menu'] ?? 'light')));
+$themeStyleMap = [
+  'light' => ['start' => '#6f86a3', 'end' => '#8ea2bb', 'primary' => '#64748b', 'primaryStrong' => '#475569', 'accent' => '#94a3b8', 'primaryRgb' => '100, 116, 139', 'accentRgb' => '148, 163, 184'],
+  'dark' => ['start' => '#111827', 'end' => '#1f2937', 'primary' => '#374151', 'primaryStrong' => '#111827', 'accent' => '#6b7280', 'primaryRgb' => '55, 65, 81', 'accentRgb' => '107, 114, 128'],
+  'brand' => ['start' => '#0b4fd6', 'end' => '#0f9db1', 'primary' => '#0f4fd6', 'primaryStrong' => '#0b3caa', 'accent' => '#0f9db1', 'primaryRgb' => '15, 79, 214', 'accentRgb' => '15, 157, 177'],
+  'emerald' => ['start' => '#065f46', 'end' => '#10b981', 'primary' => '#10b981', 'primaryStrong' => '#065f46', 'accent' => '#6ee7b7', 'primaryRgb' => '16, 185, 129', 'accentRgb' => '110, 231, 183'],
+  'navy' => ['start' => '#0c1b32', 'end' => '#12355f', 'primary' => '#1d4ed8', 'primaryStrong' => '#0c1b32', 'accent' => '#60a5fa', 'primaryRgb' => '29, 78, 216', 'accentRgb' => '96, 165, 250'],
+  'sunset' => ['start' => '#b45309', 'end' => '#f97316', 'primary' => '#ea580c', 'primaryStrong' => '#b45309', 'accent' => '#fb923c', 'primaryRgb' => '234, 88, 12', 'accentRgb' => '251, 146, 60'],
+  'mist' => ['start' => '#475569', 'end' => '#64748b', 'primary' => '#64748b', 'primaryStrong' => '#475569', 'accent' => '#94a3b8', 'primaryRgb' => '100, 116, 139', 'accentRgb' => '148, 163, 184'],
+  'strawberry' => ['start' => '#be185d', 'end' => '#f43f5e', 'primary' => '#e11d48', 'primaryStrong' => '#be185d', 'accent' => '#fb7185', 'primaryRgb' => '225, 29, 72', 'accentRgb' => '251, 113, 133'],
+  'matcha' => ['start' => '#3f6212', 'end' => '#65a30d', 'primary' => '#65a30d', 'primaryStrong' => '#3f6212', 'accent' => '#a3e635', 'primaryRgb' => '101, 163, 13', 'accentRgb' => '163, 230, 53'],
+];
+$activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
 ?>
 <!DOCTYPE html>
 <html lang="<?= h($_SESSION['lang'] ?? 'ms') ?>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= h(__('password_change_page_title')) ?> | <?= h(app_config('site.title', 'e-Prestasi')) ?></title>
+  <title><?= h(__('password_change_page_title')) ?> | <?= h(app_config('site.title', 'Sistem Pengurusan Fasiliti (e-Facility)')) ?></title>
   <link rel="icon" href="<?= base_url(app_config('site.favicon', 'assets/images/default.ico')) ?>" type="image/x-icon">
+  <link rel="stylesheet" href="<?= base_url('assets/css/icons.min.css?v=' . $version) ?>">
+  <link rel="stylesheet" href="<?= base_url('assets/css/app.min.css?v=' . $version) ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/output.css?v=' . $version) ?>">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11?v=<?= $version ?>"></script>
   <style>
     :root {
-      --cp-shell-bg:
-        radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 34%),
-        radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.18), transparent 30%),
-        linear-gradient(135deg, #eef7ff 0%, #f8fbff 48%, #eef8f4 100%);
-      --cp-panel-bg: rgba(255, 255, 255, 0.94);
-      --cp-border: rgba(148, 163, 184, 0.18);
-      --cp-shadow: 0 26px 60px rgba(15, 23, 42, 0.12);
-      --cp-text: #0f172a;
-      --cp-muted: #64748b;
-      --cp-accent: #0f766e;
+      --cp-bg: linear-gradient(180deg, #edf2f8 0%, #e3ebf5 100%);
+      --cp-card: #ffffff;
+      --cp-card-soft: #f6f9fc;
+      --cp-ink: #0f1e33;
+      --cp-text: #10213a;
+      --cp-muted: #5b6b82;
+      --cp-line: rgba(148, 163, 184, 0.24);
+      --cp-primary: <?= h($activeThemeStyle['primary']) ?>;
+      --cp-primary-strong: <?= h($activeThemeStyle['primaryStrong']) ?>;
+      --cp-accent: <?= h($activeThemeStyle['accent']) ?>;
+      --cp-primary-rgb: <?= h($activeThemeStyle['primaryRgb']) ?>;
+      --cp-accent-rgb: <?= h($activeThemeStyle['accentRgb']) ?>;
+      --cp-shadow: 0 28px 70px rgba(15, 23, 42, 0.12);
+      --cp-soft-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
       --cp-danger: #b91c1c;
+      --cp-danger-bg: rgba(254, 242, 242, 0.92);
+      --cp-danger-border: rgba(185, 28, 28, 0.18);
+      --cp-header-start: <?= h($activeThemeStyle['start']) ?>;
+      --cp-header-end: <?= h($activeThemeStyle['end']) ?>;
     }
 
     body {
       min-height: 100vh;
       margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: var(--cp-shell-bg);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(var(--cp-primary-rgb), 0.12), transparent 28%),
+        radial-gradient(circle at 100% 0%, rgba(var(--cp-accent-rgb), 0.12), transparent 26%),
+        var(--cp-bg);
       color: var(--cp-text);
+      overflow-x: hidden;
     }
 
     .cp-shell {
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px 16px;
+      padding: 28px;
+      position: relative;
     }
 
-    .cp-card {
-      width: min(100%, 560px);
-      border: 1px solid var(--cp-border);
-      border-radius: 22px;
-      background: var(--cp-panel-bg);
+    .cp-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 300px;
+      background: linear-gradient(135deg, var(--cp-header-start), var(--cp-header-end));
+      border-bottom-left-radius: 36px;
+      border-bottom-right-radius: 36px;
+      z-index: 0;
+    }
+
+    .cp-workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .cp-masthead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 8px 4px 0;
+      color: #ffffff;
+    }
+
+    .cp-brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .cp-brand-lockup img {
+      width: 150px;
+      max-width: 100%;
+      display: block;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 12px 24px rgba(2, 6, 23, 0.18));
+    }
+
+    .cp-brand-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .cp-brand-copy strong {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .cp-brand-copy span {
+      font-size: 13px;
+      line-height: 1.7;
+      color: rgba(226, 232, 240, 0.88);
+      max-width: 560px;
+    }
+
+    .cp-masthead-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .cp-version,
+    .cp-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      backdrop-filter: blur(16px);
+    }
+
+    .cp-board {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(380px, 460px);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .cp-overview,
+    .cp-panel {
+      border-radius: 30px;
+      background: var(--cp-card);
+      border: 1px solid rgba(255,255,255,0.78);
       box-shadow: var(--cp-shadow);
-      padding: 28px 26px 24px;
-      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    .cp-overview {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .cp-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: max-content;
+      max-width: 100%;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(var(--cp-primary-rgb), 0.08);
+      border: 1px solid rgba(var(--cp-primary-rgb), 0.12);
+      color: var(--cp-primary-strong);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .cp-title {
+      margin: 0;
+      font-size: clamp(32px, 4vw, 48px);
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+      font-weight: 800;
+      color: var(--cp-ink);
+    }
+
+    .cp-subtitle {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--cp-muted);
+      max-width: 720px;
+    }
+
+    .cp-overview-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(230px, 290px);
+      gap: 18px;
+    }
+
+    .cp-hero,
+    .cp-note {
+      border-radius: 26px;
+      overflow: hidden;
+      box-shadow: var(--cp-soft-shadow);
+    }
+
+    .cp-hero {
+      min-height: 340px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      color: #ffffff;
+      background:
+        linear-gradient(135deg, rgba(12,27,50,0.95), rgba(18,53,95,0.82)),
+        url('<?= base_url('assets/images/banner3.jpg') ?>') center/cover no-repeat;
+    }
+
+    .cp-hero h2 {
+      margin: 0 0 12px;
+      font-size: clamp(24px, 2.8vw, 38px);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+    }
+
+    .cp-hero p {
+      margin: 0;
+      max-width: 460px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: rgba(241, 245, 249, 0.9);
+    }
+
+    .cp-note {
+      padding: 20px;
+      background: linear-gradient(145deg, #f7fafc, #eef4fa);
+      border: 1px solid var(--cp-line);
+    }
+
+    .cp-note span,
+    .cp-note strong {
+      display: block;
+    }
+
+    .cp-note span {
+      margin-bottom: 10px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cp-primary-strong);
+    }
+
+    .cp-note strong {
+      font-size: 18px;
+      line-height: 1.45;
+      color: var(--cp-ink);
+    }
+
+    .cp-note p {
+      margin: 10px 0 0;
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--cp-muted);
+    }
+
+    .cp-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
+    }
+
+    .cp-auth-card {
+      padding: 24px;
+      border-radius: 26px;
+      background: #ffffff;
+      border: 1px solid rgba(226, 232, 240, 0.92);
+      box-shadow: var(--cp-soft-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .cp-form-head {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .cp-panel-logo {
+      width: 68px;
+      height: 68px;
+      border-radius: 22px;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(var(--cp-primary-rgb), 0.12), rgba(var(--cp-accent-rgb), 0.12));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.8);
+    }
+
+    .cp-panel-logo img {
+      max-width: 46px;
+      max-height: 46px;
     }
 
     .cp-kicker {
       display: inline-flex;
       align-items: center;
-      border-radius: 999px;
-      padding: 7px 12px;
-      background: rgba(15, 118, 110, 0.1);
-      color: var(--cp-accent);
+      gap: 8px;
+      margin-bottom: 10px;
+      color: var(--cp-primary-strong);
       font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .08em;
+      font-weight: 800;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
     }
 
-    .cp-title {
-      margin: 16px 0 8px;
-      font-size: 28px;
-      line-height: 1.1;
-      letter-spacing: -.03em;
+    .cp-panel-title {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+      color: var(--cp-ink);
     }
 
-    .cp-subtitle,
+    .cp-panel-copy,
     .cp-meta {
-      color: var(--cp-muted);
+      margin: 0;
       font-size: 13px;
       line-height: 1.75;
+      color: var(--cp-muted);
     }
 
     .cp-meta {
-      margin-top: 14px;
       padding: 14px 16px;
       border-radius: 14px;
       border: 1px solid rgba(148, 163, 184, 0.18);
@@ -406,11 +699,10 @@ $version = time();
     }
 
     .cp-errors {
-      margin-top: 18px;
       padding: 14px 16px;
       border-radius: 14px;
-      border: 1px solid rgba(185, 28, 28, 0.18);
-      background: rgba(254, 242, 242, 0.92);
+      border: 1px solid var(--cp-danger-border);
+      background: var(--cp-danger-bg);
       color: var(--cp-danger);
       font-size: 13px;
       line-height: 1.7;
@@ -422,7 +714,6 @@ $version = time();
     }
 
     .cp-form {
-      margin-top: 22px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -435,25 +726,27 @@ $version = time();
     }
 
     .cp-field label {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 800;
       color: #334155;
+      letter-spacing: .12em;
+      text-transform: uppercase;
     }
 
     .cp-field input {
       width: 100%;
-      border-radius: 14px;
+      border-radius: 18px;
       border: 1px solid rgba(148, 163, 184, 0.22);
       background: rgba(248, 250, 252, 0.95);
-      padding: 14px 15px;
-      font-size: 13px;
+      padding: 15px 16px;
+      font-size: 14px;
       outline: none;
       transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
     }
 
     .cp-field input:focus {
-      border-color: rgba(14, 165, 233, 0.46);
-      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
+      border-color: rgba(var(--cp-primary-rgb), 0.4);
+      box-shadow: 0 0 0 4px rgba(var(--cp-primary-rgb), 0.12);
       background: #fff;
     }
 
@@ -490,8 +783,8 @@ $version = time();
 
     .cp-password-toggle:focus {
       outline: none;
-      background: rgba(14, 165, 233, 0.12);
-      color: #0369a1;
+      background: rgba(var(--cp-primary-rgb), 0.12);
+      color: var(--cp-primary-strong);
     }
 
     .cp-password-toggle svg {
@@ -500,14 +793,7 @@ $version = time();
       pointer-events: none;
     }
 
-    .cp-hint {
-      color: var(--cp-muted);
-      font-size: 11px;
-      line-height: 1.7;
-    }
-
     .cp-rules {
-      margin-top: -2px;
       padding: 14px 16px;
       border-radius: 14px;
       border: 1px solid rgba(148, 163, 184, 0.18);
@@ -568,14 +854,15 @@ $version = time();
     .cp-submit {
       width: 100%;
       border: 0;
-      border-radius: 14px;
-      padding: 14px 16px;
-      background: linear-gradient(135deg, #0f766e, #0ea5e9);
+      border-radius: 18px;
+      padding: 15px 18px;
+      background: linear-gradient(135deg, var(--cp-primary-strong), var(--cp-primary) 55%, var(--cp-accent));
       color: #fff;
       font-size: 13px;
-      font-weight: 700;
-      letter-spacing: .01em;
-      box-shadow: 0 16px 28px rgba(14, 116, 144, 0.24);
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      box-shadow: 0 18px 36px rgba(var(--cp-primary-rgb), 0.24);
       transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
     }
 
@@ -586,84 +873,190 @@ $version = time();
     }
 
     .cp-foot {
-      margin-top: 14px;
-      text-align: center;
+      padding: 20px 22px;
+      border-radius: 24px;
+      background: var(--cp-card-soft);
+      border: 1px solid var(--cp-line);
       color: var(--cp-muted);
-      font-size: 11px;
-      line-height: 1.7;
+      font-size: 13px;
+      line-height: 1.75;
+    }
+
+    @media (max-width: 1024px) {
+      .cp-shell {
+        padding: 18px;
+      }
+
+      .cp-masthead,
+      .cp-board,
+      .cp-overview-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .cp-masthead {
+        align-items: flex-start;
+      }
+
+      .cp-masthead-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .cp-shell {
+        padding: 0;
+      }
+
+      .cp-shell::before {
+        border-radius: 0;
+        height: 240px;
+      }
+
+      .cp-overview,
+      .cp-panel {
+        border-radius: 0;
+        padding: 22px 18px;
+      }
+
+      .cp-masthead {
+        padding: 18px;
+      }
+
+      .cp-brand-lockup,
+      .cp-form-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .cp-hero,
+      .cp-note,
+      .cp-auth-card,
+      .cp-foot {
+        border-radius: 22px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="cp-shell">
-    <section class="cp-card">
-      <span class="cp-kicker"><?= h(__('password_change_kicker')) ?></span>
-      <h1 class="cp-title"><?= h(__('password_change_heading')) ?></h1>
-      <p class="cp-subtitle"><?= h(__($reasonTextKey)) ?></p>
-
-      <div class="cp-meta">
-        <strong><?= h(__('password_change_login_id_label')) ?>:</strong> <?= h($pendingLoginId) ?>
-      </div>
-
-      <?php if ($errors !== []): ?>
-        <div class="cp-errors" role="alert">
-          <ul>
-            <?php foreach ($errors as $error): ?>
-              <li><?= h($error) ?></li>
-            <?php endforeach; ?>
-          </ul>
-        </div>
-      <?php endif; ?>
-
-      <form method="POST" action="<?= h(base_path('change-password.php')) ?>" class="cp-form" autocomplete="off">
-        <input type="hidden" name="csrf_token" value="<?= h((string)($_SESSION['csrf_token'] ?? '')) ?>">
-
-        <div class="cp-field">
-          <label for="new_password"><?= h(__('password_change_new_password_label')) ?></label>
-          <div class="cp-password-wrap">
-            <input id="new_password" name="new_password" type="password" autocomplete="new-password" required>
-            <button type="button" class="cp-password-toggle" data-password-toggle="new_password" aria-label="Show password">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M2 12C4.8 7.6 8.1 5.4 12 5.4C15.9 5.4 19.2 7.6 22 12C19.2 16.4 15.9 18.6 12 18.6C8.1 18.6 4.8 16.4 2 12Z" stroke="currentColor" stroke-width="1.7"/>
-                <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/>
-              </svg>
-            </button>
+    <div class="cp-workspace">
+      <header class="cp-masthead">
+        <div class="cp-brand-lockup">
+          <img src="<?= base_url($loginHeaderLogo) ?>" alt="UPNM Logo">
+          <div class="cp-brand-copy">
+            <strong><?= h($systemName !== '' ? $systemName : $siteTitle) ?></strong>
+            <span><?= h($organizationName !== '' ? $organizationName : ($pageLang === 'en' ? 'Official digital access for facility operations and support services.' : 'Akses digital rasmi untuk operasi fasiliti dan perkhidmatan sokongan.')) ?></span>
           </div>
         </div>
-
-        <div class="cp-field">
-          <label for="confirm_password"><?= h(__('password_change_confirm_password_label')) ?></label>
-          <div class="cp-password-wrap">
-            <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required>
-            <button type="button" class="cp-password-toggle" data-password-toggle="confirm_password" aria-label="Show password confirmation">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M2 12C4.8 7.6 8.1 5.4 12 5.4C15.9 5.4 19.2 7.6 22 12C19.2 16.4 15.9 18.6 12 18.6C8.1 18.6 4.8 16.4 2 12Z" stroke="currentColor" stroke-width="1.7"/>
-                <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/>
-              </svg>
-            </button>
+        <div class="cp-masthead-actions">
+          <div class="cp-version">
+            <i class="ri-shield-check-line"></i>
+            <span><?= h(app_current_version_label()) ?></span>
           </div>
+          <a class="cp-home" href="<?= h(base_path('index.php')) ?>"><i class="ri-arrow-left-line"></i> <?= h(__('forgot_password_back_to_login')) ?></a>
         </div>
+      </header>
 
-        <div class="cp-rules" id="password-rules" data-login-id="<?= h($pendingLoginId) ?>">
-          <div class="cp-rules-title"><?= h(__('password_change_live_title')) ?></div>
-          <ul class="cp-rules-list">
-                <li class="cp-rule" data-rule="length"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(change_password_min_length_message((int)($runtimePasswordPolicy['min_length'] ?? 8))) ?></span></li>
-            <?php if (!empty($runtimePasswordPolicy['require_uppercase'])): ?><li class="cp-rule" data-rule="uppercase"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_uppercase')) ?></span></li><?php endif; ?>
-            <?php if (!empty($runtimePasswordPolicy['require_lowercase'])): ?><li class="cp-rule" data-rule="lowercase"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_lowercase')) ?></span></li><?php endif; ?>
-            <?php if (!empty($runtimePasswordPolicy['require_number'])): ?><li class="cp-rule" data-rule="number"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_number')) ?></span></li><?php endif; ?>
-            <?php if (!empty($runtimePasswordPolicy['require_symbol'])): ?><li class="cp-rule" data-rule="symbol"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_symbol')) ?></span></li><?php endif; ?>
-            <?php if (!empty($runtimePasswordPolicy['block_loginid_variants'])): ?><li class="cp-rule" data-rule="no-login"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_rule_no_login_id')) ?></span></li><?php endif; ?>
-            <li class="cp-rule" data-rule="match"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_rule_confirm_match')) ?></span></li>
-          </ul>
-        </div>
+      <div class="cp-board">
+        <section class="cp-overview">
+          <span class="cp-tag"><i class="ri-lock-password-line"></i> <?= h(__('password_change_kicker')) ?></span>
+          <h1 class="cp-title"><?= h($pageLang === 'en' ? 'Forced password renewal within an institutional security control flow.' : 'Pembaruan kata laluan wajib dalam aliran kawalan keselamatan institusi.') ?></h1>
+          <p class="cp-subtitle"><?= h(__($reasonTextKey)) ?></p>
 
-        <button type="submit" class="cp-submit" id="cp-submit" disabled><?= h(__('password_change_submit_btn')) ?></button>
-      </form>
+          <div class="cp-overview-grid">
+            <div class="cp-hero">
+              <h2><?= h($pageLang === 'en' ? 'Restore compliant account access before continuing to the main workspace.' : 'Pulihkan akses akaun yang patuh sebelum meneruskan ke ruang kerja utama.') ?></h2>
+              <p><?= h($pageLang === 'en' ? 'This enforced password update protects ongoing access by requiring a new password that meets current institutional policy.' : 'Kemaskini kata laluan wajib ini melindungi akses berterusan dengan mewajibkan kata laluan baharu yang mematuhi polisi institusi semasa.') ?></p>
+            </div>
 
-      <div class="cp-foot">
-        <?= h(__('password_change_footer_note')) ?>
+            <aside class="cp-note">
+              <span><?= h($pageLang === 'en' ? 'Access Requirement' : 'Keperluan Akses') ?></span>
+              <strong><?= h($pageLang === 'en' ? 'Completion of this step is required before the session can continue.' : 'Langkah ini perlu diselesaikan sebelum sesi boleh diteruskan.') ?></strong>
+              <p><?= h($pageLang === 'en' ? 'Password policy, reuse protection, and audit controls remain active throughout this process.' : 'Polisi kata laluan, perlindungan guna semula, dan kawalan audit kekal aktif sepanjang proses ini.') ?></p>
+            </aside>
+          </div>
+        </section>
+
+        <aside class="cp-panel">
+          <div class="cp-auth-card">
+            <div class="cp-form-head">
+              <div class="cp-panel-logo">
+                <img src="<?= base_url($loginPanelLogo) ?>" alt="Portal Logo">
+              </div>
+              <div>
+                <span class="cp-kicker"><i class="ri-lock-password-line"></i> <?= h(__('password_change_kicker')) ?></span>
+                <h2 class="cp-panel-title"><?= h(__('password_change_heading')) ?></h2>
+                <p class="cp-panel-copy"><?= h($pageLang === 'en' ? 'Set a compliant password before re-entering the official facility workspace.' : 'Tetapkan kata laluan yang patuh sebelum memasuki semula ruang kerja rasmi fasiliti.') ?></p>
+              </div>
+            </div>
+
+            <div class="cp-meta">
+              <strong><?= h(__('password_change_login_id_label')) ?>:</strong> <?= h($pendingLoginId) ?>
+            </div>
+
+            <?php if ($errors !== []): ?>
+              <div class="cp-errors" role="alert">
+                <ul>
+                  <?php foreach ($errors as $error): ?>
+                    <li><?= h($error) ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+
+            <form method="POST" action="<?= h(base_path('change-password.php')) ?>" class="cp-form" autocomplete="off">
+              <input type="hidden" name="csrf_token" value="<?= h((string)($_SESSION['csrf_token'] ?? '')) ?>">
+
+              <div class="cp-field">
+                <label for="new_password"><?= h(__('password_change_new_password_label')) ?></label>
+                <div class="cp-password-wrap">
+                  <input id="new_password" name="new_password" type="password" autocomplete="new-password" required>
+                  <button type="button" class="cp-password-toggle" data-password-toggle="new_password" aria-label="Show password">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M2 12C4.8 7.6 8.1 5.4 12 5.4C15.9 5.4 19.2 7.6 22 12C19.2 16.4 15.9 18.6 12 18.6C8.1 18.6 4.8 16.4 2 12Z" stroke="currentColor" stroke-width="1.7"/>
+                      <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="cp-field">
+                <label for="confirm_password"><?= h(__('password_change_confirm_password_label')) ?></label>
+                <div class="cp-password-wrap">
+                  <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required>
+                  <button type="button" class="cp-password-toggle" data-password-toggle="confirm_password" aria-label="Show password confirmation">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M2 12C4.8 7.6 8.1 5.4 12 5.4C15.9 5.4 19.2 7.6 22 12C19.2 16.4 15.9 18.6 12 18.6C8.1 18.6 4.8 16.4 2 12Z" stroke="currentColor" stroke-width="1.7"/>
+                      <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="cp-rules" id="password-rules" data-login-id="<?= h($pendingLoginId) ?>">
+                <div class="cp-rules-title"><?= h(__('password_change_live_title')) ?></div>
+                <ul class="cp-rules-list">
+                      <li class="cp-rule" data-rule="length"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(change_password_min_length_message((int)($runtimePasswordPolicy['min_length'] ?? 8))) ?></span></li>
+                  <?php if (!empty($runtimePasswordPolicy['require_uppercase'])): ?><li class="cp-rule" data-rule="uppercase"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_uppercase')) ?></span></li><?php endif; ?>
+                  <?php if (!empty($runtimePasswordPolicy['require_lowercase'])): ?><li class="cp-rule" data-rule="lowercase"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_lowercase')) ?></span></li><?php endif; ?>
+                  <?php if (!empty($runtimePasswordPolicy['require_number'])): ?><li class="cp-rule" data-rule="number"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_number')) ?></span></li><?php endif; ?>
+                  <?php if (!empty($runtimePasswordPolicy['require_symbol'])): ?><li class="cp-rule" data-rule="symbol"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_symbol')) ?></span></li><?php endif; ?>
+                  <?php if (!empty($runtimePasswordPolicy['block_loginid_variants'])): ?><li class="cp-rule" data-rule="no-login"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_rule_no_login_id')) ?></span></li><?php endif; ?>
+                  <li class="cp-rule" data-rule="match"><span class="cp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_rule_confirm_match')) ?></span></li>
+                </ul>
+              </div>
+
+              <button type="submit" class="cp-submit" id="cp-submit" disabled><?= h(__('password_change_submit_btn')) ?></button>
+            </form>
+          </div>
+
+          <div class="cp-foot">
+            <?= h(__('password_change_footer_note')) ?>
+          </div>
+        </aside>
       </div>
-    </section>
+    </div>
   </div>
 
   <?php if (function_exists('render_alert')) render_alert(); ?>

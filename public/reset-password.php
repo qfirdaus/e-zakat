@@ -15,6 +15,7 @@ define('ALLOW_ANON_AJAX', true);
 require_once __DIR__ . '/includes/init.php';
 require_once __DIR__ . '/includes/functions-db.php';
 require_once __DIR__ . '/classes/Database.php';
+require_once __DIR__ . '/classes/Config.php';
 require_once __DIR__ . '/classes/User.php';
 require_once __DIR__ . '/classes/Mailer.php';
 
@@ -248,7 +249,7 @@ if ($requestMethod === 'POST') {
                             'displayName' => trim((string)($tokenRecord['f_nama'] ?? $tokenRecord['f_nickname'] ?? $loginId)),
                             'loginId' => trim((string)($tokenRecord['f_loginID'] ?? $loginId)),
                             'changedAt' => (new DateTimeImmutable('now', new DateTimeZone('Asia/Kuala_Lumpur')))->format('Y-m-d H:i:s'),
-                            'siteTitle' => app_config('site.title', 'e-Prestasi'),
+                            'siteTitle' => app_config('site.title', 'Sistem Pengurusan Fasiliti (e-Facility)'),
                         ]);
                         Mailer::quickSend(
                             $pdo,
@@ -320,102 +321,396 @@ if ($requestMethod === 'POST') {
 
 $loginIdLabel = trim((string)($tokenRecord['f_loginID'] ?? ''));
 $version = time();
+$configModel = class_exists('Config') ? new Config(Database::getInstance('mysql')->getConnection()) : null;
+$globalThemeSettings = $configModel ? ($configModel->getTema() ?: []) : [];
+$loginHeaderLogo = app_config('branding.login_header_logo', 'assets/images/logo-upnm.png');
+$loginPanelLogo = app_config('branding.login_panel_logo', 'assets/images/upnm30-logo.png');
+$systemName = trim((string)app_config('system.name', 'Sistem Pengurusan Fasiliti (e-Facility)'));
+$siteTitle = trim((string)app_config('site.title', 'Sistem Pengurusan Fasiliti (e-Facility)'));
+$organizationName = trim((string)app_config('organization.name', $systemName !== '' ? $systemName : $siteTitle));
+$pageLang = (string)($_SESSION['lang'] ?? 'ms');
+$sidebarTheme = strtolower(trim((string)($globalThemeSettings['sidebarColor'] ?? $_SESSION['theme.menu'] ?? 'light')));
+$themeStyleMap = [
+  'light' => ['start' => '#6f86a3', 'end' => '#8ea2bb', 'primary' => '#64748b', 'primaryStrong' => '#475569', 'accent' => '#94a3b8', 'primaryRgb' => '100, 116, 139', 'accentRgb' => '148, 163, 184'],
+  'dark' => ['start' => '#111827', 'end' => '#1f2937', 'primary' => '#374151', 'primaryStrong' => '#111827', 'accent' => '#6b7280', 'primaryRgb' => '55, 65, 81', 'accentRgb' => '107, 114, 128'],
+  'brand' => ['start' => '#0b4fd6', 'end' => '#0f9db1', 'primary' => '#0f4fd6', 'primaryStrong' => '#0b3caa', 'accent' => '#0f9db1', 'primaryRgb' => '15, 79, 214', 'accentRgb' => '15, 157, 177'],
+  'emerald' => ['start' => '#065f46', 'end' => '#10b981', 'primary' => '#10b981', 'primaryStrong' => '#065f46', 'accent' => '#6ee7b7', 'primaryRgb' => '16, 185, 129', 'accentRgb' => '110, 231, 183'],
+  'navy' => ['start' => '#0c1b32', 'end' => '#12355f', 'primary' => '#1d4ed8', 'primaryStrong' => '#0c1b32', 'accent' => '#60a5fa', 'primaryRgb' => '29, 78, 216', 'accentRgb' => '96, 165, 250'],
+  'sunset' => ['start' => '#b45309', 'end' => '#f97316', 'primary' => '#ea580c', 'primaryStrong' => '#b45309', 'accent' => '#fb923c', 'primaryRgb' => '234, 88, 12', 'accentRgb' => '251, 146, 60'],
+  'mist' => ['start' => '#475569', 'end' => '#64748b', 'primary' => '#64748b', 'primaryStrong' => '#475569', 'accent' => '#94a3b8', 'primaryRgb' => '100, 116, 139', 'accentRgb' => '148, 163, 184'],
+  'strawberry' => ['start' => '#be185d', 'end' => '#f43f5e', 'primary' => '#e11d48', 'primaryStrong' => '#be185d', 'accent' => '#fb7185', 'primaryRgb' => '225, 29, 72', 'accentRgb' => '251, 113, 133'],
+  'matcha' => ['start' => '#3f6212', 'end' => '#65a30d', 'primary' => '#65a30d', 'primaryStrong' => '#3f6212', 'accent' => '#a3e635', 'primaryRgb' => '101, 163, 13', 'accentRgb' => '163, 230, 53'],
+];
+$activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
 ?>
 <!DOCTYPE html>
 <html lang="<?= h($_SESSION['lang'] ?? 'ms') ?>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= h(__('reset_password_page_title')) ?> | <?= h(app_config('site.title', 'e-Prestasi')) ?></title>
+  <title><?= h(__('reset_password_page_title')) ?> | <?= h(app_config('site.title', 'Sistem Pengurusan Fasiliti (e-Facility)')) ?></title>
   <link rel="icon" href="<?= base_url(app_config('site.favicon', 'assets/images/default.ico')) ?>" type="image/x-icon">
+  <link rel="stylesheet" href="<?= base_url('assets/css/icons.min.css?v=' . $version) ?>">
+  <link rel="stylesheet" href="<?= base_url('assets/css/app.min.css?v=' . $version) ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/output.css?v=' . $version) ?>">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11?v=<?= $version ?>"></script>
   <style>
     :root {
-      --rp-shell-bg:
-        radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 34%),
-        radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.18), transparent 30%),
-        linear-gradient(135deg, #eef7ff 0%, #f8fbff 48%, #eef8f4 100%);
-      --rp-panel-bg: rgba(255, 255, 255, 0.94);
-      --rp-border: rgba(148, 163, 184, 0.18);
-      --rp-shadow: 0 26px 60px rgba(15, 23, 42, 0.12);
-      --rp-text: #0f172a;
-      --rp-muted: #64748b;
-      --rp-accent: #0f766e;
+      --rp-bg: linear-gradient(180deg, #edf2f8 0%, #e3ebf5 100%);
+      --rp-card: #ffffff;
+      --rp-card-soft: #f6f9fc;
+      --rp-ink: #0f1e33;
+      --rp-text: #10213a;
+      --rp-muted: #5b6b82;
+      --rp-line: rgba(148, 163, 184, 0.24);
+      --rp-primary: <?= h($activeThemeStyle['primary']) ?>;
+      --rp-primary-strong: <?= h($activeThemeStyle['primaryStrong']) ?>;
+      --rp-accent: <?= h($activeThemeStyle['accent']) ?>;
+      --rp-primary-rgb: <?= h($activeThemeStyle['primaryRgb']) ?>;
+      --rp-accent-rgb: <?= h($activeThemeStyle['accentRgb']) ?>;
+      --rp-shadow: 0 28px 70px rgba(15, 23, 42, 0.12);
+      --rp-soft-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+      --rp-danger-bg: rgba(254, 242, 242, 0.95);
+      --rp-danger-border: rgba(185, 28, 28, 0.18);
+      --rp-danger-text: #991b1b;
+      --rp-banner-bg: linear-gradient(180deg, rgba(240, 249, 255, 0.92), rgba(248, 250, 252, 0.94));
+      --rp-banner-border: rgba(14, 116, 144, 0.16);
+      --rp-header-start: <?= h($activeThemeStyle['start']) ?>;
+      --rp-header-end: <?= h($activeThemeStyle['end']) ?>;
     }
 
     body {
       min-height: 100vh;
       margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: var(--rp-shell-bg);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(var(--rp-primary-rgb), 0.12), transparent 28%),
+        radial-gradient(circle at 100% 0%, rgba(var(--rp-accent-rgb), 0.12), transparent 26%),
+        var(--rp-bg);
       color: var(--rp-text);
+      overflow-x: hidden;
     }
 
     .rp-shell {
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px 16px;
+      padding: 28px;
+      position: relative;
     }
 
-    .rp-card {
-      width: min(100%, 560px);
-      border: 1px solid var(--rp-border);
-      border-radius: 22px;
-      background: var(--rp-panel-bg);
+    .rp-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 300px;
+      background: linear-gradient(135deg, var(--rp-header-start), var(--rp-header-end));
+      border-bottom-left-radius: 36px;
+      border-bottom-right-radius: 36px;
+      z-index: 0;
+    }
+
+    .rp-workspace {
+      position: relative;
+      z-index: 1;
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .rp-masthead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 8px 4px 0;
+      color: #ffffff;
+    }
+
+    .rp-brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .rp-brand-lockup img {
+      width: 150px;
+      max-width: 100%;
+      display: block;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 12px 24px rgba(2, 6, 23, 0.18));
+    }
+
+    .rp-brand-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .rp-brand-copy strong {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .rp-brand-copy span {
+      font-size: 13px;
+      line-height: 1.7;
+      color: rgba(226, 232, 240, 0.88);
+      max-width: 560px;
+    }
+
+    .rp-masthead-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .rp-version,
+    .rp-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      backdrop-filter: blur(16px);
+    }
+
+    .rp-board {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(380px, 460px);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .rp-overview,
+    .rp-panel {
+      border-radius: 30px;
+      background: var(--rp-card);
+      border: 1px solid rgba(255,255,255,0.78);
       box-shadow: var(--rp-shadow);
-      padding: 28px 26px 24px;
-      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    .rp-overview {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .rp-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: max-content;
+      max-width: 100%;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(var(--rp-primary-rgb), 0.08);
+      border: 1px solid rgba(var(--rp-primary-rgb), 0.12);
+      color: var(--rp-primary-strong);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .rp-title {
+      margin: 0;
+      font-size: clamp(32px, 4vw, 48px);
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+      font-weight: 800;
+      color: var(--rp-ink);
+    }
+
+    .rp-copy {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--rp-muted);
+      max-width: 720px;
+    }
+
+    .rp-overview-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(230px, 290px);
+      gap: 18px;
+    }
+
+    .rp-hero,
+    .rp-note {
+      border-radius: 26px;
+      overflow: hidden;
+      box-shadow: var(--rp-soft-shadow);
+    }
+
+    .rp-hero {
+      min-height: 340px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      color: #ffffff;
+      background:
+        linear-gradient(135deg, rgba(12,27,50,0.95), rgba(18,53,95,0.82)),
+        url('<?= base_url('assets/images/banner2.jpg') ?>') center/cover no-repeat;
+    }
+
+    .rp-hero h2 {
+      margin: 0 0 12px;
+      font-size: clamp(24px, 2.8vw, 38px);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+    }
+
+    .rp-hero p {
+      margin: 0;
+      max-width: 460px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: rgba(241, 245, 249, 0.9);
+    }
+
+    .rp-note {
+      padding: 20px;
+      background: linear-gradient(145deg, #f7fafc, #eef4fa);
+      border: 1px solid var(--rp-line);
+    }
+
+    .rp-note span,
+    .rp-note strong {
+      display: block;
+    }
+
+    .rp-note span {
+      margin-bottom: 10px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--rp-primary-strong);
+    }
+
+    .rp-note strong {
+      font-size: 18px;
+      line-height: 1.45;
+      color: var(--rp-ink);
+    }
+
+    .rp-note p {
+      margin: 10px 0 0;
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--rp-muted);
+    }
+
+    .rp-panel {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
+    }
+
+    .rp-auth-card {
+      padding: 24px;
+      border-radius: 26px;
+      background: #ffffff;
+      border: 1px solid rgba(226, 232, 240, 0.92);
+      box-shadow: var(--rp-soft-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .rp-form-head {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .rp-panel-logo {
+      width: 68px;
+      height: 68px;
+      border-radius: 22px;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(var(--rp-primary-rgb), 0.12), rgba(var(--rp-accent-rgb), 0.12));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.8);
+    }
+
+    .rp-panel-logo img {
+      max-width: 46px;
+      max-height: 46px;
     }
 
     .rp-kicker {
       display: inline-flex;
       align-items: center;
-      border-radius: 999px;
-      padding: 7px 12px;
-      background: rgba(15, 118, 110, 0.1);
-      color: var(--rp-accent);
+      gap: 8px;
+      margin-bottom: 10px;
+      color: var(--rp-primary-strong);
       font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .08em;
+      font-weight: 800;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
     }
 
-    .rp-title {
-      margin: 16px 0 8px;
-      font-size: 28px;
-      line-height: 1.1;
-      letter-spacing: -.03em;
+    .rp-panel-title {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+      color: var(--rp-ink);
     }
 
-    .rp-copy {
-      margin: 0 0 18px;
-      color: var(--rp-muted);
-      line-height: 1.75;
+    .rp-panel-copy {
+      margin: 0;
       font-size: 13px;
+      line-height: 1.8;
+      color: var(--rp-muted);
     }
 
     .rp-banner,
     .rp-errors {
-      margin-bottom: 18px;
       padding: 14px 16px;
       border-radius: 16px;
       font-size: 12px;
-      line-height: 1.7;
+      line-height: 1.75;
     }
 
     .rp-banner {
-      border: 1px solid rgba(14, 116, 144, 0.16);
-      background: linear-gradient(180deg, rgba(240, 249, 255, 0.92), rgba(248, 250, 252, 0.94));
+      border: 1px solid var(--rp-banner-border);
+      background: var(--rp-banner-bg);
       color: #0f172a;
     }
 
     .rp-errors {
-      border: 1px solid rgba(185, 28, 28, 0.18);
-      background: rgba(254, 242, 242, 0.95);
-      color: #991b1b;
+      border: 1px solid var(--rp-danger-border);
+      background: var(--rp-danger-bg);
+      color: var(--rp-danger-text);
     }
 
     .rp-errors ul {
@@ -441,25 +736,27 @@ $version = time();
     }
 
     .rp-field label {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 800;
       color: #334155;
+      letter-spacing: .12em;
+      text-transform: uppercase;
     }
 
     .rp-field input {
       width: 100%;
-      border-radius: 12px;
+      border-radius: 18px;
       border: 1px solid rgba(148, 163, 184, 0.22);
-      background: rgba(248, 250, 252, 0.9);
-      padding: 13px 15px;
-      font-size: 13px;
+      background: rgba(248, 250, 252, 0.92);
+      padding: 15px 16px;
+      font-size: 14px;
       outline: none;
       transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
     }
 
     .rp-field input:focus {
-      border-color: rgba(20, 184, 166, 0.42);
-      box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.12);
+      border-color: rgba(var(--rp-primary-rgb), 0.4);
+      box-shadow: 0 0 0 4px rgba(var(--rp-primary-rgb), 0.12);
       background: #fff;
     }
 
@@ -501,8 +798,8 @@ $version = time();
 
     .rp-password-toggle:focus {
       outline: none;
-      background: rgba(20, 184, 166, 0.12);
-      color: #0f766e;
+      background: rgba(var(--rp-primary-rgb), 0.12);
+      color: var(--rp-primary-strong);
     }
 
     .rp-password-toggle svg {
@@ -511,16 +808,9 @@ $version = time();
       pointer-events: none;
     }
 
-    .rp-hint {
-      color: var(--rp-muted);
-      font-size: 11px;
-      line-height: 1.65;
-    }
-
     .rp-rules {
-      margin-top: -2px;
       padding: 14px 16px;
-      border-radius: 14px;
+      border-radius: 16px;
       border: 1px solid rgba(148, 163, 184, 0.18);
       background: rgba(248, 250, 252, 0.94);
     }
@@ -581,7 +871,7 @@ $version = time();
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: 12px;
+      border-radius: 18px;
       text-decoration: none;
       font-weight: 700;
       padding: 13px 16px;
@@ -591,10 +881,13 @@ $version = time();
     .rp-submit {
       width: 100%;
       border: 0;
-      background: linear-gradient(135deg, #0f766e, #14b8a6);
+      background: linear-gradient(135deg, var(--rp-primary-strong), var(--rp-primary) 55%, var(--rp-accent));
       color: #fff;
-      box-shadow: 0 16px 28px rgba(15, 118, 110, 0.22);
+      box-shadow: 0 18px 36px rgba(var(--rp-primary-rgb), 0.24);
       cursor: pointer;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
     }
 
     .rp-submit:disabled {
@@ -610,95 +903,216 @@ $version = time();
     }
 
     .rp-back {
-      margin-top: 6px;
       border: 1px solid rgba(148, 163, 184, 0.2);
       color: #0f172a;
       background: rgba(255, 255, 255, 0.78);
       box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
     }
+
+    .rp-footer-note {
+      padding: 20px 22px;
+      border-radius: 24px;
+      background: var(--rp-card-soft);
+      border: 1px solid var(--rp-line);
+      color: var(--rp-muted);
+      font-size: 13px;
+      line-height: 1.75;
+    }
+
+    @media (max-width: 1024px) {
+      .rp-shell {
+        padding: 18px;
+      }
+
+      .rp-masthead,
+      .rp-board,
+      .rp-overview-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .rp-masthead {
+        align-items: flex-start;
+      }
+
+      .rp-masthead-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .rp-shell {
+        padding: 0;
+      }
+
+      .rp-shell::before {
+        border-radius: 0;
+        height: 240px;
+      }
+
+      .rp-overview,
+      .rp-panel {
+        border-radius: 0;
+        padding: 22px 18px;
+      }
+
+      .rp-masthead {
+        padding: 18px;
+      }
+
+      .rp-brand-lockup,
+      .rp-form-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .rp-hero,
+      .rp-note,
+      .rp-auth-card,
+      .rp-footer-note {
+        border-radius: 22px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="rp-shell">
-    <div class="rp-card">
-      <span class="rp-kicker"><?= h(__('reset_password_kicker')) ?></span>
-      <h1 class="rp-title"><?= h(__('reset_password_heading')) ?></h1>
-      <p class="rp-copy"><?= h(__('reset_password_intro')) ?></p>
-
-      <?php if (!$featureAvailable): ?>
-        <div class="rp-errors">
-          <ul><li><?= h(__('forgot_password_feature_unavailable')) ?></li></ul>
-        </div>
-      <?php elseif (!$tokenUsable): ?>
-        <div class="rp-errors">
-          <ul><li><?= h(__('reset_password_token_invalid')) ?></li></ul>
-        </div>
-        <a class="rp-back" href="<?= h(base_path('forgot-password.php')) ?>"><?= h(__('reset_password_request_new_link')) ?></a>
-      <?php else: ?>
-        <?php if ($errors !== []): ?>
-          <div class="rp-errors">
-            <ul>
-              <?php foreach ($errors as $error): ?>
-                <li><?= h((string)$error) ?></li>
-              <?php endforeach; ?>
-            </ul>
+    <div class="rp-workspace">
+      <header class="rp-masthead">
+        <div class="rp-brand-lockup">
+          <img src="<?= base_url($loginHeaderLogo) ?>" alt="UPNM Logo">
+          <div class="rp-brand-copy">
+            <strong><?= h($systemName !== '' ? $systemName : $siteTitle) ?></strong>
+            <span><?= h($organizationName !== '' ? $organizationName : ($pageLang === 'en' ? 'Official digital access for facility operations and support services.' : 'Akses digital rasmi untuk operasi fasiliti dan perkhidmatan sokongan.')) ?></span>
           </div>
-        <?php endif; ?>
+        </div>
+        <div class="rp-masthead-actions">
+          <div class="rp-version">
+            <i class="ri-shield-check-line"></i>
+            <span><?= h(app_current_version_label()) ?></span>
+          </div>
+          <a class="rp-home" href="<?= h(base_path('index.php')) ?>"><i class="ri-arrow-left-line"></i> <?= h(__('forgot_password_back_to_login')) ?></a>
+        </div>
+      </header>
 
-        <form method="POST" action="<?= h(base_path('reset-password.php')) ?>" class="rp-form" autocomplete="off">
-          <input type="hidden" name="csrf_token" value="<?= h((string)($_SESSION['csrf_token'] ?? '')) ?>">
-          <input type="hidden" name="token" value="<?= h($token) ?>">
+      <div class="rp-board">
+        <section class="rp-overview">
+          <span class="rp-tag"><i class="ri-shield-keyhole-line"></i> <?= h(__('reset_password_kicker')) ?></span>
+          <h1 class="rp-title"><?= h($pageLang === 'en' ? 'Reset credentials through a controlled institutional security flow.' : 'Tetapkan semula kelayakan melalui aliran keselamatan institusi yang terkawal.') ?></h1>
+          <p class="rp-copy"><?= h(__('reset_password_intro')) ?></p>
 
-          <div class="rp-row">
-            <div class="rp-field">
-              <label for="login_id"><?= h(__('password_change_login_id_label')) ?></label>
-              <input id="login_id" type="text" value="<?= h($loginIdLabel) ?>" readonly>
+          <div class="rp-overview-grid">
+            <div class="rp-hero">
+              <h2><?= h($pageLang === 'en' ? 'Password updates remain governed by policy, validity, and audit controls.' : 'Kemaskini kata laluan kekal tertakluk kepada polisi, kesahan, dan kawalan audit.') ?></h2>
+              <p><?= h($pageLang === 'en' ? 'Only valid reset tokens can continue. New passwords must satisfy the active institutional password policy before access is restored.' : 'Hanya token tetapan semula yang sah boleh diteruskan. Kata laluan baharu mesti mematuhi polisi kata laluan institusi yang aktif sebelum akses dipulihkan.') ?></p>
             </div>
 
-            <div class="rp-field">
-              <label for="new_password"><?= h(__('password_change_new_password_label')) ?></label>
-              <div class="rp-password-wrap">
-                <input id="new_password" name="new_password" type="password" required autocomplete="new-password">
-                <button type="button" class="rp-password-toggle" data-password-toggle="new_password" aria-label="Show password">
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M2 12C4.8 7.6 8.1 5.4 12 5.4C15.9 5.4 19.2 7.6 22 12C19.2 16.4 15.9 18.6 12 18.6C8.1 18.6 4.8 16.4 2 12Z" stroke="currentColor" stroke-width="1.7"/>
-                    <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/>
-                  </svg>
-                </button>
+            <aside class="rp-note">
+              <span><?= h($pageLang === 'en' ? 'Security Control' : 'Kawalan Keselamatan') ?></span>
+              <strong><?= h($pageLang === 'en' ? 'The reset session remains limited to authorized manual-login identity flows.' : 'Sesi tetapan semula ini terhad kepada aliran identiti log masuk manual yang dibenarkan.') ?></strong>
+              <p><?= h($pageLang === 'en' ? 'Token status, expiry, and policy eligibility are validated before the password is accepted.' : 'Status token, tempoh sah, dan kelayakan polisi disahkan sebelum kata laluan diterima.') ?></p>
+            </aside>
+          </div>
+        </section>
+
+        <aside class="rp-panel">
+          <div class="rp-auth-card">
+            <div class="rp-form-head">
+              <div class="rp-panel-logo">
+                <img src="<?= base_url($loginPanelLogo) ?>" alt="Portal Logo">
+              </div>
+              <div>
+                <span class="rp-kicker"><i class="ri-refresh-line"></i> <?= h(__('reset_password_kicker')) ?></span>
+                <h2 class="rp-panel-title"><?= h(__('reset_password_heading')) ?></h2>
+                <p class="rp-panel-copy"><?= h($pageLang === 'en' ? 'Set a new password that satisfies the current institutional security policy.' : 'Tetapkan kata laluan baharu yang mematuhi polisi keselamatan institusi semasa.') ?></p>
               </div>
             </div>
 
-            <div class="rp-field">
-              <label for="confirm_password"><?= h(__('password_change_confirm_password_label')) ?></label>
-              <div class="rp-password-wrap">
-                <input id="confirm_password" name="confirm_password" type="password" required autocomplete="new-password">
-                <button type="button" class="rp-password-toggle" data-password-toggle="confirm_password" aria-label="Show password confirmation">
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M2 12C4.8 7.6 8.1 5.4 12 5.4C15.9 5.4 19.2 7.6 22 12C19.2 16.4 15.9 18.6 12 18.6C8.1 18.6 4.8 16.4 2 12Z" stroke="currentColor" stroke-width="1.7"/>
-                    <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/>
-                  </svg>
-                </button>
+            <?php if (!$featureAvailable): ?>
+              <div class="rp-errors">
+                <ul><li><?= h(__('forgot_password_feature_unavailable')) ?></li></ul>
               </div>
-            </div>
+            <?php elseif (!$tokenUsable): ?>
+              <div class="rp-errors">
+                <ul><li><?= h(__('reset_password_token_invalid')) ?></li></ul>
+              </div>
+              <a class="rp-back" href="<?= h(base_path('forgot-password.php')) ?>"><?= h(__('reset_password_request_new_link')) ?></a>
+            <?php else: ?>
+              <div class="rp-banner">
+                <strong><?= h(__('password_change_login_id_label')) ?>:</strong> <?= h($loginIdLabel) ?>
+              </div>
+
+              <?php if ($errors !== []): ?>
+                <div class="rp-errors">
+                  <ul>
+                    <?php foreach ($errors as $error): ?>
+                      <li><?= h((string)$error) ?></li>
+                    <?php endforeach; ?>
+                  </ul>
+                </div>
+              <?php endif; ?>
+
+              <form method="POST" action="<?= h(base_path('reset-password.php')) ?>" class="rp-form" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="<?= h((string)($_SESSION['csrf_token'] ?? '')) ?>">
+                <input type="hidden" name="token" value="<?= h($token) ?>">
+
+                <div class="rp-row">
+                  <div class="rp-field">
+                    <label for="login_id"><?= h(__('password_change_login_id_label')) ?></label>
+                    <input id="login_id" type="text" value="<?= h($loginIdLabel) ?>" readonly>
+                  </div>
+
+                  <div class="rp-field">
+                    <label for="new_password"><?= h(__('password_change_new_password_label')) ?></label>
+                    <div class="rp-password-wrap">
+                      <input id="new_password" name="new_password" type="password" required autocomplete="new-password">
+                      <button type="button" class="rp-password-toggle" data-password-toggle="new_password" aria-label="Show password">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M2 12C4.8 7.6 8.1 5.4 12 5.4C15.9 5.4 19.2 7.6 22 12C19.2 16.4 15.9 18.6 12 18.6C8.1 18.6 4.8 16.4 2 12Z" stroke="currentColor" stroke-width="1.7"/>
+                          <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="rp-field">
+                    <label for="confirm_password"><?= h(__('password_change_confirm_password_label')) ?></label>
+                    <div class="rp-password-wrap">
+                      <input id="confirm_password" name="confirm_password" type="password" required autocomplete="new-password">
+                      <button type="button" class="rp-password-toggle" data-password-toggle="confirm_password" aria-label="Show password confirmation">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M2 12C4.8 7.6 8.1 5.4 12 5.4C15.9 5.4 19.2 7.6 22 12C19.2 16.4 15.9 18.6 12 18.6C8.1 18.6 4.8 16.4 2 12Z" stroke="currentColor" stroke-width="1.7"/>
+                          <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.7"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rp-rules" id="password-rules" data-login-id="<?= h($loginIdLabel) ?>">
+                  <div class="rp-rules-title"><?= h(__('password_change_live_title')) ?></div>
+                  <ul class="rp-rules-list">
+                      <li class="rp-rule" data-rule="length"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(reset_password_min_length_message((int)($runtimePasswordPolicy['min_length'] ?? 8))) ?></span></li>
+                    <?php if (!empty($runtimePasswordPolicy['require_uppercase'])): ?><li class="rp-rule" data-rule="uppercase"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_uppercase')) ?></span></li><?php endif; ?>
+                    <?php if (!empty($runtimePasswordPolicy['require_lowercase'])): ?><li class="rp-rule" data-rule="lowercase"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_lowercase')) ?></span></li><?php endif; ?>
+                    <?php if (!empty($runtimePasswordPolicy['require_number'])): ?><li class="rp-rule" data-rule="number"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_number')) ?></span></li><?php endif; ?>
+                    <?php if (!empty($runtimePasswordPolicy['require_symbol'])): ?><li class="rp-rule" data-rule="symbol"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_symbol')) ?></span></li><?php endif; ?>
+                    <?php if (!empty($runtimePasswordPolicy['block_loginid_variants'])): ?><li class="rp-rule" data-rule="no-login"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_rule_no_login_id')) ?></span></li><?php endif; ?>
+                    <li class="rp-rule" data-rule="match"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_rule_confirm_match')) ?></span></li>
+                  </ul>
+                </div>
+
+                <button type="submit" class="rp-submit" id="rp-submit" disabled><?= h(__('reset_password_submit_btn')) ?></button>
+                <a class="rp-back" href="<?= h(base_path('index.php')) ?>"><?= h(__('forgot_password_back_to_login')) ?></a>
+              </form>
+            <?php endif; ?>
           </div>
 
-          <div class="rp-rules" id="password-rules" data-login-id="<?= h($loginIdLabel) ?>">
-            <div class="rp-rules-title"><?= h(__('password_change_live_title')) ?></div>
-            <ul class="rp-rules-list">
-                <li class="rp-rule" data-rule="length"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(reset_password_min_length_message((int)($runtimePasswordPolicy['min_length'] ?? 8))) ?></span></li>
-              <?php if (!empty($runtimePasswordPolicy['require_uppercase'])): ?><li class="rp-rule" data-rule="uppercase"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_uppercase')) ?></span></li><?php endif; ?>
-              <?php if (!empty($runtimePasswordPolicy['require_lowercase'])): ?><li class="rp-rule" data-rule="lowercase"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_lowercase')) ?></span></li><?php endif; ?>
-              <?php if (!empty($runtimePasswordPolicy['require_number'])): ?><li class="rp-rule" data-rule="number"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_number')) ?></span></li><?php endif; ?>
-              <?php if (!empty($runtimePasswordPolicy['require_symbol'])): ?><li class="rp-rule" data-rule="symbol"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_error_symbol')) ?></span></li><?php endif; ?>
-              <?php if (!empty($runtimePasswordPolicy['block_loginid_variants'])): ?><li class="rp-rule" data-rule="no-login"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_rule_no_login_id')) ?></span></li><?php endif; ?>
-              <li class="rp-rule" data-rule="match"><span class="rp-rule-dot" aria-hidden="true">&bull;</span><span><?= h(__('password_change_rule_confirm_match')) ?></span></li>
-            </ul>
+          <div class="rp-footer-note">
+            <?= h($pageLang === 'en' ? 'This reset flow enforces token validity, password policy, and audit tracking before restoring access.' : 'Aliran tetapan semula ini menguatkuasakan kesahan token, polisi kata laluan, dan jejak audit sebelum akses dipulihkan.') ?>
           </div>
-
-          <button type="submit" class="rp-submit" id="rp-submit" disabled><?= h(__('reset_password_submit_btn')) ?></button>
-          <a class="rp-back" href="<?= h(base_path('index.php')) ?>"><?= h(__('forgot_password_back_to_login')) ?></a>
-        </form>
-      <?php endif; ?>
+        </aside>
+      </div>
     </div>
   </div>
 
