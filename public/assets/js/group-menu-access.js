@@ -467,6 +467,7 @@ const MenuAccess = {
     }
 
     const payload = {
+      csrf_token: GroupUtils.getCSRF(),
       groupID,
       modulIDs: GroupState.getModulIDs(),
       menuIDs: GroupState.getMenuIDs()

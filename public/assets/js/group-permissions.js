@@ -399,6 +399,7 @@ const GroupPermissions = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': GroupUtils.getCSRF() },
           body: JSON.stringify({
+            csrf_token: GroupUtils.getCSRF(),
             groupID: GroupState.getGroupID(),
             modulIDs: GroupState.getModulIDs(),
             menuIDs: GroupState.getMenuIDs()
