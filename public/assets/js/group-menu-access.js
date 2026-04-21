@@ -1070,6 +1070,7 @@ const MenuAccess = {
 
     try {
       const payload = {
+        csrf_token: GroupUtils.getCSRF(),
         menuID: Number(menuID),
         groupID: Number(GroupState.getMenuGroupID() || 0),
         hard: 1
