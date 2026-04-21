@@ -17,6 +17,7 @@ const MenuAccess = {
   T: null,
   restoreParentMenuModal: false,
   pendingParentRestoreAfterSave: false,
+  currentRows: [],
 
   formatText(template, replacements = {}) {
     return String(template || '').replace(/\{(\w+)\}/g, (_, key) => String(replacements[key] ?? ''));
@@ -399,6 +400,90 @@ const MenuAccess = {
       flag: __asOn(rawFlag) ? 1 : 0
     };
   },
+
+  async loadGroupPermissionState(groupID) {
+    const gid = parseInt(groupID || '0', 10);
+    if (!gid) {
+      return {
+        modulIDs: [],
+        menuIDs: [],
+        menusByModul: {},
+        modulesMap: {}
+      };
+    }
+
+    const j = await GroupUtils.fetchJSONSafe(GroupUtils.apiUrl('group-perms-get.php', { groupID: gid }));
+    if (!j || j.error) {
+      throw new Error((j && j.message) || this.T.error_load_access || this.T.error_load || 'Gagal memuat akses kumpulan.');
+    }
+
+    const toNumArray = (v) => {
+      if (Array.isArray(v)) return v.map(x => parseInt(x, 10)).filter(Number.isFinite);
+      if (typeof v === 'string') return v.split(',').map(s => parseInt(String(s).trim(), 10)).filter(Number.isFinite);
+      if (typeof v === 'number') return [v];
+      return [];
+    };
+
+    const modulIDs = toNumArray(j.modulIDs ?? j.f_modulAccess ?? j.modul_access);
+    const menuIDs = toNumArray(j.menuIDs ?? j.f_menuAccess ?? j.menu_access);
+    const menusByModul = j.menusByModul || {};
+    const modulesMap = Object.fromEntries(
+      (Array.isArray(j.modules) ? j.modules : []).map((m) => {
+        const id = parseInt(m.id ?? m.f_modulID, 10);
+        const name = String(m.nama || m.modulName || ('Modul ' + (m.id || m.f_modulID)));
+        return [id, name];
+      }).filter(([id]) => Number.isFinite(id))
+    );
+
+    GroupState.setGroupID(gid);
+    GroupState.setModulIDs(modulIDs);
+    GroupState.setMenuIDs(menuIDs);
+    GroupState.setMenusByModul(menusByModul);
+    GroupState.setModulesRaw(
+      Object.keys(modulesMap).map((id) => ({ id: parseInt(id, 10), nama: modulesMap[id] }))
+    );
+
+    return { modulIDs, menuIDs, menusByModul, modulesMap };
+  },
+
+  getCurrentAccessibleMenuIds() {
+    return this.currentRows
+      .map((row) => parseInt(row.menuID, 10))
+      .filter(Number.isFinite);
+  },
+
+  isGroupMenuEnabled(menuID) {
+    const currentMenuIDs = GroupState.getMenuIDs().map((id) => parseInt(id, 10)).filter(Number.isFinite);
+    if (!currentMenuIDs.length) {
+      return true;
+    }
+    return currentMenuIDs.includes(parseInt(menuID, 10));
+  },
+
+  async saveGroupMenuAccess() {
+    const groupID = parseInt(GroupState.getMenuGroupID() || '0', 10) || 0;
+    if (!groupID) {
+      throw new Error(this.T.group_invalid_id || this.T.group_not_found || 'Kumpulan tidak sah.');
+    }
+
+    const payload = {
+      groupID,
+      modulIDs: GroupState.getModulIDs(),
+      menuIDs: GroupState.getMenuIDs()
+    };
+
+    const j = await GroupUtils.fetchJSONSafe(GroupUtils.apiUrl('group-perms-save.php'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': GroupUtils.getCSRF() },
+      body: JSON.stringify(payload)
+    });
+
+    if (!j || j.error) {
+      throw new Error((j && j.message) || this.T.error_save || 'Gagal menyimpan akses menu kumpulan.');
+    }
+
+    return j;
+  },
   
   // Fetch all menus
   async fetchAllMenusStrict() {
@@ -520,6 +605,7 @@ const MenuAccess = {
   },
   
   buildMenuTable(rows) {
+    this.currentRows = Array.isArray(rows) ? rows.slice() : [];
     const domainBadge = (domain) => {
       const safeDomain = String(domain || 'SHARED').toUpperCase();
       return '<span class="badge rounded-pill menu-domain-badge" data-domain="' + GroupUtils.esc(safeDomain) + '">' + GroupUtils.esc(safeDomain) + '</span>';
@@ -646,15 +732,22 @@ const MenuAccess = {
       const tr = input.closest('tr');
       if (!tr) return;
       const menuId = tr.getAttribute('data-menu-id');
-      const flagVal = input.value === '1' ? 1 : 0;
+      const shouldEnable = input.value === '1';
+      const previousMenuIDs = GroupState.getMenuIDs().map((id) => parseInt(id, 10)).filter(Number.isFinite);
+      const allAccessibleMenuIds = MenuAccess.getCurrentAccessibleMenuIds();
+      const nextSet = new Set(previousMenuIDs.length ? previousMenuIDs : allAccessibleMenuIds);
+
+      if (shouldEnable) {
+        nextSet.add(parseInt(menuId, 10));
+      } else {
+        nextSet.delete(parseInt(menuId, 10));
+      }
+
+      GroupState.setMenuIDs(Array.from(nextSet).sort((a, b) => a - b));
       try {
-        const resp = await GroupUtils.fetchJSONSafe(GroupUtils.apiUrl('menu-flag-toggle.php'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': GroupUtils.getCSRF() },
-          body: JSON.stringify({ menuID: menuId, flag: flagVal })
-        });
-        if (!resp || resp.error) throw new Error((resp && resp.message) || this.T.error_update_status || 'Gagal kemas kini status.');
+        await MenuAccess.saveGroupMenuAccess();
       } catch (e) {
+        GroupState.setMenuIDs(previousMenuIDs);
         const name = 'flag-' + menuId;
         MenuAccess.cntEl.querySelectorAll('input[name="' + name + '"]').forEach(el => {
           if (el !== input) el.checked = !input.checked;
@@ -668,31 +761,27 @@ const MenuAccess = {
   async openMenuEditor(groupID) {
     this.showLoading();
     try {
-      // Get modul map
-      let modulMap = {};
-      try {
-        const ml = await GroupUtils.fetchJSONSafe(GroupUtils.apiUrl('modul-list.php'));
-        const arr = Array.isArray(ml?.moduls) ? ml.moduls : (Array.isArray(ml) ? ml : []);
-        modulMap = Object.fromEntries(
-          arr.map(m => {
-            const id = parseInt(m.id ?? m.f_modulID, 10);
-            const nm = String(m.nama || m.modulName || ('Modul ' + (m.id || m.f_modulID)));
-            return [id, nm];
-          })
-        );
-      } catch (_) {}
+      const { modulIDs, menuIDs, menusByModul, modulesMap } = await this.loadGroupPermissionState(groupID);
+      const rows = [];
 
-      const allMenus = await this.fetchAllMenusStrict();
-      const rows = allMenus.map(m => ({
-        modulID: m.modulID,
-        modulName: modulMap[m.modulID] || ('Modul ' + m.modulID),
-        menuID: m.id,
-        menuName: m.name,
-        path: m.path,
-        domain: m.domain,
-        showStaffOnly: m.showStaffOnly,
-        flag: m.flag
-      }));
+      modulIDs.forEach((modulID) => {
+        const menuList = Array.isArray(menusByModul[modulID]) ? menusByModul[modulID] : [];
+        menuList.forEach((m) => {
+          const menuId = parseInt(m.id ?? m.f_menuID, 10);
+          const hasExplicitMenuFilter = Array.isArray(menuIDs) && menuIDs.length > 0;
+          const enabledForGroup = hasExplicitMenuFilter ? menuIDs.includes(menuId) : true;
+          rows.push({
+            modulID,
+            modulName: modulesMap[modulID] || ('Modul ' + modulID),
+            menuID: menuId,
+            menuName: String(m.nama || m.menuName || m.kod || '-'),
+            path: String(m.path || m.f_path || ''),
+            domain: String(m.domain || m.f_domain || 'SHARED'),
+            showStaffOnly: parseInt(m.showStaffOnly ?? m.show_staff_only ?? m.f_show_staff_only ?? 1, 10) === 1 ? 1 : 0,
+            flag: enabledForGroup ? 1 : 0
+          });
+        });
+      });
 
       rows.sort((a, b) => (a.modulID - b.modulID) || String(a.menuName).localeCompare(String(b.menuName)));
       this.buildMenuTable(rows);
