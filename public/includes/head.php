@@ -44,7 +44,7 @@
 
   <!-- Canonical & favicon -->
   <link rel="canonical" href="<?= base_url($defaultHome) ?>" />
-  <link rel="shortcut icon" href="<?= base_url($faviconPath) ?>" />
+  <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico" />
 
   <style>
     #global-loader{
