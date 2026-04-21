@@ -110,6 +110,11 @@ class UserListController {
   }
 
   private function loadUsers(): void {
+    $userModelForSchema = new User($this->pdo);
+    $hasNickname = $userModelForSchema->authTableHasColumn('f_nickname');
+    $hasAutoProvisioned = $userModelForSchema->authTableHasColumn('f_isAutoProvisioned');
+    $hasIdentitySource = $userModelForSchema->authTableHasColumn('f_identitySource');
+
     $where  = [
       "COALESCE(u.f_statusID,0) <> 9",
       "TRIM(COALESCE(u.f_categoryUser, '')) = 'STAF'"
@@ -138,23 +143,28 @@ class UserListController {
     $this->lastPage = 1;
 
     // Ambil SEMUA rekod (biar DataTables urus paging client-side)
+    $selectFields = [
+      'u.f_userID',
+      'u.f_loginID',
+      'u.f_stafID',
+      'u.f_nopekerja',
+      'u.f_categoryUser',
+      'u.f_nama',
+      'u.f_namajabatan',
+      'u.f_jawatan',
+      'u.f_status',
+      'u.f_flag',
+      $hasNickname ? 'u.f_nickname' : "'' AS f_nickname",
+      $hasAutoProvisioned ? 'COALESCE(u.f_isAutoProvisioned, 0) AS f_isAutoProvisioned' : '0 AS f_isAutoProvisioned',
+      $hasIdentitySource ? "TRIM(COALESCE(u.f_identitySource, '')) AS f_identitySource" : "'' AS f_identitySource",
+      'u.f_groupID',
+      'TRIM(u.f_groupKod) AS f_groupKod',
+      "COALESCE(NULLIF(TRIM(g.f_groupName), ''), TRIM(u.f_groupKod)) AS f_groupName",
+    ];
+
     $sql = "
       SELECT
-        u.f_userID,
-        u.f_loginID,
-        u.f_stafID,
-        u.f_nopekerja,
-        u.f_categoryUser,
-        u.f_nama,
-        u.f_namajabatan,
-        u.f_jawatan,
-        u.f_status,
-        u.f_flag,
-        COALESCE(u.f_isAutoProvisioned, 0) AS f_isAutoProvisioned,
-        TRIM(COALESCE(u.f_identitySource, '')) AS f_identitySource,
-        u.f_groupID,
-        TRIM(u.f_groupKod) AS f_groupKod,
-        COALESCE(NULLIF(TRIM(g.f_groupName), ''), TRIM(u.f_groupKod)) AS f_groupName
+        " . implode(",\n        ", $selectFields) . "
       FROM tbl_m_user u
       LEFT JOIN tbl_m_group g
         ON g.f_groupID = u.f_groupID

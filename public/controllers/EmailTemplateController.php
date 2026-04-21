@@ -168,6 +168,12 @@ final class EmailTemplateController
         $this->form = $this->collectFormData();
         $this->shouldOpenModal = true;
         $formAction = strtolower(trim((string)($_POST['form_action'] ?? 'save')));
+        $allowedActions = ['save', 'archive', 'duplicate', 'seed_templates'];
+
+        if (!in_array($formAction, $allowedActions, true)) {
+            $this->errorMessage = $this->tr('emailTemplate_error_invalid_action', 'Tindakan yang diminta tidak sah.');
+            return;
+        }
 
         $csrfToken = trim((string)($_POST['csrf_token'] ?? ''));
         if ($csrfToken === '' || !hash_equals($this->csrf, $csrfToken)) {

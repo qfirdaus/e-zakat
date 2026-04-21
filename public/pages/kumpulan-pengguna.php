@@ -30,7 +30,9 @@ $permDisabledAttr = $canManageGroups ? '' : 'disabled aria-disabled="true"';
 $permDisabledClass = $canManageGroups ? '' : ' disabled';
 
 // helper escape
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+if (!function_exists('h')) {
+  function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+}
 
 $PAGE_TITLE = (string)__('userGroup_page_title');
 

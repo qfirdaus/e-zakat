@@ -20,7 +20,9 @@ $dynamicRoleWidthPct = $rolesCount > 0 ? (65 / $rolesCount) : 0.0;
 $dynamicRoleWidthStr = number_format($dynamicRoleWidthPct, 4, '.', '');
 $PAGE_TITLE = (string)(__('access_title') ?? 'Access Matrix');
 
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+if (!function_exists('h')) {
+    function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+}
 
 // CSRF
 if (empty($_SESSION['csrf_token'])) { $_SESSION['csrf_token'] = bin2hex(random_bytes(16)); }

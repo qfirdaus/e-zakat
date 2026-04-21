@@ -20,9 +20,11 @@ try {
     }
 
     require_once __DIR__ . '/../classes/Database.php';
+    require_once __DIR__ . '/../classes/User.php';
 
     $pdo = Database::getInstance('mysql')->getConnection();
     ensureAjaxGroupManagePermission($pdo);
+    $userSchema = new User($pdo);
 
     if (!is_student_mode_enabled()) {
         jsonErrorResponse((string)__('studentSearch_mode_disabled'), 403);
@@ -93,9 +95,16 @@ try {
     };
 
     $ensureUserNotExists = static function (PDO $pdo, string $identifier): void {
-        $sql = "SELECT f_userID FROM tbl_m_user WHERE f_stafID = :identifier OR TRIM(COALESCE(f_loginID, '')) = :identifier LIMIT 1";
+        $sql = "SELECT f_userID
+                FROM tbl_m_user
+                WHERE f_stafID = :stafID
+                   OR TRIM(COALESCE(f_loginID, '')) = :loginID
+                LIMIT 1";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([':identifier' => $identifier]);
+        $stmt->execute([
+            ':stafID' => $identifier,
+            ':loginID' => $identifier,
+        ]);
         if ($stmt->fetch(PDO::FETCH_ASSOC)) {
             jsonErrorResponse('Pelajar dengan nombor matrik ini sudah wujud dalam sistem.', 409);
         }
@@ -133,7 +142,8 @@ try {
               AND upper(convert(varchar(20), statuskategori)) = 'AKTIF'
         ";
         $stmt = $pdoSybase->prepare($sql);
-        $stmt->execute([':matrik' => $matrik]);
+        $stmt->bindValue(':matrik', $matrik);
+        $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$row) {
@@ -168,6 +178,35 @@ try {
         return null;
     };
 
+    $fetchInsertedUserRow = static function (PDO $pdo, int $userID): array {
+        $sql = "
+            SELECT
+                u.f_userID,
+                u.f_loginID,
+                u.f_stafID,
+                u.f_nickname,
+                u.f_email,
+                u.f_handphone,
+                u.f_nokp,
+                u.f_nopekerja,
+                u.f_nama,
+                u.f_categoryUser,
+                u.f_namajabatan,
+                u.f_jawatan,
+                u.f_flag,
+                u.f_groupID,
+                u.f_groupKod,
+                COALESCE(NULLIF(TRIM(g.f_groupName), ''), TRIM(u.f_groupKod)) AS f_groupName
+            FROM tbl_m_user u
+            LEFT JOIN tbl_m_group g ON g.f_groupID = u.f_groupID
+            WHERE u.f_userID = :userID
+            LIMIT 1
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':userID' => $userID]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    };
+
     $insertStudent = static function (
         PDO $pdo,
         array $student,
@@ -175,103 +214,68 @@ try {
         string $groupKod,
         int $flag,
         ?string $loggedInStafID,
-        callable $derivePhone
+        callable $derivePhone,
+        User $userSchema
     ): int {
         $nokp = trim((string)($student['nokp'] ?? ''));
         $hashedPassword = $nokp !== '' ? password_hash($nokp, PASSWORD_DEFAULT) : '';
         $kumpjawatan = trim((string)($student['kadet'] ?? ''));
+        $columnValueMap = [
+            'f_loginID' => trim((string)($student['matrik'] ?? '')),
+            'f_stafID' => trim((string)($student['matrik'] ?? '')),
+            'f_categoryUser' => 'PELAJAR',
+            'f_nopekerja' => null,
+            'f_nama' => trim((string)($student['nama'] ?? '')) ?: null,
+            'f_nickname' => trim((string)($student['nama'] ?? '')) ?: null,
+            'f_nokp' => $nokp !== '' ? $nokp : null,
+            'f_password' => $hashedPassword,
+            'f_email' => trim((string)($student['email'] ?? '')) ?: null,
+            'f_handphone' => $derivePhone($student),
+            'f_jawatanKod' => trim((string)($student['kdprogram'] ?? '')) ?: null,
+            'f_jawatan' => trim((string)($student['program'] ?? '')) ?: null,
+            'f_jenisID' => trim((string)($student['kdtahap'] ?? '')) ?: null,
+            'f_jenis' => trim((string)($student['tahap_pengajian'] ?? '')) ?: null,
+            'f_jabatanKod' => trim((string)($student['kdfakulti'] ?? '')) ?: null,
+            'f_namajabatan' => trim((string)($student['fakulti'] ?? '')) ?: null,
+            'f_kumpjawatan' => $kumpjawatan !== '' ? $kumpjawatan : null,
+            'f_verified_at' => '__SQL_NOW__',
+            'f_must_change_password' => 1,
+            'f_password_changed_at' => null,
+            'f_password_expires_at' => null,
+            'f_statusID' => null,
+            'f_status' => trim((string)($student['statuskategori'] ?? '')) ?: null,
+            'f_groupID' => $groupID,
+            'f_groupKod' => $groupKod,
+            'f_flag' => $flag,
+            'f_insertdt' => '__SQL_NOW__',
+            'f_updatedt' => '__SQL_NOW__',
+            'f_updateby' => $loggedInStafID,
+            'f_remarks' => 'Added via Tambah Pelajar form',
+        ];
 
-        $sql = "
-            INSERT INTO tbl_m_user (
-                f_loginID,
-                f_stafID,
-                f_categoryUser,
-                f_nopekerja,
-                f_nama,
-                f_nickname,
-                f_nokp,
-                f_password,
-                f_email,
-                f_handphone,
-                f_jawatanKod,
-                f_jawatan,
-                f_jenisID,
-                f_jenis,
-                f_jabatanKod,
-                f_namajabatan,
-                f_kumpjawatan,
-                f_verified_at,
-                f_must_change_password,
-                f_password_changed_at,
-                f_password_expires_at,
-                f_statusID,
-                f_status,
-                f_groupID,
-                f_groupKod,
-                f_flag,
-                f_insertdt,
-                f_updatedt,
-                f_updateby,
-                f_remarks
-            ) VALUES (
-                :loginID,
-                :identifier,
-                'PELAJAR',
-                NULL,
-                :nama,
-                :nickname,
-                :nokp,
-                :password,
-                :email,
-                :handphone,
-                :kdprogram,
-                :program,
-                :kdtahap,
-                :tahap,
-                :kdfakulti,
-                :fakulti,
-                :kumpjawatan,
-                NOW(),
-                1,
-                NULL,
-                NULL,
-                :statusid,
-                :status,
-                :groupID,
-                :groupKod,
-                :flag,
-                NOW(),
-                NOW(),
-                :updateby,
-                :remarks
-            )
-        ";
+        $columns = [];
+        $placeholders = [];
+        $params = [];
+        foreach ($columnValueMap as $column => $value) {
+            if (!$userSchema->authTableHasColumn($column)) {
+                continue;
+            }
+            $columns[] = $column;
+            if ($value === '__SQL_NOW__') {
+                $placeholders[] = 'NOW()';
+                continue;
+            }
+            $placeholder = ':' . $column;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $value;
+        }
 
+        $sql = "INSERT INTO tbl_m_user (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
         $stmt = $pdo->prepare($sql);
-        $ok = $stmt->execute([
-            ':loginID' => trim((string)($student['matrik'] ?? '')),
-            ':identifier' => trim((string)($student['matrik'] ?? '')),
-            ':nama' => trim((string)($student['nama'] ?? '')) ?: null,
-            ':nickname' => trim((string)($student['nama'] ?? '')) ?: null,
-            ':nokp' => $nokp !== '' ? $nokp : null,
-            ':password' => $hashedPassword,
-            ':email' => trim((string)($student['email'] ?? '')) ?: null,
-            ':handphone' => $derivePhone($student),
-            ':kdprogram' => trim((string)($student['kdprogram'] ?? '')) ?: null,
-            ':program' => trim((string)($student['program'] ?? '')) ?: null,
-            ':kdtahap' => trim((string)($student['kdtahap'] ?? '')) ?: null,
-            ':tahap' => trim((string)($student['tahap_pengajian'] ?? '')) ?: null,
-            ':kdfakulti' => trim((string)($student['kdfakulti'] ?? '')) ?: null,
-            ':fakulti' => trim((string)($student['fakulti'] ?? '')) ?: null,
-            ':kumpjawatan' => $kumpjawatan !== '' ? $kumpjawatan : null,
-            ':statusid' => null,
-            ':status' => trim((string)($student['statuskategori'] ?? '')) ?: null,
-            ':groupID' => $groupID,
-            ':groupKod' => $groupKod,
-            ':flag' => $flag,
-            ':updateby' => $loggedInStafID,
-            ':remarks' => 'Added via Tambah Pelajar form',
-        ]);
+        foreach ($params as $placeholder => $value) {
+            $stmt->bindValue($placeholder, $value);
+        }
+        $ok = $stmt->execute();
 
         if (!$ok) {
             throw new RuntimeException('Gagal menyimpan data pelajar.');
@@ -331,7 +335,8 @@ try {
     $student = $fetchStudent($matrik);
 
     $loggedInStafID = $_SESSION['f_stafID'] ?? null;
-    $newUserId = $insertStudent($pdo, $student, $group['groupID'], $group['groupKod'], $payload['flag'], $loggedInStafID, $derivePhone);
+    $newUserId = $insertStudent($pdo, $student, $group['groupID'], $group['groupKod'], $payload['flag'], $loggedInStafID, $derivePhone, $userSchema);
+    $insertedRow = $fetchInsertedUserRow($pdo, $newUserId);
 
     try {
         $logStudentAudit($student, $group['groupID'], $group['groupKod'], $payload['flag'], $newUserId);
@@ -344,9 +349,16 @@ try {
     jsonSuccessResponse([
         'message' => 'Pelajar berjaya ditambah.',
         'userID' => $newUserId,
+        'row' => $insertedRow,
     ]);
 } catch (PDOException $e) {
     error_log('[user-add-student] PDO Error: ' . $e->getMessage());
+    if (isset($sql)) {
+        error_log('[user-add-student] Last SQL: ' . $sql);
+    }
+    if (isset($params) && is_array($params)) {
+        error_log('[user-add-student] Param keys: ' . implode(', ', array_keys($params)));
+    }
     if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
         jsonErrorResponse('Pelajar dengan nombor matrik ini sudah wujud dalam sistem.', 409);
     }

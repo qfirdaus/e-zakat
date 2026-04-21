@@ -1,1 +1,1 @@
-{"driver":"mysql","dsn":"mysql:host=172.16.2.141;dbname=efacilitydb;charset=utf8mb4","user":"finance","pass":"Finance@2025?"}
+{"driver":"mysql","dsn":"mysql:host=172.16.2.141;dbname=iqsframeworkdb;charset=utf8mb4","user":"dbapps","pass":"@plikasiDigit@l25"}

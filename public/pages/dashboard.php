@@ -9,7 +9,9 @@ require_once __DIR__ . '/../controllers/DashboardController.php';
 
 $controller = new DashboardController();
 
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+if (!function_exists('h')) {
+  function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+}
 function t(string $key, string $fallback): string {
   $v = __($key);
   return ($v === $key || $v === null || $v === '') ? $fallback : (string)$v;

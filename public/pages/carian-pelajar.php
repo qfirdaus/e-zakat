@@ -37,8 +37,10 @@ $queryInfo = $search !== ''
     ? (string)(__('studentLookup_query_info_search') ?? 'Gunakan halaman ini untuk mencari data pelajar aktif berdasarkan matrik, nama, atau fakulti melalui domain Sybase Pelajar.')
     : (string)(__('studentLookup_query_info_default') ?? 'Halaman ini digunakan untuk menyemak data pelajar aktif melalui domain Sybase Pelajar apabila mode Staf + Pelajar diaktifkan.');
 
-function h($v): string {
-    return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+if (!function_exists('h')) {
+    function h($v): string {
+        return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+    }
 }
 ?>
 <!DOCTYPE html>

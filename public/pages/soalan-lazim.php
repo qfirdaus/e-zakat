@@ -17,7 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && session_status() === PHP_SESSION_ACT
 }
 
 /* ================= Helpers ================= */
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+if (!function_exists('h')) {
+  function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+}
 function tx(string $key, string $fallback): string {
   $v = __($key);
   return ($v === $key || $v === null || $v === '') ? $fallback : (string)$v;

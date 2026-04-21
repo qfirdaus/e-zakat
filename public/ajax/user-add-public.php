@@ -19,9 +19,11 @@ try {
     }
 
     require_once __DIR__ . '/../classes/Database.php';
+    require_once __DIR__ . '/../classes/User.php';
 
     $pdo = Database::getInstance('mysql')->getConnection();
     ensureAjaxGroupManagePermission($pdo);
+    $userSchema = new User($pdo);
 
     if (!checkRateLimit('user_add_public', 20, 60)) {
         jsonErrorResponse('Terlalu banyak permintaan. Sila cuba lagi selepas beberapa saat.', 429);
@@ -141,6 +143,35 @@ try {
         throw new RuntimeException('Gagal menjana identifier pengguna umum.');
     };
 
+    $fetchInsertedUserRow = static function (PDO $pdo, int $userID): array {
+        $sql = "
+            SELECT
+                u.f_userID,
+                u.f_loginID,
+                u.f_stafID,
+                u.f_nickname,
+                u.f_email,
+                u.f_handphone,
+                u.f_nokp,
+                u.f_nopekerja,
+                u.f_nama,
+                u.f_categoryUser,
+                u.f_namajabatan,
+                u.f_jawatan,
+                u.f_flag,
+                u.f_groupID,
+                u.f_groupKod,
+                COALESCE(NULLIF(TRIM(g.f_groupName), ''), TRIM(u.f_groupKod)) AS f_groupName
+            FROM tbl_m_user u
+            LEFT JOIN tbl_m_group g ON g.f_groupID = u.f_groupID
+            WHERE u.f_userID = :userID
+            LIMIT 1
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':userID' => $userID]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    };
+
     $insertPublicUser = static function (
         PDO $pdo,
         array $payload,
@@ -148,84 +179,59 @@ try {
         string $groupKod,
         int $flag,
         ?string $loggedInStafID,
-        callable $generateLegacyPublicId
+        callable $generateLegacyPublicId,
+        User $userSchema
     ): int {
         $nickname = $payload['nickname'] !== '' ? $payload['nickname'] : $payload['name'];
         $hashedPassword = password_hash($payload['password'], PASSWORD_DEFAULT);
         $legacyPublicId = $generateLegacyPublicId($pdo);
+        $columnValueMap = [
+            'f_loginID' => $payload['email'],
+            'f_stafID' => $legacyPublicId,
+            'f_categoryUser' => 'UMUM',
+            'f_nopekerja' => null,
+            'f_nama' => $payload['name'],
+            'f_nickname' => $nickname,
+            'f_nokp' => $payload['nokp'] !== '' ? $payload['nokp'] : null,
+            'f_password' => $hashedPassword,
+            'f_email' => $payload['email'],
+            'f_handphone' => $payload['phone'] !== '' ? $payload['phone'] : null,
+            'f_namajabatan' => $payload['university'] !== '' ? $payload['university'] : null,
+            'f_verified_at' => '__SQL_NOW__',
+            'f_must_change_password' => 1,
+            'f_password_changed_at' => null,
+            'f_password_expires_at' => null,
+            'f_statusID' => null,
+            'f_status' => $flag === 1 ? 'AKTIF' : 'DISAHKAN',
+            'f_groupID' => $groupID,
+            'f_groupKod' => $groupKod,
+            'f_flag' => $flag,
+            'f_insertdt' => '__SQL_NOW__',
+            'f_updatedt' => '__SQL_NOW__',
+            'f_updateby' => $loggedInStafID,
+            'f_remarks' => 'Added via Tambah Umum form',
+        ];
 
-        $sql = "
-            INSERT INTO tbl_m_user (
-                f_loginID,
-                f_stafID,
-                f_categoryUser,
-                f_nopekerja,
-                f_nama,
-                f_nickname,
-                f_nokp,
-                f_password,
-                f_email,
-                f_handphone,
-                f_namajabatan,
-                f_verified_at,
-                f_must_change_password,
-                f_password_changed_at,
-                f_password_expires_at,
-                f_statusID,
-                f_status,
-                f_groupID,
-                f_groupKod,
-                f_flag,
-                f_insertdt,
-                f_updatedt,
-                f_updateby,
-                f_remarks
-            ) VALUES (
-                :loginID,
-                :legacyID,
-                'UMUM',
-                NULL,
-                :nama,
-                :nickname,
-                :nokp,
-                :password,
-                :email,
-                :handphone,
-                :namajabatan,
-                NOW(),
-                1,
-                NULL,
-                NULL,
-                NULL,
-                :status,
-                :groupID,
-                :groupKod,
-                :flag,
-                NOW(),
-                NOW(),
-                :updateby,
-                :remarks
-            )
-        ";
+        $columns = [];
+        $placeholders = [];
+        $params = [];
+        foreach ($columnValueMap as $column => $value) {
+            if (!$userSchema->authTableHasColumn($column)) {
+                continue;
+            }
+            $columns[] = $column;
+            if ($value === '__SQL_NOW__') {
+                $placeholders[] = 'NOW()';
+                continue;
+            }
+            $placeholder = ':' . $column;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $value;
+        }
 
+        $sql = "INSERT INTO tbl_m_user (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
         $stmt = $pdo->prepare($sql);
-        $ok = $stmt->execute([
-            ':loginID' => $payload['email'],
-            ':legacyID' => $legacyPublicId,
-            ':nama' => $payload['name'],
-            ':nickname' => $nickname,
-            ':nokp' => $payload['nokp'] !== '' ? $payload['nokp'] : null,
-            ':password' => $hashedPassword,
-            ':email' => $payload['email'],
-            ':handphone' => $payload['phone'] !== '' ? $payload['phone'] : null,
-            ':namajabatan' => $payload['university'] !== '' ? $payload['university'] : null,
-            ':status' => $flag === 1 ? 'AKTIF' : 'DISAHKAN',
-            ':groupID' => $groupID,
-            ':groupKod' => $groupKod,
-            ':flag' => $flag,
-            ':updateby' => $loggedInStafID,
-            ':remarks' => 'Added via Tambah Umum form',
-        ]);
+        $ok = $stmt->execute($params);
 
         if (!$ok) {
             throw new RuntimeException('Gagal menyimpan data pengguna umum.');
@@ -280,7 +286,8 @@ try {
     $ensureUserNotExists($pdo, $payload['email']);
 
     $loggedInStafID = $_SESSION['f_stafID'] ?? null;
-    $newUserId = $insertPublicUser($pdo, $payload, $group['groupID'], $group['groupKod'], $payload['flag'], $loggedInStafID, $generateLegacyPublicId);
+    $newUserId = $insertPublicUser($pdo, $payload, $group['groupID'], $group['groupKod'], $payload['flag'], $loggedInStafID, $generateLegacyPublicId, $userSchema);
+    $insertedRow = $fetchInsertedUserRow($pdo, $newUserId);
 
     try {
         $logPublicAudit($payload, $group['groupID'], $group['groupKod'], $payload['flag'], $newUserId);
@@ -291,6 +298,7 @@ try {
     jsonSuccessResponse([
         'message' => 'Pengguna umum berjaya ditambah.',
         'userID' => $newUserId,
+        'row' => $insertedRow,
     ]);
 } catch (PDOException $e) {
     error_log('[user-add-public] PDO Error: ' . $e->getMessage());

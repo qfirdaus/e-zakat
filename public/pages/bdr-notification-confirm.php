@@ -88,9 +88,11 @@ $canConfirm = $status === 'ready' && $isAuthenticatedForConfirm;
 $needsLogin = $status === 'ready' && !$isAuthenticatedForConfirm;
 $showRecordDetails = !in_array($status, ['invalid_token', 'expired', 'already_confirmed', 'confirmed'], true);
 
-function h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+if (!function_exists('h')) {
+    function h($value): string
+    {
+        return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+    }
 }
 
 function tr_page(string $key, string $fallback): string

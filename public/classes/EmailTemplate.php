@@ -267,6 +267,32 @@ final class EmailTemplate extends BaseModel
         ) >= 0;
     }
 
+    public function delete(int $id): bool
+    {
+        if ($id <= 0) {
+            return false;
+        }
+
+        $record = $this->findById($id);
+        if (!$record) {
+            return false;
+        }
+
+        if ((int)($record['f_isDefault'] ?? 0) === 1) {
+            throw new RuntimeException('Default email template cannot be deleted until another template is set as default.');
+        }
+
+        $usageCounts = $this->getUsageCounts([$id]);
+        if ((int)($usageCounts[$id] ?? 0) > 0) {
+            throw new RuntimeException('Email template cannot be deleted because it has been used.');
+        }
+
+        return $this->execute(
+            "DELETE FROM {$this->table} WHERE f_templateID = :id LIMIT 1",
+            [':id' => $id]
+        ) > 0;
+    }
+
     public function duplicate(int $id, string $updateBy): int
     {
         $record = $this->findById($id);

@@ -10,6 +10,11 @@ require_once __DIR__ . '/../classes/EmailTemplateRenderService.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+const EMAIL_TEMPLATE_PREVIEW_MAX_SUBJECT_LENGTH = 255;
+const EMAIL_TEMPLATE_PREVIEW_MAX_HTML_LENGTH = 50000;
+const EMAIL_TEMPLATE_PREVIEW_MAX_TEXT_LENGTH = 20000;
+const EMAIL_TEMPLATE_PREVIEW_MAX_JSON_BYTES = 50000;
+
 function normalizeEmailTemplateJsonInput(string $value): string
 {
     $normalized = preg_replace('/^\xEF\xBB\xBF/', '', $value) ?? $value;
@@ -28,6 +33,9 @@ function emailTemplatePreviewPayload(): array
 {
     $sampleVariables = [];
     $sampleInput = normalizeEmailTemplateJsonInput((string)($_POST['sample_variables'] ?? '{}'));
+    if (strlen($sampleInput) > EMAIL_TEMPLATE_PREVIEW_MAX_JSON_BYTES) {
+        throw new InvalidArgumentException((string)(__('emailTemplate_error_sample_json_too_large') ?: 'Sample variables JSON terlalu besar.'));
+    }
     if ($sampleInput !== '') {
         $decoded = json_decode($sampleInput, true);
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
@@ -36,10 +44,24 @@ function emailTemplatePreviewPayload(): array
         $sampleVariables = $decoded;
     }
 
+    $subjectTemplate = trim((string)($_POST['subject_template'] ?? ''));
+    $bodyHtml = trim((string)($_POST['body_html'] ?? ''));
+    $bodyText = trim((string)($_POST['body_text'] ?? ''));
+
+    if (mb_strlen($subjectTemplate) > EMAIL_TEMPLATE_PREVIEW_MAX_SUBJECT_LENGTH) {
+        throw new InvalidArgumentException((string)(__('emailTemplate_error_subject_too_long') ?: 'Subjek template terlalu panjang.'));
+    }
+    if (strlen($bodyHtml) > EMAIL_TEMPLATE_PREVIEW_MAX_HTML_LENGTH) {
+        throw new InvalidArgumentException((string)(__('emailTemplate_error_body_html_too_long') ?: 'Kandungan HTML template terlalu panjang.'));
+    }
+    if (strlen($bodyText) > EMAIL_TEMPLATE_PREVIEW_MAX_TEXT_LENGTH) {
+        throw new InvalidArgumentException((string)(__('emailTemplate_error_body_text_too_long') ?: 'Kandungan text template terlalu panjang.'));
+    }
+
     return [
-        'subject_template' => trim((string)($_POST['subject_template'] ?? '')),
-        'body_html' => trim((string)($_POST['body_html'] ?? '')),
-        'body_text' => trim((string)($_POST['body_text'] ?? '')),
+        'subject_template' => $subjectTemplate,
+        'body_html' => $bodyHtml,
+        'body_text' => $bodyText,
         'sample_variables' => $sampleVariables,
     ];
 }
@@ -51,6 +73,10 @@ try {
 
     if (!isValidCsrfToken()) {
         jsonErrorResponse((string)(__('userGroup_csrf_invalid') ?: 'CSRF token tidak sah.'), 403);
+    }
+
+    if (!checkRateLimit('email_template_preview', 30, 60)) {
+        jsonErrorResponse((string)(__('emailTemplate_error_preview_rate_limited') ?: 'Terlalu banyak permintaan preview. Sila tunggu sebentar dan cuba lagi.'), 429);
     }
 
     $pdo = Database::pdoMysql();
@@ -75,7 +101,6 @@ try {
             'subject' => (string)($rendered['subject'] ?? ''),
             'html' => (string)($rendered['html'] ?? ''),
             'text' => (string)($rendered['text'] ?? ''),
-            'raw_html' => (string)($rendered['raw_html'] ?? ''),
             'used_placeholders' => array_values((array)($rendered['used_placeholders'] ?? [])),
             'invalid_placeholders' => array_values((array)($rendered['invalid_placeholders'] ?? [])),
             'missing_placeholders' => array_values((array)($rendered['missing_placeholders'] ?? [])),

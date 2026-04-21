@@ -19,9 +19,11 @@ try {
     }
 
     require_once __DIR__ . '/../classes/Database.php';
+    require_once __DIR__ . '/../classes/User.php';
 
     $pdo = Database::getInstance('mysql')->getConnection();
     ensureAjaxGroupManagePermission($pdo);
+    $userSchema = new User($pdo);
 
     // Rate limiting: max 20 requests per 60 seconds
     if (!checkRateLimit('user_add', 20, 60)) {
@@ -233,107 +235,67 @@ try {
         int $groupID,
         string $groupKod,
         int $flag,
-        ?string $loggedInStafID
+        ?string $loggedInStafID,
+        User $userSchema
     ): int {
         $nokp = $sybaseUser['nokp'] ?? '';
         $hashedPassword = '';
         if (!empty($nokp)) {
             $hashedPassword = password_hash($nokp, PASSWORD_DEFAULT);
         }
+        $columnValueMap = [
+            'f_loginID' => $nopekerja,
+            'f_stafID' => $nopekerja,
+            'f_categoryUser' => 'STAF',
+            'f_nopekerja' => $idpekerja ?: ($sybaseUser['idpekerja'] ?? null),
+            'f_nama' => $sybaseUser['gelar_nama'] ?? null,
+            'f_nickname' => $sybaseUser['nama'] ?? null,
+            'f_nokp' => $sybaseUser['nokp'] ?? null,
+            'f_password' => $hashedPassword,
+            'f_email' => $sybaseUser['email'] ?? null,
+            'f_handphone' => $sybaseUser['handphone'] ?? null,
+            'f_jawatanKod' => $sybaseUser['kdjwtsemasa'] ?? null,
+            'f_jawatan' => $sybaseUser['jawatansemasa'] ?? null,
+            'f_jenisID' => !empty($sybaseUser['kdjenis']) ? (int)$sybaseUser['kdjenis'] : null,
+            'f_jenis' => $sybaseUser['jenis'] ?? null,
+            'f_jabatanKod' => $sybaseUser['kdjbtnsemasa'] ?? null,
+            'f_namajabatan' => $sybaseUser['jabatansemasa'] ?? null,
+            'f_kumpjawatan' => $sybaseUser['kumpjwt'] ?? null,
+            'f_verified_at' => '__SQL_NOW__',
+            'f_must_change_password' => 1,
+            'f_password_changed_at' => null,
+            'f_password_expires_at' => null,
+            'f_statusID' => !empty($sybaseUser['kodstatus']) ? (int)$sybaseUser['kodstatus'] : null,
+            'f_status' => $sybaseUser['status'] ?? null,
+            'f_groupID' => $groupID,
+            'f_groupKod' => $groupKod,
+            'f_flag' => $flag,
+            'f_insertdt' => '__SQL_NOW__',
+            'f_updatedt' => '__SQL_NOW__',
+            'f_updateby' => $loggedInStafID,
+            'f_remarks' => 'Added via Tambah Pengguna form',
+        ];
 
-        $insertSql = "
-            INSERT INTO tbl_m_user (
-                f_loginID,
-                f_stafID,
-                f_categoryUser,
-                f_nopekerja,
-                f_nama,
-                f_nickname,
-                f_nokp,
-                f_password,
-                f_email,
-                f_handphone,
-                f_jawatanKod,
-                f_jawatan,
-                f_jenisID,
-                f_jenis,
-                f_jabatanKod,
-                f_namajabatan,
-                f_kumpjawatan,
-                f_verified_at,
-                f_must_change_password,
-                f_password_changed_at,
-                f_password_expires_at,
-                f_statusID,
-                f_status,
-                f_groupID,
-                f_groupKod,
-                f_flag,
-                f_insertdt,
-                f_updatedt,
-                f_updateby,
-                f_remarks
-            ) VALUES (
-                :loginID,
-                :stafID,
-                :categoryUser,
-                :idpekerja,
-                :gelar_nama,
-                :nama,
-                :nokp,
-                :password,
-                :email,
-                :handphone,
-                :kdjwtsemasa,
-                :jawatansemasa,
-                :kdjenis,
-                :jenis,
-                :kdjbtnsemasa,
-                :jabatansemasa,
-                :kumpjwt,
-                NOW(),
-                1,
-                NULL,
-                NULL,
-                :kodstatus,
-                :status,
-                :groupID,
-                :groupKod,
-                :flag,
-                NOW(),
-                NOW(),
-                :updateby,
-                :remarks
-            )
-        ";
+        $columns = [];
+        $placeholders = [];
+        $params = [];
+        foreach ($columnValueMap as $column => $value) {
+            if (!$userSchema->authTableHasColumn($column)) {
+                continue;
+            }
+            $columns[] = $column;
+            if ($value === '__SQL_NOW__') {
+                $placeholders[] = 'NOW()';
+                continue;
+            }
+            $placeholder = ':' . $column;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $value;
+        }
 
+        $insertSql = "INSERT INTO tbl_m_user (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
         $insertStmt = $pdo->prepare($insertSql);
-        $result = $insertStmt->execute([
-            ':loginID' => $nopekerja,
-            ':stafID' => $nopekerja,
-            ':categoryUser' => 'STAF',
-            ':idpekerja' => $idpekerja ?: ($sybaseUser['idpekerja'] ?? null),
-            ':gelar_nama' => $sybaseUser['gelar_nama'] ?? null,
-            ':nama' => $sybaseUser['nama'] ?? null,
-            ':nokp' => $sybaseUser['nokp'] ?? null,
-            ':password' => $hashedPassword,
-            ':email' => $sybaseUser['email'] ?? null,
-            ':handphone' => $sybaseUser['handphone'] ?? null,
-            ':kdjwtsemasa' => $sybaseUser['kdjwtsemasa'] ?? null,
-            ':jawatansemasa' => $sybaseUser['jawatansemasa'] ?? null,
-            ':kdjenis' => !empty($sybaseUser['kdjenis']) ? (int)$sybaseUser['kdjenis'] : null,
-            ':jenis' => $sybaseUser['jenis'] ?? null,
-            ':kdjbtnsemasa' => $sybaseUser['kdjbtnsemasa'] ?? null,
-            ':jabatansemasa' => $sybaseUser['jabatansemasa'] ?? null,
-            ':kumpjwt' => $sybaseUser['kumpjwt'] ?? null,
-            ':kodstatus' => !empty($sybaseUser['kodstatus']) ? (int)$sybaseUser['kodstatus'] : null,
-            ':status' => $sybaseUser['status'] ?? null,
-            ':groupID' => $groupID,
-            ':groupKod' => $groupKod,
-            ':flag' => $flag,
-            ':updateby' => $loggedInStafID,
-            ':remarks' => 'Added via Tambah Pengguna form',
-        ]);
+        $result = $insertStmt->execute($params);
 
         if (!$result) {
             throw new Exception('Gagal menyimpan data pengguna.');
@@ -375,7 +337,7 @@ try {
 
     // Get logged in user for audit
     $loggedInStafID = $_SESSION['f_stafID'] ?? null;
-    $newUserId = $insertUserFromSybase($pdo, $nopekerja, $idpekerja, $sybaseUser, $groupID, $groupKod, $flag, $loggedInStafID);
+    $newUserId = $insertUserFromSybase($pdo, $nopekerja, $idpekerja, $sybaseUser, $groupID, $groupKod, $flag, $loggedInStafID, $userSchema);
 
     // Audit: Log user creation
     try {

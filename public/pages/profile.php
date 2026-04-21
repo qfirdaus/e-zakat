@@ -54,7 +54,9 @@ try {
 // Close session lock after reading
 if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
 
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+if (!function_exists('h')) {
+  function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+}
 function tr(string $key, string $fallback): string {
   $t = __($key);
   return ($t === $key || $t === null || $t === '') ? $fallback : (string)$t;
