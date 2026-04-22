@@ -2261,7 +2261,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') ==
 <script>
 window.GroupPageRuntime = Object.assign({}, window.GroupPageRuntime || {}, {
   activeGroupId: <?= json_encode((int)($_SESSION['group_active_id'] ?? ($profile['f_groupID'] ?? 0))) ?>,
-  defaultGroupId: <?= json_encode((int)($_SESSION['group_default_id'] ?? ($profile['f_groupID'] ?? 0))) ?>
+  defaultGroupId: <?= json_encode((int)($_SESSION['group_default_id'] ?? ($profile['f_groupID'] ?? 0))) ?>,
+  canManageGroups: <?= json_encode((bool)$canManageGroups) ?>
 });
 </script>
 <!-- Extracted JavaScript Modules -->
@@ -2945,6 +2946,10 @@ window.hasDT = function() {
       aksesModalEl?.addEventListener('hidden.bs.modal', () => {
         if (typeof GroupState !== 'undefined' && !GroupState.isMenuOrderDirty()) return;
         if (typeof GroupState !== 'undefined') GroupState.setMenuOrderDirty(false);
+        if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
+          window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
+          return;
+        }
         if (typeof MenuRefresh !== 'undefined') MenuRefresh.refreshMainMenu().catch(console.warn);
       });
     })();
@@ -3281,7 +3286,7 @@ window.hasDT = function() {
 
   // Add loading to action buttons (skip icon-only buttons to preserve icons)
   document.addEventListener('click', function(e) {
-    const btn = e.target.closest('.view-access, .view-menu, .view-group-perms, #menuEditSaveBtn');
+    const btn = e.target.closest('.view-access, .view-menu, .view-group-perms');
     if (btn && !btn.disabled) {
       const isIconButton = btn.classList.contains('icon-btn');
       
@@ -3386,6 +3391,19 @@ document.addEventListener('DOMContentLoaded', function(){
   const defaultIconValue = <?= json_encode((string)$defaultModuleIcon) ?>;
   let restoreParentAccessModal = false;
 
+  const syncSidebarAfterModuleChange = async () => {
+    if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
+      return window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
+    }
+    if (window.SidebarSync && typeof window.SidebarSync.refreshCurrentSidebar === 'function') {
+      return window.SidebarSync.refreshCurrentSidebar().catch(console.warn);
+    }
+    if (window.MenuRefresh && typeof window.MenuRefresh.refreshMainMenu === 'function') {
+      return window.MenuRefresh.refreshMainMenu().catch(console.warn);
+    }
+    return Promise.resolve(false);
+  };
+
   const syncModuleIconPreview = (iconClass) => {
     if (!iconPreview) return;
     const safeIcon = iconClass || 'ri-folder-fill';
@@ -3451,24 +3469,22 @@ document.addEventListener('DOMContentLoaded', function(){
   if (saveBtn && form) {
     saveBtn.addEventListener('click', async function(e){
       e.preventDefault();
-      if ((form.dataset.mode || 'create') !== 'edit') {
-        form.submit();
-        return;
-      }
+      const isEditMode = (form.dataset.mode || 'create') === 'edit';
 
       const payload = {
-        moduleID: moduleIdInput ? moduleIdInput.value : '',
         modulNameMs: nameMsInput ? nameMsInput.value : '',
         modulNameEn: nameEnInput ? nameEnInput.value : '',
         icon: iconInput ? iconInput.value : '',
       };
+      if (isEditMode) {
+        payload.moduleID = moduleIdInput ? moduleIdInput.value : '';
+      }
 
       saveBtn.disabled = true;
-      const originalHtml = saveBtn.innerHTML;
-      saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> <?= h(__('updating')) ?>';
 
       try {
-        const resp = await fetch(GroupUtils.apiUrl('module-update.php'), {
+        const endpoint = isEditMode ? 'module-update.php' : 'module-create.php';
+        const resp = await fetch(GroupUtils.apiUrl(endpoint), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3489,20 +3505,23 @@ document.addEventListener('DOMContentLoaded', function(){
         if (window.ModuleAccess && typeof ModuleAccess.reloadCurrentAccess === 'function') {
           await ModuleAccess.reloadCurrentAccess();
         }
-        if (window.MenuRefresh && typeof MenuRefresh.refreshMainMenu === 'function') {
-          await MenuRefresh.refreshMainMenu().catch(console.warn);
-        }
+        await syncSidebarAfterModuleChange();
+        setModuleFormMode('create');
 
         if (window.Swal && typeof Swal.fire === 'function') {
           (window.GroupSwal ? GroupSwal.fire({
             icon: 'success',
             title: <?= json_encode((string)__('config_js_berjaya')) ?>,
-            text: resp.message || <?= json_encode((string)__('modul_kemaskini_msg')) ?>,
+            text: resp.message || (isEditMode
+              ? <?= json_encode((string)__('modul_kemaskini_msg')) ?>
+              : <?= json_encode((string)__('modul_berjaya_msg')) ?>),
             confirmButtonText: <?= json_encode((string)__('config_js_btn_ok')) ?>
           }) : Swal.fire({
             icon: 'success',
             title: <?= json_encode((string)__('config_js_berjaya')) ?>,
-            text: resp.message || <?= json_encode((string)__('modul_kemaskini_msg')) ?>,
+            text: resp.message || (isEditMode
+              ? <?= json_encode((string)__('modul_kemaskini_msg')) ?>
+              : <?= json_encode((string)__('modul_berjaya_msg')) ?>),
             confirmButtonText: <?= json_encode((string)__('config_js_btn_ok')) ?>
           }));
         }
@@ -3522,7 +3541,6 @@ document.addEventListener('DOMContentLoaded', function(){
         }
       } finally {
         saveBtn.disabled = false;
-        saveBtn.innerHTML = originalHtml;
       }
     });
   }

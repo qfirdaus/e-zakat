@@ -23,6 +23,7 @@ const GroupPermissions = {
   restoreParentModalFromRing: false,
   restoreParentModalFromPick: false,
   activeSessionGroupId: 0,
+  currentGroupData: null,
   saveTimer: null,
   T: {},
   
@@ -410,10 +411,19 @@ const GroupPermissions = {
           return;
         }
 
+        if (window.MenuAccess && typeof window.MenuAccess.upsertGroupTableRow === 'function') {
+          window.MenuAccess.upsertGroupTableRow({
+            groupID: currentGroupId,
+            groupKod: this.currentGroupData?.kod || '',
+            groupName: this.currentGroupData?.nama || '',
+            modulAccess: GroupState.getModulIDs(),
+            menuAccess: GroupState.getMenuIDs()
+          });
+        }
+
         if (currentGroupId > 0 && this.activeSessionGroupId > 0 && currentGroupId === this.activeSessionGroupId) {
-          if (window.AccessUiSync && typeof window.AccessUiSync.applyAccessState === 'function') {
-            await window.AccessUiSync.applyAccessState({ active_group_id: currentGroupId }, {
-              refreshSidebar: true,
+          if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarForGroup === 'function') {
+            await window.AccessUiSync.syncSidebarForGroup(currentGroupId, {
               redirectOnDenied: false,
             }).catch((err) => {
               console.warn('Access UI sync failed after group permissions save:', err);
@@ -442,6 +452,7 @@ const GroupPermissions = {
     const gid = btn.getAttribute('data-group-id');
     const gkod = btn.getAttribute('data-group-kod') || '';
     const gnam = btn.getAttribute('data-group-nama') || '';
+    this.currentGroupData = { id: gid, kod: gkod, nama: gnam };
     GroupState.setGroupID(gid);
     this.renderSubtitleBar(gkod + (gnam ? ' — ' + gnam : ''));
     this.showLoading();

@@ -154,21 +154,42 @@ const MenuAccess = {
         const j = await resp.json();
         if (!j || j.error) throw new Error(j && j.message ? j.message : (this.T.err_save_menu || 'Gagal simpan'));
 
-        // Always reload after save (create/update) so table state/ordering stays correct.
-        // This also guarantees latest module/menu access indicators are rendered from DB.
-        location.reload();
-        return;
-
-        // Close modal and reset form
         const modalEl = document.getElementById('groupCreateModal');
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        const savedGroup = Object.assign({}, j.group || {}, {
+          groupID: j.group?.id ?? payload.groupID,
+          groupKod: payload.groupKod,
+          groupName: payload.groupName,
+          categoryUser: payload.categoryUser,
+          color: payload.color,
+          priority: payload.priority,
+          mod: payload.mod,
+          modulAccess: payload.modulAccess,
+          menuAccess: payload.menuAccess
+        });
+
+        this.upsertGroupTableRow(savedGroup);
         modal.hide();
-        document.getElementById('groupCreateForm')?.reset();
-        if (document.getElementById('gc_groupID')) document.getElementById('gc_groupID').value = '';
-        if (document.getElementById('gc_color_picker')) document.getElementById('gc_color_picker').value = '#50a4c1';
-        if (document.getElementById('gc_color')) document.getElementById('gc_color').value = '#50a4c1';
-        // clear selects
-        try { document.getElementById('gc_moduls').innerHTML = ''; document.getElementById('gc_menus').innerHTML = ''; } catch (_) {}
+        this.resetGroupCreateForm();
+        await this.syncSidebarForGroup(savedGroup.groupID || savedGroup.id || 0);
+
+        if (window.Swal && typeof Swal.fire === 'function') {
+          await (window.GroupSwal ? GroupSwal.fire({
+            icon: 'success',
+            title: this.T.done || 'Berjaya',
+            text: groupID > 0
+              ? (this.T.group_update_success || 'Kumpulan berjaya dikemaskini.')
+              : (this.T.group_create_success || 'Kumpulan berjaya ditambah.'),
+            confirmButtonText: this.T.btn_ok || 'OK'
+          }) : Swal.fire({
+            icon: 'success',
+            title: this.T.done || 'Berjaya',
+            text: groupID > 0
+              ? (this.T.group_update_success || 'Kumpulan berjaya dikemaskini.')
+              : (this.T.group_create_success || 'Kumpulan berjaya ditambah.'),
+            confirmButtonText: this.T.btn_ok || 'OK'
+          }));
+        }
 
       } catch (err) {
         if (errEl) { errEl.textContent = err.message || this.T.error_network || 'Ralat rangkaian'; errEl.classList.remove('d-none'); }
@@ -280,6 +301,8 @@ const MenuAccess = {
           return;
         }
 
+        this.removeGroupTableRow(gid);
+        await this.syncSidebarForGroup(gid);
         await (window.GroupSwal ? GroupSwal.fire({
           icon: 'success',
           title: this.T.done || 'Berjaya',
@@ -291,7 +314,6 @@ const MenuAccess = {
           text: this.T.delete_group_success || 'Kumpulan berjaya dipadam.',
           confirmButtonText: this.T.btn_ok || 'OK'
         }));
-        location.reload();
       } catch (err) {
         await (window.GroupSwal ? GroupSwal.fire({
           icon: 'error',
@@ -311,6 +333,190 @@ const MenuAccess = {
         this.updateEditModalUI(mode);
       });
     }
+  },
+
+  getGroupTableApi() {
+    if (!window.jQuery || !jQuery.fn || !jQuery.fn.dataTable || !jQuery.fn.dataTable.isDataTable('#groupTable')) {
+      return null;
+    }
+    return jQuery('#groupTable').DataTable();
+  },
+
+  escapeAttr(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  },
+
+  canManageGroups() {
+    return !!window.GroupPageRuntime?.canManageGroups;
+  },
+
+  normalizeGroupRecord(group = {}) {
+    const modulAccess = Array.isArray(group.modulAccess)
+      ? group.modulAccess
+      : String(group.modulAccess ?? group.f_modulAccess ?? '')
+          .split(',')
+          .map((value) => String(value).trim())
+          .filter(Boolean);
+    const menuAccess = Array.isArray(group.menuAccess)
+      ? group.menuAccess
+      : String(group.menuAccess ?? group.f_menuAccess ?? '')
+          .split(',')
+          .map((value) => String(value).trim())
+          .filter(Boolean);
+
+    return {
+      id: parseInt(group.id ?? group.groupID ?? group.f_groupID ?? '0', 10) || 0,
+      kod: String(group.kod ?? group.groupKod ?? group.f_groupKod ?? '').trim(),
+      nama: String(group.nama ?? group.groupName ?? group.f_groupName ?? '').trim(),
+      categoryUser: String(group.categoryUser ?? group.f_categoryUser ?? 'STAF').trim() || 'STAF',
+      color: String(group.color ?? group.f_color ?? '').trim(),
+      priority: String(group.priority ?? group.f_priority ?? '0').trim() || '0',
+      mod: String(group.mod ?? group.f_mod ?? '0').trim() || '0',
+      modulAccess,
+      menuAccess
+    };
+  },
+
+  buildGroupRowData(group = {}, index = 1) {
+    const record = this.normalizeGroupRecord(group);
+    const hasAccess = record.modulAccess.length > 0 || record.menuAccess.length > 0;
+    const canDeleteGroup = !hasAccess;
+    const barColor = record.color || '#94a3b8';
+    const esc = (value) => GroupUtils.esc(String(value ?? ''));
+    const escAttr = (value) => this.escapeAttr(value);
+    const manageButtons = this.canManageGroups()
+      ? [
+          '<button type="button" class="btn btn-sm btn-outline-warning icon-btn btn-edit-group-meta ms-1" ' +
+            'data-group-id="' + escAttr(record.id) + '" ' +
+            'data-group-kod="' + escAttr(record.kod) + '" ' +
+            'data-group-nama="' + escAttr(record.nama) + '" ' +
+            'data-group-category="' + escAttr(record.categoryUser) + '" ' +
+            'data-group-priority="' + escAttr(record.priority) + '" ' +
+            'data-group-mod="' + escAttr(record.mod) + '" ' +
+            'data-group-color="' + escAttr(record.color) + '" ' +
+            'title="' + escAttr(this.T.userGroup_edit_group || 'Kemaskini kumpulan') + '">' +
+            '<i class="ri-pencil-line"></i></button>'
+        ]
+      : [];
+
+    if (this.canManageGroups() && canDeleteGroup) {
+      manageButtons.push(
+        '<button type="button" class="btn btn-sm btn-outline-danger icon-btn btn-delete-group ms-1" ' +
+          'data-group-id="' + escAttr(record.id) + '" ' +
+          'data-group-kod="' + escAttr(record.kod) + '" ' +
+          'data-group-nama="' + escAttr(record.nama) + '" ' +
+          'title="' + escAttr(this.T.userGroup_delete_group || 'Padam kumpulan') + '">' +
+          '<i class="ri-delete-bin-line"></i></button>'
+      );
+    }
+
+    return [
+      String(index),
+      esc(record.kod),
+      esc(record.nama),
+      '<span class="group-create-preview-chip group-category-chip group-table-category-chip" data-category="' + escAttr(record.categoryUser) + '">' +
+        esc(record.categoryUser) +
+      '</span>',
+      '<div class="group-color-cell"><span class="group-color-bar" style="background-color: ' + escAttr(barColor) + ';" title="' + escAttr(barColor) + '"></span></div>',
+      '<button type="button" class="btn btn-sm btn-outline-secondary icon-btn view-group-perms" ' +
+        'data-group-id="' + escAttr(record.id) + '" ' +
+        'data-group-kod="' + escAttr(record.kod) + '" ' +
+        'data-group-nama="' + escAttr(record.nama) + '" ' +
+        'title="' + escAttr(this.T.userGroup_col_group_access || 'Akses kumpulan') + '">' +
+        '<i class="ri-user-settings-line"></i></button>' +
+        manageButtons.join(''),
+      hasAccess
+        ? '<button type="button" class="btn btn-sm btn-outline-primary icon-btn view-access" ' +
+            'data-group-id="' + escAttr(record.id) + '" ' +
+            'data-group-kod="' + escAttr(record.kod) + '" ' +
+            'data-group-nama="' + escAttr(record.nama) + '" ' +
+            'title="' + escAttr(this.T.userGroup_col_module_access || 'Akses modul') + '">' +
+            '<i class="ri-links-line"></i></button>'
+        : '<span class="text-muted"><i class="ri-link-unlink-m"></i></span>',
+      '<button type="button" class="btn btn-sm btn-outline-success icon-btn view-menu" ' +
+        'data-group-id="' + escAttr(record.id) + '" ' +
+        'data-group-kod="' + escAttr(record.kod) + '" ' +
+        'data-group-nama="' + escAttr(record.nama) + '" ' +
+        'title="' + escAttr(this.T.userGroup_col_menu_access || 'Akses menu') + '">' +
+        '<i class="ri-menu-2-line"></i></button>'
+    ];
+  },
+
+  reindexGroupTable() {
+    const table = this.getGroupTableApi();
+    if (!table) return;
+    table.rows({ order: 'applied', search: 'applied' }).every(function (rowIdx) {
+      const rowData = this.data();
+      if (Array.isArray(rowData)) {
+        rowData[0] = String(rowIdx + 1);
+        this.data(rowData, false);
+      }
+    });
+    table.draw(false);
+  },
+
+  upsertGroupTableRow(group = {}) {
+    const table = this.getGroupTableApi();
+    const record = this.normalizeGroupRecord(group);
+    if (!table || record.id <= 0) return false;
+
+    const selector = 'tr[data-group-id="' + record.id + '"]';
+    const existingRow = table.row(selector);
+    if (existingRow.any()) {
+      existingRow.data(this.buildGroupRowData(record));
+      const node = existingRow.node();
+      if (node) node.setAttribute('data-group-id', String(record.id));
+    } else {
+      const node = table.row.add(this.buildGroupRowData(record)).draw(false).node();
+      if (node) node.setAttribute('data-group-id', String(record.id));
+    }
+    this.reindexGroupTable();
+    return true;
+  },
+
+  removeGroupTableRow(groupId) {
+    const table = this.getGroupTableApi();
+    const targetGroupId = parseInt(groupId || '0', 10) || 0;
+    if (!table || targetGroupId <= 0) return false;
+    const row = table.row('tr[data-group-id="' + targetGroupId + '"]');
+    if (!row.any()) return false;
+    row.remove().draw(false);
+    this.reindexGroupTable();
+    return true;
+  },
+
+  resetGroupCreateForm() {
+    if (document.getElementById('gc_groupID')) document.getElementById('gc_groupID').value = '';
+    if (document.getElementById('gc_groupKod')) document.getElementById('gc_groupKod').value = '';
+    if (document.getElementById('gc_groupName')) document.getElementById('gc_groupName').value = '';
+    if (document.getElementById('gc_categoryUser')) document.getElementById('gc_categoryUser').value = 'STAF';
+    if (document.getElementById('gc_priority')) document.getElementById('gc_priority').value = '0';
+    if (document.getElementById('gc_mod')) document.getElementById('gc_mod').value = '0';
+    if (document.getElementById('gc_color_picker')) document.getElementById('gc_color_picker').value = '#50a4c1';
+    if (document.getElementById('gc_color')) document.getElementById('gc_color').value = '#50a4c1';
+    try {
+      const modSel = document.getElementById('gc_moduls');
+      const menuSel = document.getElementById('gc_menus');
+      if (modSel) Array.from(modSel.options).forEach((opt) => { opt.selected = false; });
+      if (menuSel) Array.from(menuSel.options).forEach((opt) => { opt.selected = false; });
+    } catch (_) { /* ignore */ }
+    if (typeof this.syncGroupPreview === 'function') {
+      this.syncGroupPreview();
+    }
+  },
+
+  async syncSidebarForGroup(groupId) {
+    if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarForGroup === 'function') {
+      return window.AccessUiSync.syncSidebarForGroup(groupId, { redirectOnDenied: false }).catch(console.warn);
+    }
+    if (window.SidebarSync && typeof window.SidebarSync.refreshCurrentSidebar === 'function') {
+      return window.SidebarSync.refreshCurrentSidebar().catch(console.warn);
+    }
+    return Promise.resolve(false);
   },
 
   updateEditModalUI(mode) {
@@ -482,6 +688,15 @@ const MenuAccess = {
     if (!j || j.error) {
       throw new Error((j && j.message) || this.T.error_save || 'Gagal menyimpan akses menu kumpulan.');
     }
+
+    this.upsertGroupTableRow({
+      groupID,
+      groupKod: GroupState.getLastMenuBtn()?.getAttribute('data-group-kod') || '',
+      groupName: GroupState.getLastMenuBtn()?.getAttribute('data-group-nama') || '',
+      modulAccess: GroupState.getModulIDs(),
+      menuAccess: GroupState.getMenuIDs(),
+    });
+    await this.syncSidebarForGroup(groupID);
 
     return j;
   },
@@ -976,6 +1191,14 @@ const MenuAccess = {
           confirmButtonText: this.T.btn_ok || 'OK'
         }));
       }
+      this.upsertGroupTableRow({
+        groupID,
+        groupKod: GroupState.getLastMenuBtn()?.getAttribute('data-group-kod') || '',
+        groupName: GroupState.getLastMenuBtn()?.getAttribute('data-group-nama') || '',
+        modulAccess: GroupState.getModulIDs(),
+        menuAccess: GroupState.getMenuIDs(),
+      });
+      await this.syncSidebarForGroup(groupID);
       if (shouldRestoreParent) {
         const parentModal = GroupUtils.getModal(this.modalEl);
         if (parentModal) {
@@ -1111,6 +1334,14 @@ const MenuAccess = {
           confirmButtonText: MenuAccess.T.btn_ok || 'OK'
         }));
       }
+      this.upsertGroupTableRow({
+        groupID: GroupState.getMenuGroupID(),
+        groupKod: GroupState.getLastMenuBtn()?.getAttribute('data-group-kod') || '',
+        groupName: GroupState.getLastMenuBtn()?.getAttribute('data-group-nama') || '',
+        modulAccess: GroupState.getModulIDs(),
+        menuAccess: GroupState.getMenuIDs().filter((id) => parseInt(id, 10) !== parseInt(menuID, 10)),
+      });
+      await this.syncSidebarForGroup(GroupState.getMenuGroupID());
     } catch (e) {
       if (window.Swal && Swal.fire) {
         (window.GroupSwal ? GroupSwal.fire({

@@ -31,6 +31,10 @@ const ModuleAccess = {
     this.modalEl?.addEventListener('hidden.bs.modal', () => {
       if (!GroupState.isMenuOrderDirty()) return;
       GroupState.setMenuOrderDirty(false);
+      if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
+        window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
+        return;
+      }
       MenuRefresh.refreshMainMenu().catch(console.warn);
     });
     
@@ -349,6 +353,12 @@ const ModuleAccess = {
         setTimeout(() => this.errEl?.classList.add('d-none'), 2500);
         return;
       }
+      GroupState.setMenuOrderDirty(false);
+      if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
+        await window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
+      } else {
+        await MenuRefresh.refreshMainMenu().catch(console.warn);
+      }
     } catch (e) {
       this.restoreModuleOrder(oldOrder);
       this.showError(e.message || this.T.error_network);
@@ -401,7 +411,9 @@ const ModuleAccess = {
       }
 
       await this.reloadCurrentAccess();
-      if (typeof MenuRefresh !== 'undefined' && MenuRefresh && typeof MenuRefresh.refreshMainMenu === 'function') {
+      if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
+        await window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
+      } else if (typeof MenuRefresh !== 'undefined' && MenuRefresh && typeof MenuRefresh.refreshMainMenu === 'function') {
         await MenuRefresh.refreshMainMenu().catch(console.warn);
       }
 
@@ -480,7 +492,12 @@ const ModuleAccess = {
       }
       this.refreshReorderButtons(bodyEl);
       GroupState.setMenuOrderDirty(true);
-      await MenuRefresh.refreshMainMenu();
+      if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
+        await window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
+      } else {
+        await MenuRefresh.refreshMainMenu().catch(console.warn);
+      }
+      GroupState.setMenuOrderDirty(false);
     } catch (e) {
       if (typeof revert === 'function') revert();
       this.showError(e.message || this.T.error_network);

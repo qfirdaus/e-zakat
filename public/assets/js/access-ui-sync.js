@@ -74,6 +74,19 @@ const AccessUiSync = {
     return file ? ('pages/' + file) : '';
   },
 
+  getActiveGroupId() {
+    return parseInt(window.GroupPageRuntime?.activeGroupId || '0', 10) || 0;
+  },
+
+  isActiveGroup(groupId) {
+    const activeGroupId = this.getActiveGroupId();
+    const targetGroupId = parseInt(groupId || '0', 10) || 0;
+    if (activeGroupId <= 0 || targetGroupId <= 0) {
+      return false;
+    }
+    return activeGroupId === targetGroupId;
+  },
+
   setActiveGroupId(groupId) {
     const nextGroupId = parseInt(groupId || '0', 10) || 0;
     if (window.GroupPageRuntime && Object.prototype.hasOwnProperty.call(window.GroupPageRuntime, 'activeGroupId')) {
@@ -96,6 +109,44 @@ const AccessUiSync = {
       return false;
     }
     return window.SidebarSync.refreshCurrentSidebar();
+  },
+
+  async syncSidebarSilently(options = {}) {
+    const settings = Object.assign({
+      state: null,
+      redirectOnDenied: false,
+      fallbackMenuRefresh: true,
+    }, options || {});
+
+    try {
+      if (settings.state) {
+        return await this.applyAccessState(settings.state, {
+          refreshSidebar: true,
+          redirectOnDenied: !!settings.redirectOnDenied,
+        });
+      }
+      return await this.runExclusive(() => this.refreshSidebar());
+    } catch (err) {
+      if (
+        settings.fallbackMenuRefresh &&
+        window.MenuRefresh &&
+        typeof window.MenuRefresh.refreshMainMenu === 'function'
+      ) {
+        await window.MenuRefresh.refreshMainMenu().catch(console.warn);
+      }
+      throw err;
+    }
+  },
+
+  async syncSidebarForGroup(groupId, options = {}) {
+    const activeGroupId = this.getActiveGroupId();
+    const targetGroupId = parseInt(groupId || '0', 10) || 0;
+
+    if (activeGroupId > 0 && targetGroupId > 0 && activeGroupId !== targetGroupId) {
+      return false;
+    }
+
+    return this.syncSidebarSilently(options);
   },
 
   async applyAccessState(state = {}, options = {}) {
