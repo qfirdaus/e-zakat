@@ -79,6 +79,10 @@ function is_menu_active(string $currentFile, string $menuPath): bool {
     return basename($currentFile) === basename($sanitizedPath);
 }
 
+function sidebar_link_active_class(string $currentFile, string $menuPath): string {
+    return is_menu_active($currentFile, $menuPath) ? ' active' : '';
+}
+
 function sanitize_sidebar_user_image(?string $path): string {
     $default = 'assets/images/small/small-5.jpg';
     $path = trim((string)$path);
@@ -364,6 +368,16 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
     background-color: rgba(255, 255, 255, 0.1);
     font-weight: 600;
 }
+.side-nav .side-nav-item > .side-nav-primary-link.active {
+    color: var(--ct-menu-item-active-color);
+    background-color: rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+}
+.side-nav .side-nav-item.menuitem-active > .side-nav-primary-link {
+    color: var(--ct-menu-item-active-color);
+    background-color: rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+}
 .side-nav .side-nav-item.menuitem-active > .side-nav-toggle-btn .sidebar-parent-arrow {
     opacity: 1;
 }
@@ -448,8 +462,9 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
 
             <!-- Dashboard -->
             <li class="side-nav-title mt-1"><?= __('sidebar_main') ?></li>
-            <li class="side-nav-item">
-                <a href="<?= base_path($defaultHome) ?>" class="side-nav-link side-nav-primary-link">
+            <?php $dashboardActive = is_menu_active($currentFile, $defaultHome); ?>
+            <li class="side-nav-item<?= $dashboardActive ? ' menuitem-active' : '' ?>">
+                <a href="<?= base_path($defaultHome) ?>" class="side-nav-link side-nav-primary-link<?= $dashboardActive ? ' active' : '' ?>">
                     <i class="ri-dashboard-fill"></i>
                     <span><?= __('sidebar_dashboard') ?></span>
                     <i class="ri-bar-chart-line sidebar-chart-icon" title="<?= __('sidebar_dashboard_stats') ?: 'Statistik' ?>"></i>
