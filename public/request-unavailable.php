@@ -8,7 +8,7 @@ if (function_exists('set_alert')) {
         'type' => 'sweet',
         'icon' => 'warning',
         'title' => 'access_notice_title',
-        'text' => 'access_notice_text',
+        'text' => 'access_missing_page_text',
         'confirm' => true,
         'position' => 'center',
         'is_key' => true,

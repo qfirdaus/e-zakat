@@ -95,6 +95,12 @@ if (!function_exists('prestasi_current_page_relative_path')) {
     }
 }
 
+if (!function_exists('prestasi_public_root_path')) {
+    function prestasi_public_root_path(): string {
+        return realpath(__DIR__ . '/../../') ?: (__DIR__ . '/../../');
+    }
+}
+
 if (!function_exists('prestasi_current_request_relative_path')) {
     function prestasi_current_request_relative_path(): string {
         $scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
@@ -158,6 +164,53 @@ if (!function_exists('prestasi_infer_request_namespace')) {
         }
 
         return $path;
+    }
+}
+
+if (!function_exists('prestasi_request_uri_relative_path')) {
+    function prestasi_request_uri_relative_path(): string {
+        $requestUriPath = (string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '');
+        $requestUriPath = ltrim(str_replace('\\', '/', $requestUriPath), '/');
+        if ($requestUriPath === '') {
+            return '';
+        }
+
+        $scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
+        $scriptDir = trim(dirname($scriptName), '/');
+        if ($scriptDir !== '' && $scriptDir !== '.' && str_starts_with($requestUriPath, $scriptDir . '/')) {
+            $requestUriPath = substr($requestUriPath, strlen($scriptDir) + 1);
+        }
+
+        $publicPos = stripos($requestUriPath, 'public/');
+        if ($publicPos !== false) {
+            $requestUriPath = substr($requestUriPath, $publicPos + 7);
+        }
+
+        $normalizedUri = prestasi_normalize_menu_path($requestUriPath);
+        if ($normalizedUri === '') {
+            return '';
+        }
+
+        $inferred = prestasi_infer_request_namespace($normalizedUri);
+        return $inferred !== '' ? $inferred : $normalizedUri;
+    }
+}
+
+if (!function_exists('prestasi_requested_missing_page_from_uri')) {
+    function prestasi_requested_missing_page_from_uri(): string {
+        $requestedPath = prestasi_request_uri_relative_path();
+        if ($requestedPath === '' || !str_starts_with($requestedPath, 'pages/')) {
+            return '';
+        }
+
+        $basename = basename($requestedPath);
+        if ($basename === '' || !str_ends_with($basename, '.php')) {
+            return '';
+        }
+
+        $publicRoot = prestasi_public_root_path();
+        $candidate = $publicRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $requestedPath);
+        return is_file($candidate) ? '' : $requestedPath;
     }
 }
 
@@ -510,14 +563,14 @@ if (!function_exists('prestasi_forbidden_redirect_path')) {
     }
 }
 
-if (!function_exists('prestasi_redirect_with_generic_access_notice')) {
-    function prestasi_redirect_with_generic_access_notice(): never {
+if (!function_exists('prestasi_redirect_with_access_notice')) {
+    function prestasi_redirect_with_access_notice(string $textKey = 'access_notice_text', string $titleKey = 'access_notice_title'): never {
         if (function_exists('set_alert')) {
             set_alert([
                 'type' => 'sweet',
                 'icon' => 'warning',
-                'title' => 'access_notice_title',
-                'text' => 'access_notice_text',
+                'title' => $titleKey,
+                'text' => $textKey,
                 'confirm' => true,
                 'position' => 'center',
                 'is_key' => true,
@@ -529,6 +582,12 @@ if (!function_exists('prestasi_redirect_with_generic_access_notice')) {
             header('Location: ' . $redirect, true, 302);
         }
         exit;
+    }
+}
+
+if (!function_exists('prestasi_redirect_with_generic_access_notice')) {
+    function prestasi_redirect_with_generic_access_notice(): never {
+        prestasi_redirect_with_access_notice('access_notice_text');
     }
 }
 
@@ -577,7 +636,13 @@ if (!function_exists('ensure_current_request_access')) {
             exit;
         }
 
-        prestasi_redirect_with_generic_access_notice();
+        $missingPagePath = prestasi_requested_missing_page_from_uri();
+        if ($missingPagePath !== '') {
+            prestasi_access_trace_log(sprintf('[access_trace] redirect=missing-page requested=%s', $missingPagePath));
+            prestasi_redirect_with_access_notice('access_missing_page_text');
+        }
+
+        prestasi_redirect_with_access_notice('manual_unauthorized_access');
     }
 }
 

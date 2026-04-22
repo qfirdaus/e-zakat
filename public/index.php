@@ -37,6 +37,22 @@ require_once __DIR__ . '/includes/functions-db.php';
 require_once __DIR__ . '/includes/sso-config.php';
 require_once __DIR__ . '/classes/Config.php';
 
+$requestedMissingPage = function_exists('prestasi_requested_missing_page_from_uri')
+    ? prestasi_requested_missing_page_from_uri()
+    : '';
+
+if ($requestedMissingPage !== '' && function_exists('set_alert')) {
+    set_alert([
+        'type' => 'sweet',
+        'icon' => 'warning',
+        'title' => 'access_notice_title',
+        'text' => 'access_missing_page_text',
+        'confirm' => true,
+        'position' => 'center',
+        'is_key' => true,
+    ]);
+}
+
 if ($hasIncomingSsoToken) {
     $__ssoDebugLog('INDEX_CALLBACK_ENTRY', [
         'request_uri' => $_SERVER['REQUEST_URI'] ?? null,

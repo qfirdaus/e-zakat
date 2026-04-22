@@ -2226,6 +2226,7 @@ return [
 'manual_unauthorized_access' => 'Anda tidak dibenarkan mengakses halaman ini.',
 'access_notice_title' => 'Makluman Sistem',
 'access_notice_text' => 'Destinasi yang diminta tidak tersedia. Sila teruskan menggunakan navigasi yang disediakan dalam sistem.',
+'access_missing_page_text' => 'Halaman yang diminta tidak wujud atau tidak lagi tersedia. Sila gunakan navigasi yang disediakan dalam sistem.',
 'manual_csrf_reload' => 'CSRF token tidak sah. Sila muat semula halaman dan cuba lagi.',
 'manual_page_title' => 'Urus Manual Pengguna',
 'manual_breadcrumb_home' => 'Utama',

@@ -2214,6 +2214,7 @@ return [
 'manual_unauthorized_access' => 'You are not allowed to access this page.',
 'access_notice_title' => 'System Notice',
 'access_notice_text' => 'The requested destination is unavailable. Please continue using the navigation provided in the system.',
+'access_missing_page_text' => 'The requested page does not exist or is no longer available. Please use the navigation provided in the system.',
 'manual_csrf_reload' => 'Invalid CSRF token. Please reload the page and try again.',
 'manual_page_title' => 'Manage User Manuals',
 'manual_breadcrumb_home' => 'Home',
