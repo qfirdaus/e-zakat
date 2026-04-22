@@ -179,7 +179,7 @@ The current build already includes several working administrative and operationa
 - **Group Management (`pages/kumpulan-pengguna.php`)**  
   Centralizes management of user groups, module access, menu access, group identity styling, icon choices, ordering, and the structure used by the platform authorization model.
 
-- **Access Matrix (`pages/access.php`)**  
+- **Access Matrix (`pages/access-matrix.php`)**  
   Provides a read-only matrix view that allows administrators to review which groups or roles have access to which modules and menu paths.
 
 - **Audit Center (`pages/audit-center.php`)**  

@@ -317,13 +317,24 @@ class SidebarController
      */
     private function detectActiveModul(string $currentFile): void
     {
+        $aliases = [
+            'access.php' => ['access-matrix.php'],
+            'access-matrix.php' => ['access.php'],
+        ];
+        $currentBase = basename($currentFile);
+
         foreach ($this->senaraiModul as $modul) {
             $modulID = (int)$modul['f_modulID'];
             $childs = $this->modulMenus[$modulID] ?? [];
             
             foreach ($childs as $menu) {
                 $menuPath = $this->sanitizeMenuPath($menu['f_path'] ?? '');
-                if ($menuPath && $currentFile === basename($menuPath)) {
+                $menuBase = $menuPath ? basename($menuPath) : '';
+                $isAliasMatch = $menuBase !== '' && (
+                    in_array($currentBase, $aliases[$menuBase] ?? [], true)
+                    || in_array($menuBase, $aliases[$currentBase] ?? [], true)
+                );
+                if ($menuPath && ($currentBase === $menuBase || $isAliasMatch)) {
                     $this->modulAktifID = $modulID;
                     return; // Found, exit early
                 }
@@ -519,5 +530,4 @@ class SidebarController
         return null; // No notifications for now
     }
 }
-
 

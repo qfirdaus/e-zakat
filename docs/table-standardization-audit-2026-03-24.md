@@ -34,7 +34,7 @@ Status semasa:
 
 - `pages/senarai-pengguna.php`
 - `pages/manage-manuals.php`
-- `pages/access.php`
+- `pages/access-matrix.php`
 - `pages/carian-pelajar.php`
 - `assets/css/pages/profile.css`
 
@@ -74,7 +74,7 @@ Pattern ini wujud serentak dalam:
 - `kumpulan-pengguna.php`
 - `senarai-pengguna.php`
 - `manage-manuals.php`
-- `access.php`
+- `access-matrix.php`
 - `profile.css`
 - `carian-pelajar.php`
 
@@ -191,7 +191,7 @@ Ini tak perlu ikut DataTables penuh, tetapi patut ikut family surface yang sama:
 Prioriti tertinggi:
 1. `senarai-pengguna.php`
 2. `manage-manuals.php`
-3. `access.php`
+3. `access-matrix.php`
 4. `profile.css`
 5. `carian-pelajar.php`
 
@@ -221,7 +221,7 @@ Bina preset CSS/JS standard berasaskan `kumpulan-pengguna`.
 Migrasi page ini dahulu:
 - `senarai-pengguna.php`
 - `manage-manuals.php`
-- `access.php`
+- `access-matrix.php`
 
 ### Langkah 3
 

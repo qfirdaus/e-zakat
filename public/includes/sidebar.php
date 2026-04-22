@@ -76,7 +76,19 @@ function is_menu_active(string $currentFile, string $menuPath): bool {
     if (!$sanitizedPath) {
         return false;
     }
-    return $currentFile === basename($sanitizedPath);
+    $currentBase = basename($currentFile);
+    $menuBase = basename($sanitizedPath);
+    if ($currentBase === $menuBase) {
+        return true;
+    }
+
+    $aliases = [
+        'access.php' => ['access-matrix.php'],
+        'access-matrix.php' => ['access.php'],
+    ];
+
+    return in_array($currentBase, $aliases[$menuBase] ?? [], true)
+        || in_array($menuBase, $aliases[$currentBase] ?? [], true);
 }
 
 function sanitize_sidebar_user_image(?string $path): string {

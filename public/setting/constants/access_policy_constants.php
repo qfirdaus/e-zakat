@@ -24,6 +24,7 @@ if (!defined('ACCESS_POLICY_PUBLIC_PAGE_ALLOWLIST')) {
 if (!defined('ACCESS_POLICY_SUPER_ADMIN_ONLY_PAGES')) {
     define('ACCESS_POLICY_SUPER_ADMIN_ONLY_PAGES', [
         'pages/access.php',
+        'pages/access-matrix.php',
         'pages/audit-center.php',
         'pages/carian-pelajar.php',
         'pages/kumpulan-pengguna.php',
