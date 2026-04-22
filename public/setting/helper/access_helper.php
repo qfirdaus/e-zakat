@@ -89,35 +89,6 @@ if (!function_exists('prestasi_normalize_menu_path')) {
     }
 }
 
-if (!function_exists('prestasi_menu_path_aliases')) {
-    /**
-     * Return equivalent normalized page paths for compatibility renames.
-     *
-     * @return array<int,string>
-     */
-    function prestasi_menu_path_aliases(?string $path): array {
-        $normalized = prestasi_normalize_menu_path($path);
-        if ($normalized === '') {
-            return [];
-        }
-
-        $aliases = [$normalized];
-        static $pageAliasMap = [
-            'pages/access.php' => ['pages/access-matrix.php'],
-            'pages/access-matrix.php' => ['pages/access.php'],
-        ];
-
-        foreach ($pageAliasMap[$normalized] ?? [] as $aliasPath) {
-            $aliasNormalized = prestasi_normalize_menu_path($aliasPath);
-            if ($aliasNormalized !== '' && !in_array($aliasNormalized, $aliases, true)) {
-                $aliases[] = $aliasNormalized;
-            }
-        }
-
-        return $aliases;
-    }
-}
-
 if (!function_exists('prestasi_current_page_relative_path')) {
     function prestasi_current_page_relative_path(): string {
         return prestasi_current_request_relative_path();
@@ -416,13 +387,15 @@ if (!function_exists('prestasi_load_allowed_page_paths')) {
                     );
                     $stmtMenu->execute($menuIds);
                     foreach (($stmtMenu->fetchAll(PDO::FETCH_COLUMN) ?: []) as $path) {
-                        foreach (prestasi_menu_path_aliases((string)$path) as $normalized) {
-                            $paths[$normalized] = true;
-                            $basename = basename($normalized);
-                            if ($basename !== '') {
-                                $paths[$basename] = true;
-                                $paths['pages/' . $basename] = true;
-                            }
+                        $normalized = prestasi_normalize_menu_path((string)$path);
+                        if ($normalized === '') {
+                            continue;
+                        }
+                        $paths[$normalized] = true;
+                        $basename = basename($normalized);
+                        if ($basename !== '') {
+                            $paths[$basename] = true;
+                            $paths['pages/' . $basename] = true;
                         }
                     }
                 }
