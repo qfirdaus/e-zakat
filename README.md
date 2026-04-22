@@ -177,10 +177,10 @@ The current build already includes several working administrative and operationa
   Serves as the main user governance module for staff, student, and public accounts. It supports listing, searching, adding users, editing user records, assigning groups, updating access flags, managing extra roles, refreshing user data through modal- and AJAX-driven workflows, and identifying SSO auto-provisioned accounts directly from the listing UI.
 
 - **Group Management (`pages/kumpulan-pengguna.php`)**  
-  Centralizes management of user groups, module access, menu access, group identity styling, icon choices, ordering, and the structure used by the platform authorization model.
+  Centralizes management of user groups, module access, menu access, group identity styling, icon choices, ordering, and the structure used by the platform authorization model. The current flow also keeps sidebar navigation state synchronized in the background after relevant access changes, with clearer active-state highlighting for main and child sidebar menus.
 
 - **Access Matrix (`pages/access-matrix.php`)**  
-  Provides a read-only matrix view that allows administrators to review which groups or roles have access to which modules and menu paths.
+  Provides a read-only matrix view that allows administrators to review which groups or roles have access to which modules and menu paths through the dedicated `access-matrix.php` page.
 
 - **Audit Center (`pages/audit-center.php`)**  
   Functions as a Super Admin audit workspace with AJAX-based navigation across events, requests, sessions, changes, and security views, including filtering, paging, export operations, metadata inspection, and selected administrative actions.

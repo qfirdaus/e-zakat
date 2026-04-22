@@ -7,10 +7,13 @@ This changelog follows a release-style summary based on major project milestones
 ## [Unreleased]
 
 ### Added
+- Added clearer active-state highlighting for main sidebar links, active module parents, and active child menus so the current navigation context is easier to identify.
 
 ### Changed
+- Changed the Access Matrix page path from `pages/access.php` to `pages/access-matrix.php` and removed the legacy page entry after database menu paths were updated.
 
 ### Fixed
+- Fixed sidebar navigation state so both main menu links and grouped child menu links remain visibly active when the current page is open.
 
 ## [1.7.1] - 2026-04-22
 
