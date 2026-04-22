@@ -359,6 +359,27 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
     color: var(--ct-menu-item-active-color);
     background-color: rgba(255, 255, 255, 0.06);
 }
+.side-nav .side-nav-item.menuitem-active > .side-nav-toggle-btn {
+    color: var(--ct-menu-item-active-color);
+    background-color: rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+}
+.side-nav .side-nav-item.menuitem-active > .side-nav-toggle-btn .sidebar-parent-arrow {
+    opacity: 1;
+}
+.side-nav .side-nav-second-level li > a {
+    border-radius: 8px;
+    transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.side-nav .side-nav-second-level li > a:hover {
+    transform: translateX(2px);
+}
+.side-nav .side-nav-second-level li.menuitem-active > a,
+.side-nav .side-nav-second-level li > a.active {
+    color: var(--ct-menu-item-active-color);
+    background-color: rgba(255, 255, 255, 0.12);
+    font-weight: 600;
+}
 </style>
 <div class="sidebar-loading-overlay">
     <div class="sidebar-loading-spinner"></div>
@@ -463,11 +484,11 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
                 $linkCls      = 'side-nav-link' . ($isActive ? '' : ' collapsed');
                 $ariaExpanded = $isActive ? 'true' : 'false';
             ?>
-                <li class="side-nav-item">
+                <li class="side-nav-item<?= $isActive ? ' menuitem-active' : '' ?>">
                     <button type="button"
                        data-sidebar-toggle="true"
                        data-sidebar-target="#<?= $modulId ?>"
-                       class="<?= $linkCls ?> side-nav-toggle-btn"
+                       class="<?= $linkCls ?> side-nav-toggle-btn<?= $isActive ? ' active' : '' ?>"
                        aria-expanded="<?= $ariaExpanded ?>"
                        aria-controls="<?= $modulId ?>">
                         <i class="<?= htmlspecialchars($icon, ENT_QUOTES, 'UTF-8') ?>"></i>
@@ -486,7 +507,7 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
                                 $menuHref = base_path('pages/' . $menuPath);
                                 $menuName = htmlspecialchars($menu['menuName'] ?? '-', ENT_QUOTES, 'UTF-8');
                             ?>
-                                <li>
+                                <li class="<?= $menuActive ? 'menuitem-active' : '' ?>">
                                     <a class="<?= $menuActive ? 'active' : '' ?>"
                                        href="<?= htmlspecialchars($menuHref, ENT_QUOTES, 'UTF-8') ?>">
                                         <?= $menuName ?>
