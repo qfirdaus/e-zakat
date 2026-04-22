@@ -7,20 +7,24 @@ This changelog follows a release-style summary based on major project milestones
 ## [Unreleased]
 
 ### Added
-- Added AJAX action handling for `template-emel` create, update, duplicate, archive, seed import, and guarded delete flows without full page refresh.
-- Added guarded delete support for email templates, restricted when a template is default or has recorded usage.
-- Added a developer guidance tab in `template-emel` with used-placeholder detection, default/programmer placeholder grouping, generated integration snippet output, and copy-to-clipboard support.
-- Added a dedicated `Usage` column in the email template listing.
 
 ### Changed
-- Changed `template-emel` preview behavior so `Render Preview` activates the `Preview` tab, opens the rendered preview panel, and keeps the raw HTML preview panel closed by default.
-- Changed `template-emel` sample JSON generation so preview data is built dynamically from placeholders currently used in the template instead of relying on a fixed default payload.
-- Changed `template-emel` interaction flow to use SweetAlert-based manual-close feedback consistently for modal and table actions.
-- Changed `template-emel` list presentation by narrowing the subject column, moving usage into its own column, and improving archived status badge visibility.
 
 ### Fixed
-- Fixed `template-emel` modal trigger behavior so add and edit actions open reliably after table redraw and inline action updates.
-- Fixed `template-emel` preview/test workflows to tolerate malformed sample JSON by normalizing or rebuilding sample values before request submission.
+
+## [1.7.1] - 2026-04-22
+
+### Added
+- Added AJAX-based module creation for `kumpulan-pengguna` through `public/ajax/module-create.php` so module changes can complete without a full page reload.
+
+### Changed
+- Changed `kumpulan-pengguna` group, menu, module, and reorder flows to use a shared silent sidebar sync path instead of mixed reload and reorder-only refresh behavior.
+- Changed `kumpulan-pengguna` table updates so group create, update, delete, and access changes refresh the group listing in place while keeping the current page context.
+- Changed `kumpulan-pengguna` module save behavior to remove the button spinner loader and keep sidebar updates running in the background after save.
+
+### Fixed
+- Fixed stale sidebar state after saving active-group access, menu, and module changes from `kumpulan-pengguna`.
+- Fixed inconsistent sidemenu behavior where some updates required `location.reload()` before access, icon, or structure changes became visible.
 
 ## [1.7.0] - 2026-04-11
 

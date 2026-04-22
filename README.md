@@ -6,7 +6,7 @@ The current version has evolved beyond a simple starter template. It now operate
 
 ## Versioning
 
-- Current version: `1.7.0`
+- Current version: `1.7.1`
 - Release history: [CHANGELOG.md](./CHANGELOG.md)
 - Version source of truth: [VERSION](./VERSION)
 
