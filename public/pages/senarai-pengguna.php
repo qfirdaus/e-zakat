@@ -5569,6 +5569,82 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
       if (jawatanEl) jawatanEl.textContent = payload?.jawatan || '<?= h(__('userList_empty_value')) ?>';
     }
 
+    async function fetchStudentDetailForModal(matrik) {
+      const normalizedMatrik = String(matrik || '').trim();
+      if (!normalizedMatrik) {
+        return null;
+      }
+
+      const body = new URLSearchParams();
+      body.set('matrik', normalizedMatrik);
+      body.set('csrf_token', CSRF);
+
+      const response = await fetch('<?= base_url('ajax/user-student-detail.php') ?>', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-CSRF-Token': CSRF,
+          'Accept': 'application/json'
+        },
+        body: body.toString()
+      });
+
+      const text = await response.text();
+      let data = null;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        return null;
+      }
+
+      if (!response.ok || !data || data.error || !data.student) {
+        return null;
+      }
+
+      return data.student;
+    }
+
+    async function enrichStudentSelectionForModal(selection) {
+      if (currentAddScope !== 'student') {
+        return;
+      }
+
+      const matrik = String(selection?.matrik || selection?.id || '').trim();
+      if (!matrik) {
+        return;
+      }
+
+      const hasCoreDetails = (
+        String(selection?.fakulti || '').trim() !== '' &&
+        String(selection?.program || '').trim() !== '' &&
+        String(selection?.tahap_pengajian || '').trim() !== '' &&
+        String(selection?.statuskategori || '').trim() !== ''
+      );
+
+      if (hasCoreDetails) {
+        updateAddModalInfoFromSelection('student', selection);
+        return;
+      }
+
+      const detail = await fetchStudentDetailForModal(matrik);
+      if (!detail) {
+        updateAddModalInfoFromSelection('student', selection);
+        return;
+      }
+
+      currentStudentSelection = {
+        ...(currentStudentSelection || {}),
+        ...(selection || {}),
+        ...detail
+      };
+
+      if (String(currentStudentSelection.id || currentStudentSelection.matrik || '') !== matrik) {
+        currentStudentSelection.id = matrik;
+      }
+
+      updateAddModalInfoFromSelection('student', currentStudentSelection);
+    }
+
     async function prepareAddUserModalForScope(scope) {
       const normalized = String(scope || 'staff').trim().toLowerCase() || 'staff';
       currentAddScope = normalized;
@@ -5761,6 +5837,10 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
                   type: 'POST',
                   dataType: 'json',
                   delay: 250,
+                  headers: {
+                    'X-CSRF-Token': CSRF,
+                    'Accept': 'application/json'
+                  },
                   data: function(params) {
                     return {
                       q: params.term || '',
@@ -5847,6 +5927,7 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
             }
             currentStudentSelection = e?.params?.data || null;
             updateAddModalInfoFromSelection('student', currentStudentSelection);
+            enrichStudentSelectionForModal(currentStudentSelection).catch(function() {});
           });
 
           // Auto isi info bila pilih rekod
@@ -5861,6 +5942,7 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
 
               if (currentStudentSelection && String(currentStudentSelection.id || '') === String(this.value || '')) {
                 updateAddModalInfoFromSelection('student', currentStudentSelection);
+                enrichStudentSelectionForModal(currentStudentSelection).catch(function() {});
               }
               return;
             }

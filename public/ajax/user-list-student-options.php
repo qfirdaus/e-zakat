@@ -23,7 +23,13 @@ try {
     $pdo = Database::getInstance('mysql')->getConnection();
     ensureAjaxGroupManagePermission($pdo);
 
-    if (!isValidCsrfToken((string)($_POST['csrf_token'] ?? ''))) {
+    if (!isValidCsrfToken()) {
+        studentManagementDiagnosticLog('student_list', 'csrf_invalid', [
+            'post_has_csrf' => isset($_POST['csrf_token']),
+            'post_csrf_length' => strlen((string)($_POST['csrf_token'] ?? '')),
+            'header_csrf_length' => strlen((string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')),
+            'session_csrf_length' => strlen((string)($_SESSION['csrf_token'] ?? '')),
+        ]);
         http_response_code(400);
         echo json_encode([
             'error' => true,
@@ -56,8 +62,23 @@ try {
     $q = trim((string)($_POST['q'] ?? ''));
     $page = max(1, (int)($_POST['page'] ?? 1));
     $perPage = 20;
+    $maxPage = 5;
+    if ($page > $maxPage) {
+        $page = $maxPage;
+    }
+    $requestStartedAt = microtime(true);
+    studentManagementDiagnosticLog('student_list', 'request_received', [
+        'query' => $q,
+        'query_length' => mb_strlen($q),
+        'page' => $page,
+        'per_page' => $perPage,
+    ]);
 
     if (mb_strlen($q) < 2) {
+        studentManagementDiagnosticLog('student_list', 'request_short_query', [
+            'query' => $q,
+            'query_length' => mb_strlen($q),
+        ]);
         echo json_encode([
             'error' => false,
             'results' => [],
@@ -92,56 +113,106 @@ try {
     $where[] = "(
         upper(convert(varchar(50), matrik)) LIKE :q
         OR upper(convert(varchar(255), nama)) LIKE :q
-        OR upper(convert(varchar(255), fakulti)) LIKE :q
-        OR upper(convert(varchar(255), program)) LIKE :q
     )";
     $params[':q'] = '%' . strtoupper($q) . '%';
 
     $whereSql = 'WHERE ' . implode(' AND ', $where);
 
-    $countSql = "SELECT COUNT(*) AS total FROM v210 {$whereSql}";
-    $countStmt = $pdoSybase->prepare($countSql);
-    foreach ($params as $key => $value) {
-        $countStmt->bindValue($key, $value);
-    }
-    $countStmt->execute();
-    $total = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
-
-    $limit = $perPage * $page;
+    $limit = ($perPage * $page) + 1;
     $sql = "
         SELECT TOP {$limit}
             matrik,
             nama,
-            email,
-            nokp,
-            hpno,
-            telno,
-            telno_terkini,
-            notel_terkini,
-            kdprogram,
             program,
-            kdfakulti,
             fakulti,
-            kdtahap,
             tahap_pengajian,
-            kadet,
-            kategori_kadet,
-            status,
-            statusketerangan,
             statuskategori
         FROM v210
         {$whereSql}
         ORDER BY nama ASC
     ";
 
-    $stmt = $pdoSybase->prepare($sql);
-    foreach ($params as $key => $value) {
-        $stmt->bindValue($key, $value);
+    $executeQuery = static function (PDO $pdoSybaseConnection, string $sqlToRun, array $sqlParams): array {
+        $stmt = $pdoSybaseConnection->prepare($sqlToRun);
+        foreach ($sqlParams as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    };
+
+    try {
+        $allResults = $executeQuery($pdoSybase, $sql, $params);
+    } catch (Throwable $primaryQueryError) {
+        studentManagementDiagnosticLog('student_list', 'primary_query_failed', [
+            'query' => $q,
+            'page' => $page,
+            'error' => $primaryQueryError->getMessage(),
+        ]);
+
+        $fallbackWhere = [];
+        $fallbackParams = [];
+        $fallbackLimit = $perPage + 1;
+        $normalizedQuery = strtoupper($q);
+
+        $fallbackWhere[] = "upper(convert(varchar(20), statuskategori)) = 'AKTIF'";
+        $fallbackWhere[] = "(
+            upper(convert(varchar(50), matrik)) LIKE :q_prefix
+            OR upper(convert(varchar(255), nama)) LIKE :q_name
+        )";
+        $fallbackParams[':q_prefix'] = $normalizedQuery . '%';
+        $fallbackParams[':q_name'] = '%' . $normalizedQuery . '%';
+
+        $fallbackSql = "
+            SELECT TOP {$fallbackLimit}
+                matrik,
+                nama,
+                '' AS program,
+                '' AS fakulti,
+                '' AS tahap_pengajian,
+                statuskategori
+            FROM v210
+            WHERE " . implode(' AND ', $fallbackWhere) . "
+            ORDER BY matrik ASC
+        ";
+
+        try {
+            $fallbackPdo = $pdoSybase;
+            try {
+                if (function_exists('get_sybase_student_key')) {
+                    Database::clearInstance(get_sybase_student_key());
+                } else {
+                    Database::clearInstance('sybase_student_prod');
+                    Database::clearInstance('sybase_student_dev');
+                }
+                $fallbackPdo = Database::pdoSybaseStudent();
+                studentManagementDiagnosticLog('student_list', 'fallback_reconnect_success', [
+                    'query' => $q,
+                ]);
+            } catch (Throwable $reconnectError) {
+                studentManagementDiagnosticLog('student_list', 'fallback_reconnect_failed', [
+                    'query' => $q,
+                    'error' => $reconnectError->getMessage(),
+                ]);
+            }
+
+            $allResults = $executeQuery($fallbackPdo, $fallbackSql, $fallbackParams);
+            $page = 1;
+            studentManagementDiagnosticLog('student_list', 'fallback_query_success', [
+                'query' => $q,
+                'result_count' => count($allResults),
+            ]);
+        } catch (Throwable $fallbackQueryError) {
+            studentManagementDiagnosticLog('student_list', 'fallback_query_failed', [
+                'query' => $q,
+                'error' => $fallbackQueryError->getMessage(),
+            ]);
+            throw $fallbackQueryError;
+        }
     }
-    $stmt->execute();
-    $allResults = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
     $startIndex = ($page - 1) * $perPage;
+    $hasMore = count($allResults) > ($perPage * $page);
     $results = array_slice($allResults, $startIndex, $perPage);
 
     $formattedResults = [];
@@ -170,36 +241,36 @@ try {
             'text' => $display,
             'matrik' => $matrik,
             'nama' => $nama,
-            'email' => trim((string)($row['email'] ?? '')),
-            'nokp' => trim((string)($row['nokp'] ?? '')),
-            'hpno' => trim((string)($row['hpno'] ?? '')),
-            'telno' => trim((string)($row['telno'] ?? '')),
-            'telno_terkini' => trim((string)($row['telno_terkini'] ?? '')),
-            'notel_terkini' => trim((string)($row['notel_terkini'] ?? '')),
-            'kdprogram' => trim((string)($row['kdprogram'] ?? '')),
             'program' => $program,
-            'kdfakulti' => trim((string)($row['kdfakulti'] ?? '')),
             'fakulti' => $fakulti,
-            'kdtahap' => trim((string)($row['kdtahap'] ?? '')),
             'tahap_pengajian' => $tahap,
-            'kategori_kadet' => trim((string)($row['kategori_kadet'] ?? '')),
-            'kadet' => trim((string)($row['kadet'] ?? '')),
-            'status' => trim((string)($row['status'] ?? '')),
-            'statusketerangan' => trim((string)($row['statusketerangan'] ?? '')),
             'statuskategori' => $statuskategori,
             'disabled' => $isDisabled,
         ];
     }
-
-    $hasMore = ($startIndex + count($results)) < $total && count($allResults) >= $limit;
 
     echo json_encode([
         'error' => false,
         'results' => $formattedResults,
         'pagination' => ['more' => $hasMore],
     ], JSON_UNESCAPED_UNICODE);
+    studentManagementDiagnosticLog('student_list', 'request_success', [
+        'query' => $q,
+        'page' => $page,
+        'raw_result_count' => count($allResults),
+        'formatted_result_count' => count($formattedResults),
+        'has_more' => $hasMore,
+        'duration_ms' => (int)round((microtime(true) - $requestStartedAt) * 1000),
+    ]);
 } catch (Throwable $e) {
-    error_log('[user-list-student-options] Error: ' . $e->getMessage());
+    error_log('[user-list-student-options] Error: ' . $e->getMessage() . ' | q=' . json_encode($q ?? '', JSON_UNESCAPED_UNICODE) . ' | page=' . json_encode($page ?? 1));
+    studentManagementDiagnosticLog('student_list', 'request_error', [
+        'query' => $q ?? '',
+        'page' => $page ?? 1,
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+    ]);
     http_response_code(500);
     echo json_encode([
         'error' => true,

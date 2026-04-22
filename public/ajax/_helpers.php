@@ -68,6 +68,94 @@ function logAjaxUnexpectedOutput(string $context, string $output, int $limit = 2
 }
 
 /**
+ * Student management diagnostic log target.
+ */
+function studentManagementDiagnosticLogPath(): string {
+    $dir = app_log_directory();
+    return rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'student-management-diagnostic.log';
+}
+
+/**
+ * Recursively sanitize sensitive values before writing diagnostic logs.
+ *
+ * @param mixed $value
+ * @return mixed
+ */
+function sanitizeStudentDiagnosticValue($value) {
+    if (!is_array($value)) {
+        return $value;
+    }
+
+    $maskedKeys = [
+        'password',
+        'password_confirm',
+        'passwordHash',
+        'csrf_token',
+        'token',
+        'authorization',
+        'cookie',
+    ];
+
+    $sanitized = [];
+    foreach ($value as $key => $item) {
+        $normalizedKey = strtolower((string)$key);
+        if (in_array($normalizedKey, $maskedKeys, true)) {
+            $sanitized[$key] = '[masked]';
+            continue;
+        }
+
+        if (is_array($item)) {
+            $sanitized[$key] = sanitizeStudentDiagnosticValue($item);
+            continue;
+        }
+
+        if (is_string($item) && strlen($item) > 1000) {
+            $sanitized[$key] = substr($item, 0, 1000) . '...[truncated]';
+            continue;
+        }
+
+        $sanitized[$key] = $item;
+    }
+
+    return $sanitized;
+}
+
+/**
+ * Write structured diagnostic logs for student list/add/edit/delete troubleshooting.
+ *
+ * @param array<string,mixed> $context
+ */
+function studentManagementDiagnosticLog(string $action, string $stage, array $context = []): void {
+    $payload = [
+        'timestamp' => date('c'),
+        'action' => $action,
+        'stage' => $stage,
+        'request_uri' => (string)($_SERVER['REQUEST_URI'] ?? ''),
+        'method' => (string)($_SERVER['REQUEST_METHOD'] ?? ''),
+        'remote_addr' => (string)($_SERVER['REMOTE_ADDR'] ?? ''),
+        'session_id' => session_id() ?: '',
+        'staff_id' => (string)($_SESSION['f_stafID'] ?? $_SESSION['user']['f_stafID'] ?? ''),
+        'login_id' => (string)($_SESSION['f_loginID'] ?? $_SESSION['user']['f_loginID'] ?? ''),
+        'app_env' => function_exists('app_env') ? (string)app_env() : '',
+        'sybase_environment' => function_exists('get_sybase_environment') ? (string)get_sybase_environment() : '',
+        'sybase_operational_mode' => function_exists('get_sybase_operational_mode') ? (string)get_sybase_operational_mode() : '',
+        'sybase_student_key' => function_exists('get_sybase_student_key') ? (string)get_sybase_student_key() : '',
+        'context' => sanitizeStudentDiagnosticValue($context),
+    ];
+
+    $line = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (!is_string($line)) {
+        $line = json_encode([
+            'timestamp' => date('c'),
+            'action' => $action,
+            'stage' => 'log_encoding_failed',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    @file_put_contents(studentManagementDiagnosticLogPath(), $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+}
+
+/**
  * Simple rate limiting (per session)
  * @param string $key Unique key untuk rate limit
  * @param int $maxRequests Maximum requests dalam window
