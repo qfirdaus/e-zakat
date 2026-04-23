@@ -555,7 +555,7 @@ if ($roleSwitchFlash !== null) {
     transform: translateX(-50%);
     z-index: 10001;
     min-width: 0;
-    width: min(420px, calc(100% - 320px));
+    width: min(470px, calc(100% - 320px));
     max-width: calc(100% - 320px);
     display: block;
     background:
@@ -690,7 +690,7 @@ if ($roleSwitchFlash !== null) {
     display: none;
   }
   .dev-mode-tab:not(.is-expanded) {
-    width: min(392px, calc(100% - 320px));
+    width: min(470px, calc(100% - 320px));
   }
   .dev-mode-tab__item {
     display: flex;
@@ -725,14 +725,14 @@ if ($roleSwitchFlash !== null) {
   @media (max-width: 991.98px) {
     .dev-mode-tab {
       min-width: 0;
-      width: min(390px, calc(100% - 220px));
+      width: min(430px, calc(100% - 220px));
       max-width: calc(100% - 220px);
     }
     .dev-mode-tab.is-expanded {
       width: min(430px, calc(100% - 220px));
     }
     .dev-mode-tab:not(.is-expanded) {
-      width: min(360px, calc(100% - 220px));
+      width: min(430px, calc(100% - 220px));
     }
   }
 
