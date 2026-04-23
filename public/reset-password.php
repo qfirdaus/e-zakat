@@ -910,16 +910,6 @@ $activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
       box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
     }
 
-    .rp-footer-note {
-      padding: 20px 22px;
-      border-radius: 24px;
-      background: var(--rp-card-soft);
-      border: 1px solid var(--rp-line);
-      color: var(--rp-muted);
-      font-size: 13px;
-      line-height: 1.75;
-    }
-
     @media (max-width: 1024px) {
       .rp-shell {
         padding: 18px;
@@ -969,8 +959,7 @@ $activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
 
       .rp-hero,
       .rp-note,
-      .rp-auth-card,
-      .rp-footer-note {
+      .rp-auth-card {
         border-radius: 22px;
       }
     }
@@ -1025,7 +1014,6 @@ $activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
               <div>
                 <span class="rp-kicker"><i class="ri-refresh-line"></i> <?= h(__('reset_password_kicker')) ?></span>
                 <h2 class="rp-panel-title"><?= h(__('reset_password_heading')) ?></h2>
-                <p class="rp-panel-copy"><?= h($pageLang === 'en' ? 'Set a new password that satisfies the current institutional security policy.' : 'Tetapkan kata laluan baharu yang mematuhi polisi keselamatan institusi semasa.') ?></p>
               </div>
             </div>
 
@@ -1109,9 +1097,6 @@ $activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
             <?php endif; ?>
           </div>
 
-          <div class="rp-footer-note">
-            <?= h($pageLang === 'en' ? 'This reset flow enforces token validity, password policy, and audit tracking before restoring access.' : 'Aliran tetapan semula ini menguatkuasakan kesahan token, polisi kata laluan, dan jejak audit sebelum akses dipulihkan.') ?>
-          </div>
         </aside>
       </div>
     </div>
