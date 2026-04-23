@@ -365,18 +365,21 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
 }
 .side-nav .side-nav-item.menuitem-active > .side-nav-toggle-btn {
     color: var(--ct-menu-item-active-color);
-    background-color: rgba(255, 255, 255, 0.05);
-    font-weight: 500;
+    background-color: rgba(255, 255, 255, 0.03);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    font-weight: 400;
 }
 .side-nav .side-nav-item > .side-nav-primary-link.active {
     color: var(--ct-menu-item-active-color);
-    background-color: rgba(255, 255, 255, 0.05);
-    font-weight: 500;
+    background-color: rgba(255, 255, 255, 0.03);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    font-weight: 400;
 }
 .side-nav .side-nav-item.menuitem-active > .side-nav-primary-link {
     color: var(--ct-menu-item-active-color);
-    background-color: rgba(255, 255, 255, 0.05);
-    font-weight: 500;
+    background-color: rgba(255, 255, 255, 0.03);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    font-weight: 400;
 }
 .side-nav .side-nav-item.menuitem-active > .side-nav-toggle-btn .sidebar-parent-arrow {
     opacity: 1;
@@ -391,8 +394,9 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
 .side-nav .side-nav-second-level li.menuitem-active > a,
 .side-nav .side-nav-second-level li > a.active {
     color: var(--ct-menu-item-active-color);
-    background-color: rgba(255, 255, 255, 0.06);
-    font-weight: 500;
+    background-color: rgba(255, 255, 255, 0.035);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    font-weight: 400;
 }
 </style>
 <div class="sidebar-loading-overlay">
