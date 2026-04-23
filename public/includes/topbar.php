@@ -550,35 +550,41 @@ if ($roleSwitchFlash !== null) {
   /* Development Mode Tab - compact, softer indicator */
   .dev-mode-tab {
     position: fixed;
-    top: 0.4rem;
+    top: 0.48rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10001;
     min-width: 0;
-    width: min(360px, calc(100% - 220px));
-    max-width: calc(100% - 220px);
+    width: min(420px, calc(100% - 320px));
+    max-width: calc(100% - 320px);
     display: block;
     background:
-      linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(246,249,253,0.96) 100%);
+      linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.98) 100%);
     color: #16324f;
     padding: 0;
-    border: 1px solid rgba(148, 163, 184, 0.26);
+    border: 1px solid rgba(148, 163, 184, 0.22);
     border-radius: 999px;
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.10);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     font-size: 0.75rem;
     letter-spacing: 0.01em;
     pointer-events: none;
+    transition: width 0.2s ease, border-radius 0.2s ease, box-shadow 0.2s ease;
+  }
+  .dev-mode-tab.is-expanded {
+    width: min(470px, calc(100% - 320px));
+    border-radius: 22px;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
   }
   .dev-mode-tab__inner {
-    padding: 0.34rem 0.46rem 0.34rem 0.7rem;
+    padding: 0.4rem 0.5rem 0.4rem 0.72rem;
   }
   .dev-mode-tab__headline {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.6rem;
+    gap: 0.72rem;
     margin-bottom: 0;
   }
   .dev-mode-tab__actions {
@@ -591,23 +597,23 @@ if ($roleSwitchFlash !== null) {
   .dev-mode-tab__title-wrap {
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.58rem;
     pointer-events: none;
     min-width: 0;
   }
   .dev-mode-tab__icon {
-    width: 1.7rem;
-    height: 1.7rem;
+    width: 1.62rem;
+    height: 1.62rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    background: linear-gradient(180deg, rgba(245, 158, 11, 0.18), rgba(249, 115, 22, 0.14));
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.14), rgba(249, 115, 22, 0.11));
     color: #c2410c;
-    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.14);
   }
   .dev-mode-tab__icon i {
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     line-height: 1;
   }
   .dev-mode-tab__title-block {
@@ -618,26 +624,26 @@ if ($roleSwitchFlash !== null) {
   }
   .dev-mode-tab__eyebrow {
     color: #64748b;
-    font-size: 0.56rem;
+    font-size: 0.49rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
   }
   .dev-mode-tab__title {
     color: #0f172a;
-    font-size: 0.78rem;
+    font-size: 0.7rem;
     font-weight: 700;
     white-space: nowrap;
   }
   .dev-mode-tab__env {
     display: inline-flex;
     align-items: center;
-    padding: 0.16rem 0.48rem;
+    padding: 0.15rem 0.46rem;
     border-radius: 999px;
-    background: rgba(37, 99, 235, 0.08);
-    border: 1px solid rgba(37, 99, 235, 0.12);
-    color: #1d4ed8;
-    font-size: 0.62rem;
+    background: rgba(37, 99, 235, 0.07);
+    border: 1px solid rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+    font-size: 0.57rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
@@ -655,7 +661,7 @@ if ($roleSwitchFlash !== null) {
     color: #334155;
     cursor: pointer;
     pointer-events: auto;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
     transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
   }
   .dev-mode-tab__toggle:hover {
@@ -672,54 +678,61 @@ if ($roleSwitchFlash !== null) {
   .dev-mode-tab__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
-    margin-top: 0.55rem;
-    padding: 0.12rem 0.06rem 0.08rem;
+    gap: 0.42rem;
+    margin-top: 0.46rem;
+    padding: 0.42rem;
+    background: linear-gradient(180deg, rgba(244,247,251,0.94), rgba(238,243,248,0.96));
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 18px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
   }
   .dev-mode-tab__grid[hidden] {
     display: none;
   }
   .dev-mode-tab:not(.is-expanded) {
-    width: min(320px, calc(100% - 220px));
+    width: min(392px, calc(100% - 320px));
   }
   .dev-mode-tab__item {
     display: flex;
     flex-direction: column;
     gap: 0.16rem;
     min-width: 0;
-    padding: 0.52rem 0.62rem;
-    background: rgba(255,255,255,0.7);
-    border: 1px solid rgba(148, 163, 184, 0.18);
+    padding: 0.44rem 0.52rem;
+    background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(148, 163, 184, 0.14);
     border-radius: 12px;
   }
   .dev-mode-tab__label {
     color: #64748b;
-    font-size: 0.54rem;
+    font-size: 0.5rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
   .dev-mode-tab__value {
     color: #0f172a;
-    font-size: 0.69rem;
+    font-size: 0.66rem;
     font-weight: 700;
     line-height: 1.25;
     word-break: break-word;
   }
   .dev-mode-tab__value--mono {
     font-family: Consolas, "Courier New", monospace;
-    font-size: 0.64rem;
+    font-size: 0.61rem;
     color: #1e293b;
   }
 
   @media (max-width: 991.98px) {
     .dev-mode-tab {
       min-width: 0;
-      width: min(320px, calc(100% - 140px));
-      max-width: calc(100% - 140px);
+      width: min(390px, calc(100% - 220px));
+      max-width: calc(100% - 220px);
+    }
+    .dev-mode-tab.is-expanded {
+      width: min(430px, calc(100% - 220px));
     }
     .dev-mode-tab:not(.is-expanded) {
-      width: min(286px, calc(100% - 140px));
+      width: min(360px, calc(100% - 220px));
     }
   }
 
@@ -736,7 +749,7 @@ if ($roleSwitchFlash !== null) {
       gap: 0.4rem;
     }
     .dev-mode-tab__title {
-      font-size: 0.72rem;
+      font-size: 0.66rem;
     }
     .dev-mode-tab__env {
       padding-inline: 0.42rem;
