@@ -1,4 +1,4 @@
-FROM php:8.2-apache
+FROM php:8.3.30-apache
 
 # ===============================
 # System & PHP extensions

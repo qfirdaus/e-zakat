@@ -651,7 +651,7 @@ foreach ($generalPlaceholders as $placeholder) {
                     </div>
                     <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal"><?= h(t('emailTemplate_btn_close', 'Tutup')) ?></button>
-                        <button type="submit" class="btn btn-primary et-primary-btn" data-submit-label><?= h(!empty($form['template_id']) ? t('emailTemplate_btn_update', 'Kemaskini Template') : t('emailTemplate_btn_save', 'Simpan Template')) ?></button>
+                        <button type="button" class="btn btn-primary et-primary-btn" data-submit-label data-template-save-button><?= h(!empty($form['template_id']) ? t('emailTemplate_btn_update', 'Kemaskini Template') : t('emailTemplate_btn_save', 'Simpan Template')) ?></button>
                     </div>
                 </form>
             </div>

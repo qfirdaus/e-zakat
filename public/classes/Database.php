@@ -16,7 +16,7 @@
 class Database
 {
     private static array $instances = [];
-    private PDO $connection;
+    private ?PDO $connection = null;
 
     /**
      * 🚪 Private constructor
@@ -136,6 +136,9 @@ class Database
      */
     public function getConnection(): PDO
     {
+        if (!$this->connection instanceof PDO) {
+            throw new Exception('⚠️ Sambungan PDO tidak tersedia.');
+        }
         return $this->connection;
     }
 

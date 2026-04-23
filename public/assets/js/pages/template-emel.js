@@ -255,6 +255,7 @@
         var modal = modalEl && window.bootstrap && window.bootstrap.Modal ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
         var titleNode = modalEl ? modalEl.querySelector('[data-modal-title]') : null;
         var submitNode = modalEl ? modalEl.querySelector('[data-submit-label]') : null;
+        var saveButton = modalEl ? modalEl.querySelector('[data-template-save-button]') : null;
         var sampleVariablesField = document.getElementById('emailTemplateSampleVariables');
         var testEmailField = document.getElementById('emailTemplateTestEmail');
         var previewSubject = document.getElementById('emailTemplatePreviewSubject');
@@ -496,6 +497,37 @@
             if (invalidField && typeof invalidField.focus === 'function') {
                 invalidField.focus();
             }
+        }
+
+        function submitTemplateForm() {
+            if (!form) {
+                return Promise.resolve();
+            }
+
+            if (!form.checkValidity()) {
+                activateModalTab('editor');
+                form.reportValidity();
+                return Promise.resolve();
+            }
+
+            clearFieldErrors(form);
+            setButtonLoading(submitNode, true, pageData.loadingProcessingText || '');
+
+            return requestTemplateAction(new FormData(form))
+                .then(function (payload) {
+                    refreshTableUi(payload.table || {});
+                    hideModalSafe();
+                    return showAlert('success', pageData.flashSuccessTitle || '', payload.message || '');
+                })
+                .catch(function (error) {
+                    applyFieldErrors(form, error.fieldErrors || {});
+                    activateModalTab('editor');
+                    focusFirstInvalidField();
+                    return showAlert('error', pageData.flashErrorTitle || '', error.message || pageData.networkErrorText);
+                })
+                .finally(function () {
+                    setButtonLoading(submitNode, false);
+                });
         }
 
         function renderPreview(preview) {
@@ -1011,32 +1043,15 @@
 
             form.addEventListener('submit', function (event) {
                 event.preventDefault();
+                event.stopPropagation();
+                submitTemplateForm();
+            });
+        }
 
-                if (!form.checkValidity()) {
-                    event.stopPropagation();
-                    activateModalTab('editor');
-                    form.reportValidity();
-                    return;
-                }
-
-                clearFieldErrors(form);
-                setButtonLoading(submitNode, true, pageData.loadingProcessingText || '');
-
-                requestTemplateAction(new FormData(form))
-                    .then(function (payload) {
-                        refreshTableUi(payload.table || {});
-                        hideModalSafe();
-                        return showAlert('success', pageData.flashSuccessTitle || '', payload.message || '');
-                    })
-                    .catch(function (error) {
-                        applyFieldErrors(form, error.fieldErrors || {});
-                        activateModalTab('editor');
-                        focusFirstInvalidField();
-                        return showAlert('error', pageData.flashErrorTitle || '', error.message || pageData.networkErrorText);
-                    })
-                    .finally(function () {
-                        setButtonLoading(submitNode, false);
-                    });
+        if (saveButton) {
+            saveButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                submitTemplateForm();
             });
         }
 

@@ -33,7 +33,7 @@ $helperLabel = $pageLang === 'en'
 $countdownLabel = $pageLang === 'en' ? 'Redirecting in' : 'Pengalihan dalam';
 $destinationLabel = $pageLang === 'en' ? 'Return to dashboard' : 'Kembali ke dashboard';
 $secondsLabel = $pageLang === 'en' ? 'seconds' : 'saat';
-$delayMs = 2400;
+$delayMs = 5000;
 $delaySeconds = (int)ceil($delayMs / 1000);
 ?>
 <!DOCTYPE html>
