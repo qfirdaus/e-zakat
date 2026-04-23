@@ -584,7 +584,6 @@ $activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
 
     .rp-hero p {
       margin: 0;
-      max-width: 460px;
       font-size: 13px;
       line-height: 1.8;
       color: rgba(241, 245, 249, 0.9);
