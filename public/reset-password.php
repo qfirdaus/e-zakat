@@ -680,9 +680,9 @@ $activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
 
     .rp-panel-title {
       margin: 0 0 8px;
-      font-size: 30px;
-      line-height: 1.04;
-      letter-spacing: -0.04em;
+      font-size: 22px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
       font-weight: 800;
       color: var(--rp-ink);
     }
