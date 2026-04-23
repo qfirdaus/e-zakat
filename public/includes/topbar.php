@@ -164,8 +164,13 @@ if ($roleSwitchFlash !== null) {
     <div class="dev-mode-tab__inner container-fluid">
       <div class="dev-mode-tab__headline">
         <span class="dev-mode-tab__title-wrap">
-          <i class="ri-code-s-slash-line fs-16"></i>
-          <span class="fw-semibold">Development Mode</span>
+          <span class="dev-mode-tab__icon">
+            <i class="ri-code-s-slash-line"></i>
+          </span>
+          <span class="dev-mode-tab__title-block">
+            <span class="dev-mode-tab__eyebrow">System Mode</span>
+            <span class="dev-mode-tab__title">Development</span>
+          </span>
         </span>
         <span class="dev-mode-tab__actions">
           <span class="dev-mode-tab__env"><?= h($sybaseEnvironmentLabel) ?></span>
@@ -542,190 +547,203 @@ if ($roleSwitchFlash !== null) {
   #switchRoleModal .role-item input[type="radio"] { transform: scale(1.1); }
   #switchRoleModal .role-label { font-weight: 600; color: #212529; }
 
-  /* Development Mode Tab - RDC-like control tab centered at top edge */
+  /* Development Mode Tab - compact, softer indicator */
   .dev-mode-tab {
     position: fixed;
-    top: 0; /* flush to top edge */
+    top: 0.4rem;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 10001; /* above topbar */
-
-    min-width: 460px;
-    max-width: 760px;
-    width: min(760px, calc(100% - 200px));
-
+    z-index: 10001;
+    min-width: 0;
+    width: min(360px, calc(100% - 220px));
+    max-width: calc(100% - 220px);
     display: block;
-
-    background: linear-gradient(180deg, #12264a 0%, #0b2340 100%); /* dark blue gradient */
-    color: #ffffff;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(246,249,253,0.96) 100%);
+    color: #16324f;
     padding: 0;
-
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-    border-bottom-left-radius: 14px;
-    border-bottom-right-radius: 14px;
-
-    box-shadow: 0 10px 26px rgba(0,0,0,0.28);
-
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.10);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    font-size: 0.75rem;
+    letter-spacing: 0.01em;
     pointer-events: none;
   }
-
-  .dev-mode-tab::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: -12px;
-    width: 72%;
-    height: 18px;
-    background: linear-gradient(180deg, rgba(11,35,64,0.95), rgba(8,24,46,0.95));
-    border-bottom-left-radius: 999px;
-    border-bottom-right-radius: 999px;
-    box-shadow: 0 6px 10px rgba(0,0,0,0.25);
-    pointer-events: none;
-  }
-
   .dev-mode-tab__inner {
-    padding: 0.5rem 0.9rem 0.7rem;
+    padding: 0.34rem 0.46rem 0.34rem 0.7rem;
   }
   .dev-mode-tab__headline {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
+    gap: 0.6rem;
     margin-bottom: 0;
   }
   .dev-mode-tab__actions {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
     pointer-events: auto;
+    flex-shrink: 0;
   }
   .dev-mode-tab__title-wrap {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-  }
-  .dev-mode-tab .fw-semibold {
-    color: #fff !important;
+    gap: 0.55rem;
     pointer-events: none;
-    text-transform: uppercase;
+    min-width: 0;
+  }
+  .dev-mode-tab__icon {
+    width: 1.7rem;
+    height: 1.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.18), rgba(249, 115, 22, 0.14));
+    color: #c2410c;
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.18);
+  }
+  .dev-mode-tab__icon i {
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+  .dev-mode-tab__title-block {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.05;
+  }
+  .dev-mode-tab__eyebrow {
+    color: #64748b;
+    font-size: 0.56rem;
+    font-weight: 700;
     letter-spacing: 0.08em;
-    font-size: 0.72rem;
+    text-transform: uppercase;
   }
-  .dev-mode-tab i {
-    color: rgba(255,255,255,0.95);
-    pointer-events: none;
+  .dev-mode-tab__title {
+    color: #0f172a;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
   }
   .dev-mode-tab__env {
     display: inline-flex;
     align-items: center;
-    padding: 0.18rem 0.6rem;
+    padding: 0.16rem 0.48rem;
     border-radius: 999px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.16);
-    color: #fff;
-    font-size: 0.68rem;
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.12);
+    color: #1d4ed8;
+    font-size: 0.62rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.07em;
   }
   .dev-mode-tab__toggle {
-    width: 26px;
-    height: 26px;
+    width: 1.85rem;
+    height: 1.85rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    border: 1px solid rgba(255,255,255,0.18);
+    border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 999px;
-    background: rgba(255,255,255,0.08);
-    color: #fff;
+    background: rgba(255,255,255,0.72);
+    color: #334155;
     cursor: pointer;
     pointer-events: auto;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
   }
   .dev-mode-tab__toggle:hover {
-    background: rgba(255,255,255,0.14);
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.2);
+    color: #1d4ed8;
+    transform: translateY(-1px);
   }
   .dev-mode-tab__toggle-text {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     line-height: 1;
     font-weight: 700;
   }
   .dev-mode-tab__grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.45rem;
-    margin-top: 0.45rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.55rem;
+    padding: 0.12rem 0.06rem 0.08rem;
   }
   .dev-mode-tab__grid[hidden] {
     display: none;
   }
   .dev-mode-tab:not(.is-expanded) {
-    min-width: 390px;
-    max-width: 560px;
-  }
-  .dev-mode-tab:not(.is-expanded)::after {
-    width: 58%;
-    height: 14px;
-    bottom: -10px;
-  }
-  .dev-mode-tab:not(.is-expanded) .dev-mode-tab__inner {
-    padding-bottom: 0.7rem;
+    width: min(320px, calc(100% - 220px));
   }
   .dev-mode-tab__item {
     display: flex;
     flex-direction: column;
-    gap: 0.18rem;
+    gap: 0.16rem;
     min-width: 0;
-    padding: 0.45rem 0.55rem;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 8px;
+    padding: 0.52rem 0.62rem;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 12px;
   }
   .dev-mode-tab__label {
-    color: rgba(255,255,255,0.72);
-    font-size: 0.58rem;
+    color: #64748b;
+    font-size: 0.54rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
   .dev-mode-tab__value {
-    color: #ffffff;
-    font-size: 0.72rem;
+    color: #0f172a;
+    font-size: 0.69rem;
     font-weight: 700;
-    line-height: 1.3;
+    line-height: 1.25;
     word-break: break-word;
   }
   .dev-mode-tab__value--mono {
     font-family: Consolas, "Courier New", monospace;
-    font-size: 0.68rem;
+    font-size: 0.64rem;
+    color: #1e293b;
   }
 
   @media (max-width: 991.98px) {
     .dev-mode-tab {
       min-width: 0;
-      width: calc(100% - 24px);
-      max-width: 680px;
+      width: min(320px, calc(100% - 140px));
+      max-width: calc(100% - 140px);
     }
-    .dev-mode-tab__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .dev-mode-tab:not(.is-expanded) {
+      width: min(286px, calc(100% - 140px));
     }
   }
 
   @media (max-width: 575.98px) {
+    .dev-mode-tab {
+      top: 0.35rem;
+      width: calc(100% - 16px);
+      max-width: calc(100% - 16px);
+    }
     .dev-mode-tab__inner {
-      padding: 0.55rem 0.75rem 0.8rem;
+      padding: 0.32rem 0.38rem 0.32rem 0.5rem;
     }
     .dev-mode-tab__headline {
-      gap: 0.45rem;
+      gap: 0.4rem;
+    }
+    .dev-mode-tab__title {
+      font-size: 0.72rem;
+    }
+    .dev-mode-tab__env {
+      padding-inline: 0.42rem;
     }
     .dev-mode-tab__grid {
       grid-template-columns: 1fr;
+      gap: 0.42rem;
     }
   }
 </style>
