@@ -85,8 +85,13 @@ function deriveBadgeClassFromColor(string $color): string {
 }
 
 try {
+  $rawBody = file_get_contents('php://input');
+  $json = json_decode($rawBody, true) ?: [];
   $headers = function_exists('getallheaders') ? getallheaders() : [];
-  $csrf = $headers['X-CSRF-Token'] ?? $headers['x-csrf-token'] ?? '';
+  $csrf = $headers['X-CSRF-Token'] ?? $headers['x-csrf-token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+  if (!is_string($csrf) || trim($csrf) === '') {
+    $csrf = (string)($json['csrf_token'] ?? '');
+  }
   if (!$csrf || !hash_equals($_SESSION['csrf_token'] ?? '', $csrf)) {
     http_response_code(400);
     echo json_encode(['error'=>true,'message'=>(string)__('userGroup_csrf_invalid')], JSON_UNESCAPED_UNICODE); exit;
@@ -103,7 +108,6 @@ try {
     echo json_encode(['error'=>true,'message'=>(string)__('userGroup_group_create_permission_denied')], JSON_UNESCAPED_UNICODE); exit;
   }
 
-  $json = json_decode(file_get_contents('php://input'), true) ?: [];
   $groupID = (int)($json['groupID'] ?? 0);
   $kod = trim((string)($json['groupKod'] ?? ''));
   $nama = trim((string)($json['groupName'] ?? ''));

@@ -128,6 +128,7 @@ const MenuAccess = {
       if (errEl) errEl.classList.add('d-none');
       const groupID = parseInt(document.getElementById('gc_groupID')?.value || '0', 10) || 0;
       const payload = {
+        csrf_token: GroupUtils.getCSRF(),
         groupID,
         groupKod: (document.getElementById('gc_groupKod')?.value || '').trim(),
         groupName: (document.getElementById('gc_groupName')?.value || '').trim(),
