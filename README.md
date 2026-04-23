@@ -6,9 +6,21 @@ The current version has evolved beyond a simple starter template. It now operate
 
 ## Versioning
 
-- Current version: `1.7.1`
+- Current version: `1.7.2`
 - Release history: [CHANGELOG.md](./CHANGELOG.md)
 - Version source of truth: [VERSION](./VERSION)
+
+## Runtime Baseline
+
+- PHP baseline: `8.3.30`
+- Docker PHP image: `php:8.3.30-apache`
+- MySQL baseline: `8.0.41`
+
+Current support position:
+
+- required team/server baseline now: `PHP 8.3.30`
+- required application database baseline now: `MySQL 8.0.41`
+- next planned runtime target under review: `PHP 8.4.x`
 
 Recommended release flow:
 
@@ -255,10 +267,10 @@ Compared with older and more tightly coupled approaches, the current version int
 
 ### Backend
 
-- PHP 8.2
+- PHP 8.3.30
 - Apache HTTP Server
 - PDO-based database access
-- MySQL for core application data
+- MySQL 8.0.41 for core application data
 - Sybase access through `pdo_dblib` and ODBC-based connection options
 
 ### Frontend

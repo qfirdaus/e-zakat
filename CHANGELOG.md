@@ -7,13 +7,31 @@ This changelog follows a release-style summary based on major project milestones
 ## [Unreleased]
 
 ### Added
-- Added clearer active-state highlighting for main sidebar links, active module parents, and active child menus so the current navigation context is easier to identify.
+- Added PHP 8.4 readiness audit documentation in `docs/php84-readiness-audit-2026-04-23.md`.
+
+## [1.7.2] - 2026-04-23
+
+### Added
+- Added runtime baseline documentation in `README.md` for `PHP 8.3.30`, Docker `php:8.3.30-apache`, and `MySQL 8.0.41`.
+- Added PHP 8.4 readiness audit documentation in `docs/php84-readiness-audit-2026-04-23.md`.
 
 ### Changed
-- Changed the Access Matrix page path from `pages/access.php` to `pages/access-matrix.php` and removed the legacy page entry after database menu paths were updated.
+- Changed Docker runtime from `php:8.2-apache` to `php:8.3.30-apache` to align container runtime with the current server baseline.
+- Changed landing-page messaging in `public/index.php` so the public entry screen positions IQS Framework as the shared core platform for downstream systems.
+- Changed `forgot-password.php` user feedback so restricted account flows return a generic SweetAlert review message without exposing policy-specific detail.
+- Changed password-change notification flows in `reset-password.php` and `change-password.php` to use explicit mailer send-state handling and clearer logging.
+- Changed project release metadata to lock the application version at `1.7.2`.
 
 ### Fixed
-- Fixed sidebar navigation state so both main menu links and grouped child menu links remain visibly active when the current page is open.
+- Fixed `public/classes/Database.php` typed connection handling so instance cleanup no longer conflicts with nullable PDO lifecycle usage under the current PHP baseline.
+- Fixed `public/pages/template-emel.php` save behavior so create and update actions can complete through AJAX without forcing a full page refresh.
+- Fixed `public/request-unavailable.php` redirect timing to wait 5 seconds before redirect.
+- Fixed forgot-password flow observability so mail, eligibility, and token-creation states are easier to trace during development.
+- Fixed audit logging so incompatible `audit_event.outcome` values are normalized before insert, preventing schema truncation warnings.
+- Fixed mailer environment detection and fallback logging so SMTP failures are easier to diagnose in development.
+
+### Security
+- Hardened forgot-password handling to keep restricted-account responses generic for anonymous users while preserving internal debug visibility in development.
 
 ## [1.7.1] - 2026-04-22
 
