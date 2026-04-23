@@ -141,6 +141,7 @@ $featureAvailable = $userModel->passwordResetTableExists();
 $runtimePasswordPolicy = function_exists('get_auth_password_policy_config') ? get_auth_password_policy_config() : [];
 $resetTokenMinutes = max(5, (int)($runtimePasswordPolicy['reset_token_minutes'] ?? 30));
 $requestMethod = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+$isDevelopment = app_env() === 'development';
 $errors = [];
 $submitted = false;
 $loginIdValue = trim((string)($_POST['login_id'] ?? ''));
@@ -203,10 +204,18 @@ if ($requestMethod === 'POST') {
                     ]);
 
                     $subject = (string)(__('forgot_password_mail_subject') ?: 'Reset kata laluan akaun anda');
-                    $sent = Mailer::quickSend($pdo, $recipientEmail, $subject, $mailHtml, $mailText);
+                    $mailer = Mailer::fromConfig($pdo);
+                    $sent = $mailer->send($recipientEmail, $subject, $mailHtml, $mailText);
 
                     if (!$sent) {
-                        error_log('[forgot-password] Failed sending reset mail to ' . $recipientEmail);
+                        $mailError = trim($mailer->getLastError());
+                        error_log('[forgot-password] Failed sending reset mail to ' . $recipientEmail . ($mailError !== '' ? ' | ' . $mailError : ''));
+                        if ($isDevelopment) {
+                            $errors[] = sprintf(
+                                (string)(__('forgot_password_error_mail_failed') ?: 'Emel reset tidak berjaya dihantar. %s'),
+                                $mailError !== '' ? $mailError : (string)(__('forgot_password_error_mail_failed_reason_unknown') ?: 'Sebab kegagalan tidak direkodkan.')
+                            );
+                        }
                     }
 
                     if (function_exists('audit_event')) {

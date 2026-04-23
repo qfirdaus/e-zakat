@@ -207,6 +207,10 @@ return [
                            => 'The security token is invalid. Reload the page and try again.',
 'forgot_password_error_rate_limited'
                            => 'Too many password reset requests. Please try again in a few minutes.',
+'forgot_password_error_mail_failed'
+                           => 'The reset email could not be sent. %s',
+'forgot_password_error_mail_failed_reason_unknown'
+                           => 'The failure reason was not recorded.',
 'forgot_password_feature_unavailable'
                            => 'The password reset feature is not fully available in this environment yet. Please contact the system administrator.',
 'reset_password_page_title'

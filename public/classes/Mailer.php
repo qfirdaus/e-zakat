@@ -148,8 +148,8 @@ class Mailer
             $this->m->addReplyTo((string)$smtp['reply_to'], $fromName);
         }
 
-        // SMTP Debug → log file bila APP_ENV=local/dev
-        if (in_array(getenv('APP_ENV') ?: 'prod', ['local','dev'], true)) {
+        // SMTP Debug → log file bila APP_ENV local/dev/development
+        if (in_array(getenv('APP_ENV') ?: 'prod', ['local', 'dev', 'development'], true)) {
             $this->m->SMTPDebug = 2;
             $dbgFile = __DIR__ . '/../log/mail_smtp_debug.log';
             $this->m->Debugoutput = function ($str) use ($dbgFile) {

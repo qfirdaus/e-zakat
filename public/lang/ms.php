@@ -207,6 +207,10 @@ return [
                            => 'Token keselamatan tidak sah. Sila muat semula halaman dan cuba lagi.',
 'forgot_password_error_rate_limited'
                            => 'Terlalu banyak permintaan reset kata laluan. Sila cuba semula selepas beberapa minit.',
+'forgot_password_error_mail_failed'
+                           => 'Emel reset tidak berjaya dihantar. %s',
+'forgot_password_error_mail_failed_reason_unknown'
+                           => 'Sebab kegagalan tidak direkodkan.',
 'forgot_password_feature_unavailable'
                            => 'Fungsi reset kata laluan belum tersedia sepenuhnya pada persekitaran ini. Sila hubungi pentadbir sistem.',
 'reset_password_page_title'
