@@ -563,6 +563,7 @@ $activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
     }
 
     .rp-hero {
+      grid-column: 1 / -1;
       min-height: 340px;
       padding: 28px;
       display: flex;
