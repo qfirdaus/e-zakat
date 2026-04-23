@@ -503,9 +503,9 @@ $activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
 
     .fp-title {
       margin: 0;
-      font-size: clamp(32px, 4vw, 48px);
-      line-height: 1.02;
-      letter-spacing: -0.05em;
+      font-size: clamp(26px, 3.2vw, 38px);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
       font-weight: 800;
       color: var(--fp-ink);
     }
