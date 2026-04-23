@@ -1,4 +1,5 @@
 <?php
+// test deploy
 $__ssoDebugLog = static function (string $message, array $context = []): void {
     $enabled = $_ENV['SSO_DEBUG_LOG_ENABLED'] ?? getenv('SSO_DEBUG_LOG_ENABLED');
     if (!is_string($enabled) || !in_array(strtolower(trim($enabled)), ['1', 'true', 'yes', 'on'], true)) {
