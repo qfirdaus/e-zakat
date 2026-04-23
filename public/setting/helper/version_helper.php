@@ -34,6 +34,13 @@ if (!function_exists('app_current_version')) {
             }
         }
 
+        if ($value === '' && function_exists('app_config')) {
+            $configVersion = trim((string)app_config('system.version', ''));
+            if ($configVersion !== '') {
+                $value = $configVersion;
+            }
+        }
+
         $cached = $value !== '' ? $value : $fallback;
 
         return $cached;

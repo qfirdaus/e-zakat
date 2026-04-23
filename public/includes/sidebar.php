@@ -365,18 +365,18 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
 }
 .side-nav .side-nav-item.menuitem-active > .side-nav-toggle-btn {
     color: var(--ct-menu-item-active-color);
-    background-color: rgba(255, 255, 255, 0.1);
-    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.05);
+    font-weight: 500;
 }
 .side-nav .side-nav-item > .side-nav-primary-link.active {
     color: var(--ct-menu-item-active-color);
-    background-color: rgba(255, 255, 255, 0.1);
-    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.05);
+    font-weight: 500;
 }
 .side-nav .side-nav-item.menuitem-active > .side-nav-primary-link {
     color: var(--ct-menu-item-active-color);
-    background-color: rgba(255, 255, 255, 0.1);
-    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.05);
+    font-weight: 500;
 }
 .side-nav .side-nav-item.menuitem-active > .side-nav-toggle-btn .sidebar-parent-arrow {
     opacity: 1;
@@ -391,8 +391,8 @@ html[data-bs-theme="dark"] .sidebar-loading-text {
 .side-nav .side-nav-second-level li.menuitem-active > a,
 .side-nav .side-nav-second-level li > a.active {
     color: var(--ct-menu-item-active-color);
-    background-color: rgba(255, 255, 255, 0.12);
-    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.06);
+    font-weight: 500;
 }
 </style>
 <div class="sidebar-loading-overlay">

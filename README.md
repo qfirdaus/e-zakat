@@ -9,6 +9,7 @@ The current version has evolved beyond a simple starter template. It now operate
 - Current version: `1.7.2`
 - Release history: [CHANGELOG.md](./CHANGELOG.md)
 - Version source of truth: [VERSION](./VERSION)
+  Runtime note: Docker mounts this file into the container so the application version label reads from the same source.
 
 ## Runtime Baseline
 
@@ -25,9 +26,10 @@ Current support position:
 Recommended release flow:
 
 1. Update [VERSION](./VERSION) from `*-dev` to the final release version, for example `1.6.0`.
-2. Move the matching items from `Unreleased` in [CHANGELOG.md](./CHANGELOG.md) into a dated release section such as `## [1.6.0] - 2026-04-07`.
-3. Create a git tag such as `v1.6.0`.
-4. Start the next cycle by updating [VERSION](./VERSION) to the next development version, for example `1.6.1-dev` or `1.7.0-dev`.
+2. Update the fallback value in [public/configuration/settings.php](./public/configuration/settings.php) only if you intentionally want a non-file fallback for non-Docker/public-only runtime paths.
+3. Move the matching items from `Unreleased` in [CHANGELOG.md](./CHANGELOG.md) into a dated release section such as `## [1.6.0] - 2026-04-07`.
+4. Create a git tag such as `v1.6.0`.
+5. Start the next cycle by updating [VERSION](./VERSION) to the next development version, for example `1.6.1-dev` or `1.7.0-dev`.
 
 Manual command format for release support:
 

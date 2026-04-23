@@ -10,6 +10,7 @@ services:
     volumes:
       # ✅ public jadi root dalam Apache
       - ./public:/var/www/html
+      - ./VERSION:/var/www/VERSION:ro
 
       # Apache config
       - ./docker/apache/iqs-framework.dev.conf:/etc/apache2/sites-enabled/000-default.conf
@@ -23,6 +24,7 @@ services:
 
     environment:
       IS_DOCKER: "1"
+      APP_VERSION_FILE: "/var/www/VERSION"
 
     extra_hosts:
       - "oneid-dev.upnm.edu.my:172.16.0.14"
