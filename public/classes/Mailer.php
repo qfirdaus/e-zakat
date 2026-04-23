@@ -19,6 +19,31 @@ class Mailer
     /** @var string */
     private string $lastError = '';
 
+    private static function currentAppEnv(): string
+    {
+        if (function_exists('app_env')) {
+            return (string)app_env();
+        }
+
+        $raw = $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? ($_ENV['ENVIRONMENT'] ?? getenv('ENVIRONMENT') ?? '');
+        $raw = strtolower(trim((string)$raw));
+        if ($raw === 'dev') {
+            return 'development';
+        }
+        if (in_array($raw, ['development', 'staging', 'production'], true)) {
+            return $raw;
+        }
+
+        return 'production';
+    }
+
+    private static function appendLog(string $fileName, string $message): void
+    {
+        $logFile = __DIR__ . '/../log/' . $fileName;
+        @file_put_contents($logFile, $message . PHP_EOL, FILE_APPEND);
+        error_log($message);
+    }
+
     /**
      * @param array<string,mixed> $smtp
      * @throws \RuntimeException
@@ -149,7 +174,7 @@ class Mailer
         }
 
         // SMTP Debug → log file bila APP_ENV local/dev/development
-        if (in_array(getenv('APP_ENV') ?: 'prod', ['local', 'dev', 'development'], true)) {
+        if (in_array(self::currentAppEnv(), ['local', 'development'], true)) {
             $this->m->SMTPDebug = 2;
             $dbgFile = __DIR__ . '/../log/mail_smtp_debug.log';
             $this->m->Debugoutput = function ($str) use ($dbgFile) {
@@ -217,21 +242,13 @@ class Mailer
             $ok = $m->send();
             if (!$ok) {
                 $this->lastError = trim($m->ErrorInfo ?: 'Unknown mailer error');
-                @file_put_contents(
-                    __DIR__ . '/../log/mail_error.log',
-                    sprintf("[%s] send() failed: %s\n", date('Y-m-d H:i:s'), $this->lastError),
-                    FILE_APPEND
-                );
+                self::appendLog('mail_error.log', sprintf('[%s] send() failed: %s', date('Y-m-d H:i:s'), $this->lastError));
             }
             return $ok;
 
         } catch (\Throwable $e) {
             $this->lastError = $e->getMessage();
-            @file_put_contents(
-                __DIR__ . '/../log/mail_error.log',
-                sprintf("[%s] EXC: %s\n", date('Y-m-d H:i:s'), $this->lastError),
-                FILE_APPEND
-            );
+            self::appendLog('mail_error.log', sprintf('[%s] EXC: %s', date('Y-m-d H:i:s'), $this->lastError));
             return false;
         }
     }

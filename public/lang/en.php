@@ -211,6 +211,16 @@ return [
                            => 'The reset email could not be sent. %s',
 'forgot_password_error_mail_failed_reason_unknown'
                            => 'The failure reason was not recorded.',
+'forgot_password_error_token_create_failed'
+                           => 'The reset token could not be recorded. Check the password reset table structure.',
+'forgot_password_error_ineligible_debug'
+                           => 'The request could not be processed through this channel.',
+'forgot_password_review_title'
+                           => 'Request Received',
+'forgot_password_review_msg'
+                           => 'Your request has been received. Follow-up action is subject to current account controls and access policy.',
+'forgot_password_review_ok'
+                           => 'Understood',
 'forgot_password_feature_unavailable'
                            => 'The password reset feature is not fully available in this environment yet. Please contact the system administrator.',
 'reset_password_page_title'

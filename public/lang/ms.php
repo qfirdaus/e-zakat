@@ -211,6 +211,16 @@ return [
                            => 'Emel reset tidak berjaya dihantar. %s',
 'forgot_password_error_mail_failed_reason_unknown'
                            => 'Sebab kegagalan tidak direkodkan.',
+'forgot_password_error_token_create_failed'
+                           => 'Token reset tidak berjaya direkodkan. Semak struktur jadual reset kata laluan.',
+'forgot_password_error_ineligible_debug'
+                           => 'Permintaan tidak dapat diproses melalui saluran ini.',
+'forgot_password_review_title'
+                           => 'Semakan Diterima',
+'forgot_password_review_msg'
+                           => 'Permintaan anda telah diterima. Tindakan susulan tertakluk kepada kawalan akaun dan polisi akses semasa.',
+'forgot_password_review_ok'
+                           => 'Faham',
 'forgot_password_feature_unavailable'
                            => 'Fungsi reset kata laluan belum tersedia sepenuhnya pada persekitaran ini. Sila hubungi pentadbir sistem.',
 'reset_password_page_title'

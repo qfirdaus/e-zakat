@@ -145,8 +145,24 @@ $isDevelopment = app_env() === 'development';
 $errors = [];
 $submitted = false;
 $loginIdValue = trim((string)($_POST['login_id'] ?? ''));
+$requestStatus = trim((string)($_GET['status'] ?? ''));
 $successReference = trim((string)($_GET['ref'] ?? ''));
-$showSuccessAlert = trim((string)($_GET['status'] ?? '')) === 'sent';
+$showSuccessAlert = $requestStatus === 'sent';
+$showReviewAlert = $requestStatus === 'review';
+
+if (!function_exists('forgot_password_debug_log')) {
+    function forgot_password_debug_log(string $message, array $context = []): void
+    {
+        $line = '[forgot-password] ' . $message;
+        if ($context !== []) {
+            $encoded = json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            if ($encoded !== false) {
+                $line .= ' | ' . $encoded;
+            }
+        }
+        error_log($line);
+    }
+}
 
 if ($requestMethod === 'POST') {
     $submitted = true;
@@ -166,12 +182,24 @@ if ($requestMethod === 'POST') {
             $candidate = $userModel->findPasswordResetCandidate($loginId);
             $canIssueReset = false;
             $recipientEmail = null;
+            $created = false;
+            $sent = false;
 
             if ($candidate) {
                 $recipientEmail = forgot_password_resolve_email($candidate);
                 $canIssueReset = (int)($candidate['f_flag'] ?? 0) === 1
                     && $recipientEmail !== null
                     && forgot_password_manual_login_allowed($candidate);
+            }
+
+            if ($isDevelopment) {
+                forgot_password_debug_log('Eligibility evaluated', [
+                    'login_id' => $loginId,
+                    'candidate_found' => $candidate !== null,
+                    'recipient_email' => $recipientEmail,
+                    'can_issue_reset' => $canIssueReset,
+                    'feature_available' => $featureAvailable,
+                ]);
             }
 
             if ($canIssueReset && $recipientEmail !== null) {
@@ -192,6 +220,14 @@ if ($requestMethod === 'POST') {
                     substr(trim((string)($_SERVER['HTTP_USER_AGENT'] ?? '')), 0, 255),
                     $resetTokenMinutes
                 );
+
+                if ($isDevelopment) {
+                    forgot_password_debug_log('Reset token creation attempted', [
+                        'login_id' => (string)$candidate['f_loginID'],
+                        'recipient_email' => $recipientEmail,
+                        'token_created' => $created,
+                    ]);
+                }
 
                 if ($created) {
                     [$mailHtml, $mailText] = Mailer::render('password-reset-request', [
@@ -216,6 +252,11 @@ if ($requestMethod === 'POST') {
                                 $mailError !== '' ? $mailError : (string)(__('forgot_password_error_mail_failed_reason_unknown') ?: 'Sebab kegagalan tidak direkodkan.')
                             );
                         }
+                    } elseif ($isDevelopment) {
+                        forgot_password_debug_log('Reset mail sent successfully', [
+                            'login_id' => (string)$candidate['f_loginID'],
+                            'recipient_email' => $recipientEmail,
+                        ]);
                     }
 
                     if (function_exists('audit_event')) {
@@ -248,6 +289,12 @@ if ($requestMethod === 'POST') {
                             error_log('[forgot-password] Audit logging failed: ' . $auditError->getMessage());
                         }
                     }
+                } elseif ($isDevelopment) {
+                    $errors[] = (string)(__('forgot_password_error_token_create_failed') ?: 'Token reset berjaya dijana tidak dapat direkodkan. Semak struktur jadual reset kata laluan.');
+                    forgot_password_debug_log('Reset token creation failed before SMTP send', [
+                        'login_id' => (string)$candidate['f_loginID'],
+                        'recipient_email' => $recipientEmail,
+                    ]);
                 }
             } elseif (function_exists('audit_event')) {
                 try {
@@ -275,6 +322,14 @@ if ($requestMethod === 'POST') {
                     error_log('[forgot-password] Audit logging failed: ' . $auditError->getMessage());
                 }
             }
+
+            if ($isDevelopment && !$canIssueReset) {
+                forgot_password_debug_log('Reset request marked ineligible', [
+                    'login_id' => $loginId,
+                    'candidate_found' => $candidate !== null,
+                    'recipient_email' => $recipientEmail,
+                ]);
+            }
         }
     }
 
@@ -285,8 +340,9 @@ if ($requestMethod === 'POST') {
             $successMessage .= "\n\n" . $referenceLabel . ': ' . $loginIdValue;
         }
 
-        $redirectTarget = 'forgot-password.php?status=sent';
-        if ($loginIdValue !== '') {
+        $redirectStatus = ($candidate !== null && !$canIssueReset) ? 'review' : 'sent';
+        $redirectTarget = 'forgot-password.php?status=' . rawurlencode($redirectStatus);
+        if ($redirectStatus === 'sent' && $loginIdValue !== '') {
             $redirectTarget .= '&ref=' . rawurlencode($loginIdValue);
         }
         redirect($redirectTarget);
@@ -1021,6 +1077,24 @@ $activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
       </div>
     </div>
   </div>
+
+  <?php if ($showReviewAlert): ?>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (!(window.Swal && typeof window.Swal.fire === 'function')) {
+          return;
+        }
+
+        window.Swal.fire({
+          icon: 'info',
+          title: <?= json_encode((string)(__('forgot_password_review_title') ?: 'Semakan Diterima'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+          text: <?= json_encode((string)(__('forgot_password_review_msg') ?: 'Permintaan anda telah diterima. Tindakan susulan tertakluk kepada kawalan akaun dan polisi akses semasa.'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+          confirmButtonText: <?= json_encode((string)(__('forgot_password_review_ok') ?: 'Faham'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
+          confirmButtonColor: '#2563eb'
+        });
+      });
+    </script>
+  <?php endif; ?>
 
 </body>
 </html>

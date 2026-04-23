@@ -90,6 +90,12 @@ final class AuditLogger
         return $value === '' ? null : $value;
     }
 
+    private static function normalizeAuditLabel($value): ?string
+    {
+        $value = strtoupper(trim((string)$value));
+        return $value === '' ? null : $value;
+    }
+
     /* ===================== REQUEST ===================== */
 
     /** Log mula request, pulangkan request_id (26 char) */
@@ -191,6 +197,45 @@ final class AuditLogger
             }
         }
 
+        $outcomeOriginal = self::normalizeAuditLabel($e['outcome'] ?? null);
+        $outcome = $outcomeOriginal;
+        $outcomeInfo = $this->getColumnInfo('audit_event', 'outcome');
+        $outcomeEnum = $outcomeInfo['enum_values'] ?? null;
+
+        if (!isset($e['meta']) || !is_array($e['meta'])) $e['meta'] = [];
+
+        if (!empty($outcomeEnum)) {
+            if ($outcome !== null && in_array($outcome, $outcomeEnum, true)) {
+                // use as-is
+            } else {
+                $fallbackMap = [
+                    'PENDING' => ['INFO', 'UNKNOWN', 'FAIL'],
+                    'IGNORED' => ['INFO', 'UNKNOWN', 'FAIL'],
+                    'SKIPPED' => ['INFO', 'UNKNOWN', 'FAIL'],
+                    'DENIED'  => ['FAIL', 'ERROR', 'REJECTED', 'BLOCKED'],
+                    'BLOCKED' => ['FAIL', 'ERROR', 'REJECTED', 'DENIED'],
+                ];
+
+                $candidates = $fallbackMap[$outcomeOriginal ?? ''] ?? ['INFO', 'UNKNOWN', 'FAIL', 'ERROR'];
+                $fallback = null;
+                foreach ($candidates as $candidate) {
+                    if (in_array($candidate, $outcomeEnum, true)) {
+                        $fallback = $candidate;
+                        break;
+                    }
+                }
+                if ($fallback === null) {
+                    $fallback = $outcomeEnum[0] ?? null;
+                }
+
+                if ($outcomeOriginal !== null) {
+                    $e['meta']['orig_outcome'] = $outcomeOriginal;
+                }
+                error_log('[audit_safe] outcome "' . ($outcomeOriginal ?? '') . '" not in enum(' . implode(',', $outcomeEnum) . ') — falling back to "' . ($fallback ?? '') . '"');
+                $outcome = $fallback;
+            }
+        }
+
         $columns = [
             'occurred_at', 'request_id', 'session_id', 'user_id', 'actor_label', 'ip_address',
             'event_type', 'severity', 'outcome', 'target_type', 'target_id', 'target_label',
@@ -221,7 +266,7 @@ final class AuditLogger
             ':ip'    => $ipBin,
             ':etype' => $etype,
             ':sev'   => $e['severity'] ?? 'INFO',
-            ':outc'  => $e['outcome'] ?? null,
+            ':outc'  => $outcome,
             ':tt'    => $e['target_type'] ?? null,
             ':tid'   => $e['target_id'] ?? null,
             ':tlabel'=> $e['target_label'] ?? null,

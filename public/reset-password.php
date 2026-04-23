@@ -242,6 +242,7 @@ if ($requestMethod === 'POST') {
             if (!$updated) {
                 $errors[] = __('password_change_error_update_failed');
             } else {
+                $notificationSent = false;
                 $notificationEmail = strtolower(trim((string)($tokenRecord['f_email'] ?? $tokenRecord['f_loginID'] ?? '')));
                 if ($notificationEmail !== '' && filter_var($notificationEmail, FILTER_VALIDATE_EMAIL)) {
                     try {
@@ -251,13 +252,17 @@ if ($requestMethod === 'POST') {
                             'changedAt' => (new DateTimeImmutable('now', new DateTimeZone('Asia/Kuala_Lumpur')))->format('Y-m-d H:i:s'),
                             'siteTitle' => app_config('site.title', 'Sistem Pengurusan Fasiliti (e-Facility)'),
                         ]);
-                        Mailer::quickSend(
-                            $pdo,
+                        $mailer = Mailer::fromConfig($pdo);
+                        $notificationSent = $mailer->send(
                             $notificationEmail,
                             (string)(__('password_change_notification_subject') ?: 'Kata laluan anda telah dikemas kini'),
                             $mailHtml,
                             $mailText
                         );
+                        if (!$notificationSent) {
+                            $mailError = trim($mailer->getLastError());
+                            error_log('[reset-password] Notification mail failed for ' . $notificationEmail . ($mailError !== '' ? ' | ' . $mailError : ''));
+                        }
                     } catch (Throwable $mailError) {
                         error_log('[reset-password] Notification mail failed: ' . $mailError->getMessage());
                     }
@@ -299,6 +304,8 @@ if ($requestMethod === 'POST') {
                                 'user_agent' => trim((string)($_SERVER['HTTP_USER_AGENT'] ?? '')) ?: null,
                                 'source' => 'reset_password_public_page',
                                 'password_expiry_at' => $expiresAt,
+                                'notification_email' => $notificationEmail !== '' ? $notificationEmail : null,
+                                'notification_sent' => $notificationSent,
                             ],
                         ]);
                     } catch (Throwable $auditError) {
