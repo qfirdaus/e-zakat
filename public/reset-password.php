@@ -591,6 +591,7 @@ $activeThemeStyle = $themeStyleMap[$sidebarTheme] ?? $themeStyleMap['light'];
     }
 
     .rp-note {
+      grid-column: 1 / -1;
       padding: 20px;
       background: linear-gradient(145deg, #f7fafc, #eef4fa);
       border: 1px solid var(--rp-line);

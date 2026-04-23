@@ -211,8 +211,8 @@ $defaultHome      = app_config('site.default_home', 'pages/dashboard.php');
 $loginHeaderLogo  = app_config('branding.login_header_logo', 'assets/images/logo-upnm.png');
 $loginPanelLogo   = app_config('branding.login_panel_logo', 'assets/images/upnm30-logo.png');
 $supportEmail     = trim((string)app_config('system.support', ''));
-$systemName       = trim((string)app_config('system.name', 'Sistem Pengurusan Fasiliti (e-Facility)'));
-$organizationName = trim((string)app_config('organization.name', app_config('system.name', 'Sistem Pengurusan Fasiliti (e-Facility)')));
+$systemName       = trim((string)app_config('system.name', 'IQS Framework'));
+$organizationName = trim((string)app_config('organization.name', app_config('system.name', 'IQS Framework')));
 $organizationWebsite = trim((string)app_config('organization.website', ''));
 $sidebarTheme = strtolower(trim((string)($globalThemeSettings['sidebarColor'] ?? $_SESSION['theme.menu'] ?? 'light')));
 $themeStyleMap = [
@@ -241,7 +241,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= __('login_title') ?> | <?= htmlspecialchars(app_config('site.title', 'Sistem Pengurusan Fasiliti (e-Facility)')) ?></title>
+  <title><?= __('login_title') ?> | <?= htmlspecialchars(app_config('site.title', 'IQS Framework')) ?></title>
   <link rel="icon" href="<?= base_url(app_config('site.favicon', 'assets/images/default.ico')) ?>" type="image/x-icon">
 
   <link rel="stylesheet" href="<?= base_url('assets/css/icons.min.css?v=' . $version) ?>">
@@ -955,8 +955,8 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       <div class="facility-brand-lockup">
         <img class="facility-brand-mark" src="<?= base_url($loginHeaderLogo) ?>" alt="UPNM Logo">
         <div class="facility-brand-meta">
-          <strong><?= htmlspecialchars($systemName !== '' ? $systemName : 'Sistem Pengurusan Fasiliti (e-Facility)', ENT_QUOTES, 'UTF-8') ?></strong>
-          <span><?= htmlspecialchars($organizationName !== '' ? $organizationName : ($lang === 'en' ? 'Official digital access for facility operations, service requests, and campus support workflows.' : 'Akses digital rasmi untuk operasi fasiliti, permohonan perkhidmatan, dan aliran sokongan kampus.'), ENT_QUOTES, 'UTF-8') ?></span>
+          <strong><?= htmlspecialchars($systemName !== '' ? $systemName : 'IQS Framework', ENT_QUOTES, 'UTF-8') ?></strong>
+          <span><?= htmlspecialchars($organizationName !== '' ? $organizationName : ($lang === 'en' ? 'Reusable core platform for building future systems with the same governance, security, and application foundation.' : 'Platform teras boleh guna semula untuk membina sistem-sistem akan datang dengan tadbir urus, keselamatan, dan asas aplikasi yang sama.'), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
       </div>
 
@@ -986,8 +986,8 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
           <div class="facility-visual-content">
             <div class="facility-visual-body">
               <div class="facility-visual-copy">
-                <h2><?= htmlspecialchars($lang === 'en' ? 'Centralized facility access with clearer governance and operational continuity.' : 'Akses fasiliti berpusat dengan tadbir urus dan kesinambungan operasi yang lebih jelas.', ENT_QUOTES, 'UTF-8') ?></h2>
-                <p><?= htmlspecialchars($lang === 'en' ? 'Built to support maintenance coordination, service accountability, and secure sign-in across the institution.' : 'Dibina untuk menyokong penyelarasan penyelenggaraan, akauntabiliti perkhidmatan, dan log masuk selamat merentas institusi.', ENT_QUOTES, 'UTF-8') ?></p>
+                <h2><?= htmlspecialchars($lang === 'en' ? 'One core framework for consistent governance across every future system.' : 'Satu framework teras untuk tadbir urus yang konsisten merentas setiap sistem akan datang.', ENT_QUOTES, 'UTF-8') ?></h2>
+                <p><?= htmlspecialchars($lang === 'en' ? 'IQS Framework is developed as the shared base so teams can move straight into business features while common capabilities stay standardized.' : 'IQS Framework dibangunkan sebagai asas bersama supaya pasukan boleh terus fokus pada ciri kerja sebenar sementara keupayaan umum kekal standard.', ENT_QUOTES, 'UTF-8') ?></p>
               </div>
             </div>
           </div>
@@ -996,13 +996,13 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
         <div class="facility-info-grid">
           <article class="facility-info-card">
             <span class="facility-card-label"><i class="ri-layout-masonry-line"></i> <?= $lang === 'en' ? 'Platform' : 'Platform' ?></span>
-            <h3><?= htmlspecialchars($systemName !== '' ? $systemName : 'Sistem Pengurusan Fasiliti (e-Facility)', ENT_QUOTES, 'UTF-8') ?></h3>
-            <p><?= htmlspecialchars($lang === 'en' ? 'Designed to consolidate requests, approvals, and service execution within a more controlled institutional channel.' : 'Direka untuk menyatukan permohonan, kelulusan, dan pelaksanaan perkhidmatan dalam saluran institusi yang lebih terkawal.', ENT_QUOTES, 'UTF-8') ?></p>
+            <h3><?= htmlspecialchars($systemName !== '' ? $systemName : 'IQS Framework', ENT_QUOTES, 'UTF-8') ?></h3>
+            <p><?= htmlspecialchars($lang === 'en' ? 'Built as the core project layer that provides shared modules, conventions, and reusable flows for major application development.' : 'Dibina sebagai lapisan projek teras yang menyediakan modul bersama, konvensyen, dan aliran boleh guna semula untuk pembangunan aplikasi utama.', ENT_QUOTES, 'UTF-8') ?></p>
           </article>
 
           <article class="facility-info-card">
             <span class="facility-card-label"><i class="ri-customer-service-2-line"></i> <?= __('login_contact_title') ?></span>
-            <h3><?= htmlspecialchars($lang === 'en' ? 'Support and reference' : 'Sokongan dan rujukan', ENT_QUOTES, 'UTF-8') ?></h3>
+            <h3><?= htmlspecialchars($lang === 'en' ? 'Support and framework reference' : 'Sokongan dan rujukan framework', ENT_QUOTES, 'UTF-8') ?></h3>
             <p>
               <?php if (!empty($contactParts)): ?>
                 <?= implode(' <span aria-hidden="true">|</span> ', $contactParts) ?>
@@ -1014,8 +1014,8 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
 
           <article class="facility-info-card">
             <span class="facility-card-label"><i class="ri-shield-keyhole-line"></i> <?= $lang === 'en' ? 'Security' : 'Keselamatan' ?></span>
-            <h3><?= htmlspecialchars($lang === 'en' ? 'Protected institutional sign-in' : 'Log masuk institusi yang dilindungi', ENT_QUOTES, 'UTF-8') ?></h3>
-            <p><?= htmlspecialchars($lang === 'en' ? 'Session protection, CSRF handling, and identity routing remain enforced behind this interface.' : 'Perlindungan sesi, pengendalian CSRF, dan routing identiti kekal dikuatkuasakan di sebalik antaramuka ini.', ENT_QUOTES, 'UTF-8') ?></p>
+            <h3><?= htmlspecialchars($lang === 'en' ? 'Shared security foundation' : 'Asas keselamatan bersama', ENT_QUOTES, 'UTF-8') ?></h3>
+            <p><?= htmlspecialchars($lang === 'en' ? 'Authentication, session protection, CSRF handling, and identity routing stay centralized here so future systems inherit the same trusted core.' : 'Autentikasi, perlindungan sesi, pengendalian CSRF, dan routing identiti dipusatkan di sini supaya sistem akan datang mewarisi teras yang sama dan dipercayai.', ENT_QUOTES, 'UTF-8') ?></p>
           </article>
         </div>
       </section>
@@ -1029,7 +1029,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
             <div>
               <span class="facility-eyebrow"><i class="ri-login-circle-line"></i> <?= __('login_heading') ?></span>
               <h2 class="facility-form-title"><?= __('login_title') ?></h2>
-              <p class="facility-form-subcopy"><?= htmlspecialchars($lang === 'en' ? 'Enter your credentials to proceed to the official facility management workspace.' : 'Masukkan kelayakan anda untuk meneruskan ke ruang kerja rasmi pengurusan fasiliti.', ENT_QUOTES, 'UTF-8') ?></p>
+              <p class="facility-form-subcopy"><?= htmlspecialchars($lang === 'en' ? 'Enter your credentials to access the IQS Framework core workspace and continue to shared platform services.' : 'Masukkan kelayakan anda untuk mengakses ruang kerja teras IQS Framework dan meneruskan ke perkhidmatan platform bersama.', ENT_QUOTES, 'UTF-8') ?></p>
             </div>
           </div>
 
@@ -1068,13 +1068,13 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
 
           <?php if ($showOneIdButton): ?>
             <div class="facility-oneid-block">
-              <span class="facility-oneid-label">Alternative Access</span>
+              <span class="facility-oneid-label"><?= htmlspecialchars($lang === 'en' ? 'Alternative Access' : 'Akses Alternatif', ENT_QUOTES, 'UTF-8') ?></span>
               <a href="<?= h($oneIdLoginUrl) ?>" class="facility-oneid-btn">
                 <span class="facility-oneid-main">
                   <span class="facility-oneid-badge">ID</span>
                   <span class="facility-oneid-copy">
                     <strong><?= h(__('login_btnOneId') ?: 'OneID Login') ?></strong>
-                    <span><?= htmlspecialchars($lang === 'en' ? 'Use central identity authentication when your access path requires single sign-on.' : 'Gunakan autentikasi identiti pusat apabila laluan akses anda memerlukan single sign-on.', ENT_QUOTES, 'UTF-8') ?></span>
+                    <span><?= htmlspecialchars($lang === 'en' ? 'Use central identity authentication when your framework access path requires single sign-on.' : 'Gunakan autentikasi identiti pusat apabila laluan akses framework anda memerlukan single sign-on.', ENT_QUOTES, 'UTF-8') ?></span>
                   </span>
                 </span>
                 <i class="ri-arrow-right-up-line"></i>
@@ -1084,8 +1084,8 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
         </div>
 
         <div class="facility-support-panel">
-          <h3><?= htmlspecialchars($lang === 'en' ? 'Official support channels' : 'Saluran sokongan rasmi', ENT_QUOTES, 'UTF-8') ?></h3>
-          <p><?= htmlspecialchars($lang === 'en' ? 'Use the official contact and reference channels below if you require assistance with access or account matters.' : 'Gunakan saluran hubungan dan rujukan rasmi di bawah jika anda memerlukan bantuan berkaitan akses atau akaun.', ENT_QUOTES, 'UTF-8') ?></p>
+          <h3><?= htmlspecialchars($lang === 'en' ? 'Core platform support channels' : 'Saluran sokongan platform teras', ENT_QUOTES, 'UTF-8') ?></h3>
+          <p><?= htmlspecialchars($lang === 'en' ? 'Use the channels below if you need help with framework access, shared modules, or core account services used by connected systems.' : 'Gunakan saluran di bawah jika anda memerlukan bantuan berkaitan akses framework, modul bersama, atau servis akaun teras yang digunakan oleh sistem-sistem berkaitan.', ENT_QUOTES, 'UTF-8') ?></p>
           <div class="facility-support-links">
             <?php if ($supportEmail !== ''): ?>
               <a href="mailto:<?= htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8') ?>"><i class="ri-mail-line"></i> <?= htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8') ?></a>
