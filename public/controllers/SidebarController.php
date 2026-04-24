@@ -142,10 +142,10 @@ class SidebarController
      * This method loads user profile, modules, menus, and detects active module.
      * Uses caching to improve performance.
      * 
-     * @param string $currentFile Current page filename (e.g., 'dashboard.php')
+     * @param string $currentPath Current page relative path (e.g., 'pages/dashboard.php')
      * @return void
      */
-    public function loadSidebarData(string $currentFile): void
+    public function loadSidebarData(string $currentPath): void
     {
         try {
             // Load user profile
@@ -162,7 +162,7 @@ class SidebarController
             $this->loadModulesAndMenus($modulAccess, $menuAccess);
             
             // Detect active module
-            $this->detectActiveModul($currentFile);
+            $this->detectActiveModul($currentPath);
             
         } catch (Throwable $e) {
             error_log("SidebarController: Error loading sidebar data: " . $e->getMessage());
@@ -312,18 +312,21 @@ class SidebarController
     /**
      * Detect which module is currently active based on current file
      * 
-     * @param string $currentFile Current page filename
+     * @param string $currentPath Current page relative path
      * @return void
      */
-    private function detectActiveModul(string $currentFile): void
+    private function detectActiveModul(string $currentPath): void
     {
+        $normalizedCurrentPath = $this->normalizeCurrentPath($currentPath);
+        $currentBasename = basename($normalizedCurrentPath !== '' ? $normalizedCurrentPath : $currentPath);
+
         foreach ($this->senaraiModul as $modul) {
             $modulID = (int)$modul['f_modulID'];
             $childs = $this->modulMenus[$modulID] ?? [];
             
             foreach ($childs as $menu) {
                 $menuPath = $this->sanitizeMenuPath($menu['f_path'] ?? '');
-                if ($menuPath && basename($currentFile) === basename($menuPath)) {
+                if ($menuPath && $this->menuMatchesCurrentPath($normalizedCurrentPath, $currentBasename, $menuPath)) {
                     $this->modulAktifID = $modulID;
                     return; // Found, exit early
                 }
@@ -471,6 +474,79 @@ class SidebarController
         }
         
         return $path;
+    }
+
+    /**
+     * Normalize request path into `pages/...` form for sidebar matching.
+     */
+    private function normalizeCurrentPath(string $currentPath): string
+    {
+        $currentPath = trim(str_replace('\\', '/', $currentPath));
+        if ($currentPath === '') {
+            return '';
+        }
+
+        $currentPath = ltrim($currentPath, '/');
+        $publicPos = stripos($currentPath, 'public/');
+        if ($publicPos !== false) {
+            $currentPath = substr($currentPath, $publicPos + 7);
+        }
+
+        return strtolower($currentPath);
+    }
+
+    /**
+     * Build equivalent path variants so `folder` and `folder/index.php` match.
+     */
+    private function buildPathVariants(string $path, bool $defaultToPages = false): array
+    {
+        $normalized = $this->normalizeCurrentPath($path);
+        if ($normalized === '') {
+            return [];
+        }
+
+        $variants = [$normalized];
+        if ($defaultToPages && !preg_match('#^(pages|ajax|actions)/#', $normalized)) {
+            $variants[] = 'pages/' . ltrim($normalized, '/');
+        }
+
+        $expanded = [];
+        foreach ($variants as $variant) {
+            $variant = rtrim($variant, '/');
+            if ($variant === '') {
+                continue;
+            }
+
+            $expanded[] = $variant;
+
+            if (str_ends_with($variant, '/index.php')) {
+                $expanded[] = substr($variant, 0, -10);
+            } elseif (!str_ends_with($variant, '.php')) {
+                $expanded[] = $variant . '/index.php';
+            }
+        }
+
+        return array_values(array_unique(array_filter($expanded, static fn($item) => $item !== '')));
+    }
+
+    /**
+     * Match a menu path against the current request with full-path priority.
+     */
+    private function menuMatchesCurrentPath(string $normalizedCurrentPath, string $currentBasename, string $menuPath): bool
+    {
+        $currentCandidates = $this->buildPathVariants($normalizedCurrentPath, false);
+        $menuCandidates = $this->buildPathVariants($menuPath, true);
+        if (empty($menuCandidates)) {
+            return false;
+        }
+
+        foreach ($currentCandidates as $candidate) {
+            if (in_array($candidate, $menuCandidates, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

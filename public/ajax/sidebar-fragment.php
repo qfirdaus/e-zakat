@@ -8,17 +8,24 @@ require_once __DIR__ . '/_helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 
 try {
-    $requestedFile = isset($_GET['currentFile']) ? basename((string)$_GET['currentFile']) : '';
-    if ($requestedFile === '') {
-        $requestedFile = basename((string)parse_url($_SERVER['HTTP_REFERER'] ?? '', PHP_URL_PATH));
+    $requestedPath = '';
+    if (isset($_GET['currentPath'])) {
+        $requestedPath = prestasi_normalize_menu_path((string)$_GET['currentPath']);
+    }
+    if ($requestedPath === '' && isset($_GET['currentFile'])) {
+        $requestedPath = prestasi_normalize_menu_path((string)$_GET['currentFile']);
+    }
+    if ($requestedPath === '') {
+        $requestedPath = prestasi_normalize_menu_path((string)parse_url($_SERVER['HTTP_REFERER'] ?? '', PHP_URL_PATH));
     }
 
-    $currentFile = $requestedFile !== '' ? $requestedFile : basename($_SERVER['PHP_SELF'] ?? '');
+    $currentPagePath = $requestedPath !== '' ? $requestedPath : prestasi_current_page_relative_path();
+    $currentFile = basename($currentPagePath !== '' ? $currentPagePath : ($_SERVER['PHP_SELF'] ?? ''));
     $pdo = Database::getInstance('mysql')->getConnection();
     $ui = buildAccessUiPayload($pdo, [
         'activeGroupId' => (int)($_SESSION['group_active_id'] ?? 0),
         'currentFile' => $currentFile,
-        'currentPagePath' => $currentFile !== '' ? ('pages/' . strtolower($currentFile)) : '',
+        'currentPagePath' => $currentPagePath,
         'currentPageAllowed' => true,
         'includeSidebar' => true,
     ]);

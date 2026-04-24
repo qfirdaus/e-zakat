@@ -65,22 +65,77 @@ function sanitize_menu_path(string $path): ?string {
 }
 
 /**
- * Detect if a menu item is active based on current file
+ * Detect if a menu item is active based on current page path
  * 
- * @param string $currentFile Current page filename (e.g., 'dashboard.php')
+ * @param string $currentPath Current page relative path (e.g., 'pages/dashboard.php')
  * @param string $menuPath Menu path from database
  * @return bool True if menu is active, false otherwise
  */
-function is_menu_active(string $currentFile, string $menuPath): bool {
+function normalize_sidebar_current_path(string $currentPath): string {
+    $currentPath = trim(str_replace('\\', '/', $currentPath));
+    if ($currentPath === '') {
+        return '';
+    }
+
+    $currentPath = ltrim($currentPath, '/');
+    $publicPos = stripos($currentPath, 'public/');
+    if ($publicPos !== false) {
+        $currentPath = substr($currentPath, $publicPos + 7);
+    }
+
+    return strtolower($currentPath);
+}
+
+function sidebar_path_match_variants(string $path, bool $defaultToPages = false): array {
+    $normalized = normalize_sidebar_current_path($path);
+    if ($normalized === '') {
+        return [];
+    }
+
+    $variants = [$normalized];
+    if ($defaultToPages && !preg_match('#^(pages|ajax|actions)/#', $normalized)) {
+        $variants[] = 'pages/' . ltrim($normalized, '/');
+    }
+
+    $expanded = [];
+    foreach ($variants as $variant) {
+        $variant = rtrim($variant, '/');
+        if ($variant === '') {
+            continue;
+        }
+
+        $expanded[] = $variant;
+
+        if (str_ends_with($variant, '/index.php')) {
+            $expanded[] = substr($variant, 0, -10);
+        } elseif (!str_ends_with($variant, '.php')) {
+            $expanded[] = $variant . '/index.php';
+        }
+    }
+
+    return array_values(array_unique(array_filter($expanded, static fn($item) => $item !== '')));
+}
+
+function is_menu_active(string $currentPath, string $menuPath): bool {
     $sanitizedPath = sanitize_menu_path($menuPath);
     if (!$sanitizedPath) {
         return false;
     }
-    return basename($currentFile) === basename($sanitizedPath);
+
+    $currentCandidates = sidebar_path_match_variants($currentPath, false);
+    $menuCandidates = sidebar_path_match_variants($sanitizedPath, true);
+
+    foreach ($currentCandidates as $candidate) {
+        if (in_array($candidate, $menuCandidates, true)) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
-function sidebar_link_active_class(string $currentFile, string $menuPath): string {
-    return is_menu_active($currentFile, $menuPath) ? ' active' : '';
+function sidebar_link_active_class(string $currentPath, string $menuPath): string {
+    return is_menu_active($currentPath, $menuPath) ? ' active' : '';
 }
 
 function sanitize_sidebar_user_image(?string $path): string {
@@ -118,8 +173,10 @@ function is_profile_empty(array $profile): bool {
 
 // Initialize controller and load sidebar data
 $currentFile = isset($currentFile) && is_string($currentFile) && $currentFile !== ''
-    ? basename($currentFile)
-    : basename($_SERVER['PHP_SELF'] ?? '');
+    ? $currentFile
+    : (function_exists('prestasi_current_page_relative_path')
+        ? prestasi_current_page_relative_path()
+        : ($_SERVER['PHP_SELF'] ?? ''));
 $sidebarController = new SidebarController();
 $sidebarController->loadSidebarData($currentFile);
 

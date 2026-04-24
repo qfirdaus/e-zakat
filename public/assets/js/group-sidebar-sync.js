@@ -16,6 +16,31 @@ const SidebarSync = {
     return trimmed;
   },
 
+  buildPathVariants(input, defaultToPages = false) {
+    const normalized = this.normalizePath(input);
+    if (!normalized) return [];
+
+    const seeds = [normalized];
+    if (defaultToPages && !/^(pages|ajax|actions)\//.test(normalized)) {
+      seeds.push('pages/' + normalized.replace(/^\/+/, ''));
+    }
+
+    const variants = [];
+    seeds.forEach((seed) => {
+      const base = String(seed || '').replace(/\/+$/, '');
+      if (!base) return;
+
+      variants.push(base);
+      if (base.endsWith('/index.php')) {
+        variants.push(base.slice(0, -10));
+      } else if (!base.endsWith('.php')) {
+        variants.push(base + '/index.php');
+      }
+    });
+
+    return [...new Set(variants.filter(Boolean))];
+  },
+
   buildAjaxUrl(file, params) {
     const baseUrl = String(window.BASE_URL || '').replace(/\/+$/, '');
     const url = new URL((baseUrl || window.location.origin) + '/ajax/' + file, window.location.origin);
@@ -185,9 +210,18 @@ const SidebarSync = {
   },
 
   activateCurrentLink(sidebarEl) {
-    const pageUrl = window.location.href.split(/[?#]/)[0];
+    const pagePathVariants = this.buildPathVariants(window.location.pathname || '', false);
     sidebarEl.querySelectorAll('.side-nav a').forEach((link) => {
-      if (link.href !== pageUrl) return;
+      let linkPathVariants = [];
+      try {
+        const url = new URL(link.href, window.location.origin);
+        linkPathVariants = this.buildPathVariants(url.pathname || '', false);
+      } catch (err) {
+        return;
+      }
+
+      const isMatch = linkPathVariants.some((variant) => pagePathVariants.includes(variant));
+      if (!isMatch) return;
 
       link.classList.add('active');
       link.parentElement?.classList.add('menuitem-active');

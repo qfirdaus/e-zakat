@@ -251,7 +251,7 @@ try {
     $ui = buildAccessUiPayload($pdo, [
         'activeGroupId' => $groupID,
         'roleName' => $newGroupName,
-        'currentFile' => basename($currentPagePath),
+        'currentFile' => $currentPagePath,
         'currentPagePath' => $currentPagePath,
         'currentPageAllowed' => $currentPageAllowed,
         'redirectUrl' => $redirectUrl,

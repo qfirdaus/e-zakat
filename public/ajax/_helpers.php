@@ -357,7 +357,8 @@ function resolveActiveGroupNameForUi(PDO $pdo, ?int $groupId = null): string {
 /**
  * Render sidebar HTML fragment for access UI updates.
  */
-function renderSidebarHtmlFragment(string $currentFile): string {
+function renderSidebarHtmlFragment(string $currentPath): string {
+    $currentFile = $currentPath;
     ob_start();
     include __DIR__ . '/../includes/sidebar.php';
     return (string)ob_get_clean();
@@ -378,8 +379,8 @@ function buildAccessUiPayload(PDO $pdo, array $options = []): array {
     $sidebarHtml = null;
 
     if (!empty($options['includeSidebar'])) {
-        $currentFile = (string)($options['currentFile'] ?? basename($_SERVER['PHP_SELF'] ?? ''));
-        $sidebarHtml = renderSidebarHtmlFragment($currentFile);
+        $sidebarCurrentPath = (string)($options['currentPagePath'] ?? $options['currentFile'] ?? basename($_SERVER['PHP_SELF'] ?? ''));
+        $sidebarHtml = renderSidebarHtmlFragment($sidebarCurrentPath);
     }
 
     return [
