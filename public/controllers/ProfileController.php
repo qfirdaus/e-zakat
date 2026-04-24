@@ -201,6 +201,7 @@ class ProfileController
             'stafID'     => (string)($row['f_stafID'] ?? ''),
             'loginID'    => (string)($row['f_loginID'] ?? ''),
             'nopekerja'  => (string)($row['f_nopekerja'] ?? ''), // still dipapar jika view perlukan
+            'categoryUser' => (string)($row['f_categoryUser'] ?? ''),
             'nama_penuh' => (string)$display,
             'nickname'   => (string)($row['f_nickname'] ?? ''),
             'jawatan'    => (string)($row['f_jawatan'] ?? ''),
@@ -218,6 +219,7 @@ class ProfileController
             'stafID'     => '',
             'loginID'    => '',
             'nopekerja'  => '',
+            'categoryUser' => '',
             'nama_penuh' => 'Pengguna',
             'nickname'   => '',
             'jawatan'    => '',

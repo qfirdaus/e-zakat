@@ -202,6 +202,14 @@ $PAGE_TITLE = tr('profile_title','Profil Pengguna');
           $stafID    = $profileView['stafID']     ?? '';
           $nopek     = $profileView['nopekerja']  ?? '';
           $emel      = $profileView['emel']       ?? '';
+          $categoryUser = strtoupper(trim((string)($profileView['categoryUser'] ?? '')));
+          $isStudentProfile = in_array($categoryUser, ['PELAJAR', 'STUDENT'], true) || !empty($_SESSION['student_profile']);
+          $copyIdLabel = $isStudentProfile
+            ? tr('profile_btn_copy_no_matrik', 'Salin No. Matrik')
+            : tr('profile_btn_copy_no_staf', 'Salin No. Staf');
+          $idLabel = $isStudentProfile
+            ? tr('profile_no_matrik', 'No. Matrik')
+            : tr('profile_no_staf', 'No. Staf');
           $selectedLang = $profileView['lang']    ?? ($lang ?? 'ms');
           $jawGred   = trim($jawatan . ($gred ? ' • '.$gred : ''));
           $activeProfileTab = (string)($_GET['tab'] ?? 'profil-pengguna');
@@ -299,10 +307,10 @@ $PAGE_TITLE = tr('profile_title','Profil Pengguna');
                           <?php if ($stafID !== ''): ?>
                             <button class="btn btn-sm btn-copy-staf"
                                     type="button"
-                                    aria-label="<?= h(tr('profile_btn_copy_no_staf','Salin No. Staf')) ?>"
+                                    aria-label="<?= h($copyIdLabel) ?>"
                                     data-copy-value="<?= h($stafID) ?>">
                               <i class="ri-file-copy-2-line me-1" aria-hidden="true"></i>
-                              <?= h(tr('profile_btn_copy_no_staf','Salin No. Staf')) ?>
+                              <?= h($copyIdLabel) ?>
                             </button>
                           <?php endif; ?>
 
@@ -323,7 +331,7 @@ $PAGE_TITLE = tr('profile_title','Profil Pengguna');
                       <div class="profile-stat-card">
                         <div class="profile-stat-label">
                           <i class="ri-account-box-line"></i>
-                          <?= h(tr('profile_no_staf','No. Staf')) ?>
+                          <?= h($idLabel) ?>
                         </div>
                         <div class="profile-stat-value"><?= h($stafID !== '' ? $stafID : '—') ?></div>
                       </div>
