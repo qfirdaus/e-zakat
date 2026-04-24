@@ -1005,7 +1005,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
             <h3><?= htmlspecialchars($lang === 'en' ? 'Support and framework reference' : 'Sokongan dan rujukan framework', ENT_QUOTES, 'UTF-8') ?></h3>
             <p>
               <?php if (!empty($contactParts)): ?>
-                <?= implode(' <span aria-hidden="true">|</span> ', $contactParts) ?>
+                <?= implode('<br>', $contactParts) ?>
               <?php else: ?>
                 <?= htmlspecialchars($contactNote, ENT_QUOTES, 'UTF-8') ?>
               <?php endif; ?>
