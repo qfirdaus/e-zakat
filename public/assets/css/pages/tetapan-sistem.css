@@ -60,13 +60,16 @@
     .email-settings-card .card-header{
       padding:1rem 1.25rem .9rem;
       border-bottom:1px solid rgba(148,163,184,.14);
-      background:linear-gradient(180deg, rgba(248,250,252,.95), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(148,163,184,.18);
     }
     .email-settings-card .card-header.email-settings-header-primary{
-      background:linear-gradient(180deg, rgba(59,130,246,.14), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(59,130,246,.30);
     }
     .email-settings-card .card-header.email-settings-header-info{
-      background:linear-gradient(180deg, rgba(6,182,212,.14), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(6,182,212,.28);
     }
     .email-settings-card .card-body{
       padding:1.15rem 1.25rem 1.25rem;
@@ -118,13 +121,16 @@
     .general-settings-card .card-header{
       padding:1rem 1.25rem .9rem;
       border-bottom:1px solid rgba(148,163,184,.14);
-      background:linear-gradient(180deg, rgba(248,250,252,.95), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(148,163,184,.18);
     }
     .general-settings-card .card-header.general-settings-header-primary{
-      background:linear-gradient(180deg, rgba(79,70,229,.14), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(79,70,229,.30);
     }
     .general-settings-card .card-header.general-settings-header-info{
-      background:linear-gradient(180deg, rgba(14,165,233,.14), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(14,165,233,.28);
     }
     .general-settings-card .card-body{
       padding:1.15rem 1.25rem 1.25rem;
@@ -260,12 +266,16 @@
     .db-settings-card .card-header{
       padding:1rem 1.25rem .9rem;
       border-bottom:1px solid rgba(148,163,184,.14);
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(148,163,184,.18);
     }
     .db-settings-card .card-header.db-settings-header-warning{
-      background:linear-gradient(180deg, rgba(245,158,11,.16), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(245,158,11,.32);
     }
     .db-settings-card .card-header.db-settings-header-success{
-      background:linear-gradient(180deg, rgba(34,197,94,.14), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(34,197,94,.28);
     }
     .db-settings-card .card-body{
       padding:1.1rem 1.25rem 1.25rem;
@@ -406,18 +416,24 @@
     .lang-settings-card .card-header{
       padding:1rem 1.25rem .9rem;
       border-bottom:1px solid rgba(148,163,184,.14);
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(148,163,184,.18);
     }
     .theme-settings-card .card-header.theme-settings-header-primary{
-      background:linear-gradient(180deg, rgba(59,130,246,.14), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(59,130,246,.30);
     }
     .theme-settings-card .card-header.theme-settings-header-info{
-      background:linear-gradient(180deg, rgba(6,182,212,.14), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(6,182,212,.28);
     }
     .theme-settings-card .card-header.theme-settings-header-success{
-      background:linear-gradient(180deg, rgba(34,197,94,.14), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(34,197,94,.28);
     }
     .lang-settings-card .card-header.lang-settings-header-danger{
-      background:linear-gradient(180deg, rgba(239,68,68,.14), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(239,68,68,.26);
     }
     .theme-settings-card .card-body,
     .lang-settings-card .card-body{
@@ -494,21 +510,28 @@
     .auth-settings-card .card-header{
       padding:1rem 1.25rem .9rem;
       border-bottom:1px solid rgba(148,163,184,.14);
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(148,163,184,.18);
     }
     .auth-settings-card .card-header.auth-settings-header-primary{
-      background:linear-gradient(180deg, rgba(37,99,235,.14), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(37,99,235,.30);
     }
     .auth-settings-card .card-header.auth-settings-header-danger{
-      background:linear-gradient(180deg, rgba(239,68,68,.12), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(239,68,68,.26);
     }
     .auth-settings-card .card-header.auth-settings-header-info{
-      background:linear-gradient(180deg, rgba(6,182,212,.12), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(6,182,212,.28);
     }
     .auth-settings-card .card-header.auth-settings-header-success{
-      background:linear-gradient(180deg, rgba(34,197,94,.12), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(34,197,94,.28);
     }
     .auth-settings-card .card-header.auth-settings-header-neutral{
-      background:linear-gradient(180deg, rgba(100,116,139,.12), rgba(255,255,255,.98));
+      background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+      box-shadow:inset 4px 0 0 rgba(100,116,139,.24);
     }
     .auth-settings-card .card-body{
       padding:1.15rem 1.25rem 1.25rem;
@@ -995,12 +1018,15 @@
     [data-bs-theme="dark"] .email-settings-card .card-header{
       background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
       border-bottom-color:rgba(148,163,184,.14);
+      box-shadow:inset 4px 0 0 rgba(148,163,184,.18);
     }
     [data-bs-theme="dark"] .email-settings-card .card-header.email-settings-header-primary{
-      background:linear-gradient(180deg, rgba(30,64,175,.36), rgba(17,24,39,.98));
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(96,165,250,.30);
     }
     [data-bs-theme="dark"] .email-settings-card .card-header.email-settings-header-info{
-      background:linear-gradient(180deg, rgba(8,145,178,.34), rgba(17,24,39,.98));
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(34,211,238,.28);
     }
     [data-bs-theme="dark"] .email-settings-note,
     [data-bs-theme="dark"] .email-settings-actions{
@@ -1017,12 +1043,15 @@
     [data-bs-theme="dark"] .general-settings-card .card-header{
       background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
       border-bottom-color:rgba(148,163,184,.14);
+      box-shadow:inset 4px 0 0 rgba(148,163,184,.18);
     }
     [data-bs-theme="dark"] .general-settings-card .card-header.general-settings-header-primary{
-      background:linear-gradient(180deg, rgba(67,56,202,.34), rgba(17,24,39,.98));
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(129,140,248,.30);
     }
     [data-bs-theme="dark"] .general-settings-card .card-header.general-settings-header-info{
-      background:linear-gradient(180deg, rgba(2,132,199,.34), rgba(17,24,39,.98));
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(56,189,248,.28);
     }
     [data-bs-theme="dark"] .general-settings-note,
     [data-bs-theme="dark"] .general-settings-actions{
@@ -1110,12 +1139,16 @@
     }
     [data-bs-theme="dark"] .db-settings-card .card-header{
       border-bottom-color:rgba(148,163,184,.14);
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(148,163,184,.18);
     }
     [data-bs-theme="dark"] .db-settings-card .card-header.db-settings-header-warning{
-      background:linear-gradient(180deg, rgba(180,83,9,.36), rgba(17,24,39,.98));
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(251,191,36,.30);
     }
     [data-bs-theme="dark"] .db-settings-card .card-header.db-settings-header-success{
-      background:linear-gradient(180deg, rgba(21,128,61,.34), rgba(17,24,39,.98));
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(74,222,128,.28);
     }
     [data-bs-theme="dark"] .db-settings-alert,
     [data-bs-theme="dark"] .db-settings-actions{
@@ -1156,18 +1189,24 @@
     [data-bs-theme="dark"] .theme-settings-card .card-header,
     [data-bs-theme="dark"] .lang-settings-card .card-header{
       border-bottom-color:rgba(148,163,184,.14);
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(148,163,184,.18);
     }
     [data-bs-theme="dark"] .theme-settings-card .card-header.theme-settings-header-primary{
-      background:linear-gradient(180deg, rgba(30,64,175,.36), rgba(17,24,39,.98));
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(96,165,250,.30);
     }
     [data-bs-theme="dark"] .theme-settings-card .card-header.theme-settings-header-info{
-      background:linear-gradient(180deg, rgba(8,145,178,.34), rgba(17,24,39,.98));
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(34,211,238,.28);
     }
     [data-bs-theme="dark"] .theme-settings-card .card-header.theme-settings-header-success{
-      background:linear-gradient(180deg, rgba(21,128,61,.34), rgba(17,24,39,.98));
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(74,222,128,.28);
     }
     [data-bs-theme="dark"] .lang-settings-card .card-header.lang-settings-header-danger{
-      background:linear-gradient(180deg, rgba(185,28,28,.34), rgba(17,24,39,.98));
+      background:linear-gradient(180deg, rgba(30,41,59,.94), rgba(17,24,39,.98));
+      box-shadow:inset 4px 0 0 rgba(248,113,113,.26);
     }
     [data-bs-theme="dark"] .theme-settings-note,
     [data-bs-theme="dark"] .lang-settings-note,

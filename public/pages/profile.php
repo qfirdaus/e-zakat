@@ -370,7 +370,7 @@ $PAGE_TITLE = tr('profile_title','Profil Pengguna');
 
                 <div class="profile-lang-panel">
                   <div class="card border-0 profile-lang-card h-100">
-                    <div class="card-header bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25 py-3 px-4">
+                    <div class="card-header py-3 px-4">
                       <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
                         <h5 class="mb-0 fw-semibold text-primary">
                           <i class="ri-translate-2 me-2"></i><?= h(tr('profile_lang_card_title','Pilihan Bahasa')) ?>
