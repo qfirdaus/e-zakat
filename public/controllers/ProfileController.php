@@ -360,7 +360,7 @@ class ProfileController
      * @param int $limit Maximum number of records to return
      * @return array
      */
-    public function getAuditEvents(int $limit = 30): array
+    public function getAuditEvents(int $limit = 30, bool $includeChangeSets = false): array
     {
         $stafID = trim((string)($_SESSION['f_stafID'] ?? ''));
         $loginId = trim((string)($_SESSION['f_loginID'] ?? ''));
@@ -502,9 +502,8 @@ class ProfileController
                 
                 $eventId = (int)($row['id'] ?? 0);
                 
-                // Fetch audit_change_set and audit_change_field for this event
                 $changeSets = [];
-                if ($eventId > 0) {
+                if ($includeChangeSets && $eventId > 0) {
                     try {
                         $sqlChangeSet = "
                             SELECT 

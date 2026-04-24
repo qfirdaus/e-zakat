@@ -3,62 +3,159 @@ declare(strict_types=1);
 
 @ini_set('display_errors', '0');
 error_reporting(E_ALL);
+
 require_once __DIR__ . '/../includes/init.php';
 require_login();
-require_once __DIR__ . '/../controllers/ProfileController.php';
+require_once __DIR__ . '/../classes/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+function auditEventMetaHumanizeField(string $field): string
+{
+    $field = trim($field);
+    if ($field === '') {
+        return 'Medan';
+    }
+
+    $field = preg_replace('/^f_/', '', $field) ?? $field;
+    $field = str_replace(['_', '-'], ' ', $field);
+    $field = preg_replace('/\s+/', ' ', $field) ?? $field;
+    return ucwords(trim($field));
+}
+
+function auditEventMetaLooksSensitive(string $field): bool
+{
+    $field = strtolower(trim($field));
+    if ($field === '') {
+        return false;
+    }
+
+    foreach ([
+        'password', 'token', 'csrf', 'cookie', 'secret', 'session', 'request_id',
+        'login_id', 'user_agent', 'ip', 'fingerprint', 'auth', 'key'
+    ] as $needle) {
+        if (str_contains($field, $needle)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function auditEventMetaSanitizeMeta(array $event, ?array $decodedMeta): array
+{
+    $summary = [
+        'occurred_at' => (string)($event['occurred_at'] ?? ''),
+        'event_type' => (string)($event['event_type'] ?? ''),
+        'outcome' => (string)($event['outcome'] ?? ''),
+        'severity' => (string)($event['severity'] ?? ''),
+        'target_type' => (string)($event['target_type'] ?? ''),
+        'target_label' => (string)($event['target_label'] ?? ''),
+        'message' => (string)($event['message'] ?? ''),
+    ];
+
+    if (is_array($decodedMeta)) {
+        foreach (['module', 'action', 'page', 'section'] as $key) {
+            if (!empty($decodedMeta[$key]) && !is_array($decodedMeta[$key])) {
+                $summary[$key] = (string)$decodedMeta[$key];
+            }
+        }
+    }
+
+    return array_filter($summary, static fn($value) => $value !== '');
+}
+
+function auditEventMetaSanitizeChangeSets(array $changeSets): array
+{
+    $summaryRows = [];
+
+    foreach ($changeSets as $changeSet) {
+        $reason = trim((string)($changeSet['change_reason'] ?? ''));
+        $fieldChanges = is_array($changeSet['field_changes'] ?? null) ? $changeSet['field_changes'] : [];
+
+        if ($fieldChanges === []) {
+            $summaryRows[] = [
+                'field' => auditEventMetaHumanizeField((string)($changeSet['target_type'] ?? 'Perubahan')),
+                'before' => 'Direkodkan',
+                'after' => $reason !== '' ? $reason : 'Dikemaskini',
+            ];
+            continue;
+        }
+
+        foreach ($fieldChanges as $fieldChange) {
+            $fieldName = (string)($fieldChange['field'] ?? '');
+            $isSensitive = !empty($fieldChange['is_sensitive']) || auditEventMetaLooksSensitive($fieldName);
+            $hint = trim((string)($fieldChange['diff_hint'] ?? ''));
+
+            $afterLabel = $hint !== ''
+                ? $hint
+                : ($reason !== '' ? $reason : ($isSensitive ? 'Perubahan direkodkan' : 'Dikemaskini'));
+
+            $summaryRows[] = [
+                'field' => auditEventMetaHumanizeField($fieldName),
+                'before' => 'Direkodkan',
+                'after' => $isSensitive ? 'Disembunyikan' : $afterLabel,
+            ];
+        }
+    }
+
+    return $summaryRows;
+}
+
 $eventId = isset($_REQUEST['event_id']) ? (int)$_REQUEST['event_id'] : 0;
 if ($eventId <= 0) {
     http_response_code(400);
-    echo json_encode(['error' => 'Invalid event id']);
-    exit;
-}
-
-$pdo = null;
-try {
-    $controller = new ProfileController();
-    // Reuse controller's PDO via reflection (fallback)
-    $ref = new ReflectionClass($controller);
-    $prop = $ref->getProperty('pdoMysql');
-    $prop->setAccessible(true);
-    $pdo = $prop->getValue($controller);
-} catch (Throwable $e) {
-    error_log('[profile-audit-event-meta] Failed to access DB: ' . $e->getMessage());
-}
-
-if (!$pdo) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Database unavailable']);
+    echo json_encode(['error' => 'invalid_event_id', 'message' => 'Invalid event id'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 try {
+    $pdo = Database::getInstance('mysql')->getConnection();
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
     $userModel = new User($pdo);
     $profile = $userModel->getProfile((string)($_SESSION['f_stafID'] ?? ''));
     $isSuperAdmin = $profile && function_exists('is_user_super_admin') && is_user_super_admin($profile, $pdo);
-    if (!$isSuperAdmin) {
-        http_response_code(403);
-        echo json_encode([
-            'error' => 'forbidden',
-            'message' => __('profile_metadata_forbidden_text') ?: 'Metadata jejak audit hanya tersedia untuk semakan Super Admin.'
-        ], JSON_UNESCAPED_UNICODE);
+
+    $sql = "
+        SELECT
+            id,
+            occurred_at,
+            request_id,
+            session_id,
+            user_id,
+            actor_label,
+            event_type,
+            severity,
+            outcome,
+            target_type,
+            target_id,
+            target_label,
+            message,
+            meta
+        FROM audit_event
+        WHERE id = :id
+        LIMIT 1
+    ";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([':id' => $eventId]);
+    $event = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+    if (!$event) {
+        http_response_code(404);
+        echo json_encode(['error' => 'not_found', 'message' => 'Audit event not found'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    // Fetch event meta from audit_event
-    $sql = "SELECT meta FROM audit_event WHERE id = :id LIMIT 1";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([':id' => $eventId]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    $meta = null;
-    if ($row && !empty($row['meta'])) {
-        $meta = json_decode($row['meta'], true);
+    $decodedMeta = null;
+    if (!empty($event['meta'])) {
+        $decodedMeta = json_decode((string)$event['meta'], true);
+        if (!is_array($decodedMeta)) {
+            $decodedMeta = null;
+        }
     }
 
-    // Fetch change sets and fields
     $changeSets = [];
     $sqlCS = "SELECT id, target_type, target_id, change_reason, meta FROM audit_change_set WHERE event_id = :eventId ORDER BY id ASC";
     $stmtCS = $pdo->prepare($sqlCS);
@@ -66,7 +163,10 @@ try {
     while ($cs = $stmtCS->fetch(PDO::FETCH_ASSOC)) {
         $csId = (int)($cs['id'] ?? 0);
         $csMeta = null;
-        if (!empty($cs['meta'])) $csMeta = json_decode($cs['meta'], true);
+        if (!empty($cs['meta'])) {
+            $decodedCsMeta = json_decode((string)$cs['meta'], true);
+            $csMeta = is_array($decodedCsMeta) ? $decodedCsMeta : null;
+        }
 
         $fields = [];
         if ($csId > 0) {
@@ -95,11 +195,24 @@ try {
         ];
     }
 
-    echo json_encode(['meta' => $meta, 'change_sets' => $changeSets], JSON_UNESCAPED_UNICODE);
+    if ($isSuperAdmin) {
+        echo json_encode([
+            'meta' => $decodedMeta,
+            'change_sets' => $changeSets,
+            'allow_full_metadata' => true,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    echo json_encode([
+        'meta' => auditEventMetaSanitizeMeta($event, $decodedMeta),
+        'change_sets' => auditEventMetaSanitizeChangeSets($changeSets),
+        'allow_full_metadata' => false,
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 } catch (Throwable $e) {
     error_log('[profile-audit-event-meta] Error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['error' => 'Server error']);
+    echo json_encode(['error' => 'server_error', 'message' => 'Server error'], JSON_UNESCAPED_UNICODE);
     exit;
 }

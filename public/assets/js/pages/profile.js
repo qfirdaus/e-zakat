@@ -431,7 +431,9 @@
       setTimeout(updateAuditNumbering, 0);
     },
 
-    openAuditMetaModal: function (metaJson, changeSetsJson, eventId) {
+    openAuditMetaModal: function (metaJson, changeSetsJson, eventId, options) {
+      const modalOptions = options && typeof options === 'object' ? options : {};
+      const allowFullMetadata = !!modalOptions.fullAccess;
       document.querySelectorAll('.audit-meta-modal').forEach((modalEl) => {
         try {
           const instance = window.bootstrap ? bootstrap.Modal.getInstance(modalEl) : null;
@@ -627,8 +629,8 @@
                       <ul class="nav audit-tabs mb-3" role="tablist">
                         <li class="nav-item" role="presentation"><button class="nav-link active" id="${modalId}-tab-summary" data-bs-toggle="tab" data-bs-target="#${modalId}-summary" type="button" role="tab">${this._escapeHtml(I18N.audit_tab_summary)}</button></li>
                         <li class="nav-item" role="presentation"><button class="nav-link" id="${modalId}-tab-changes" data-bs-toggle="tab" data-bs-target="#${modalId}-changes" type="button" role="tab">${this._escapeHtml(I18N.audit_tab_changes)}</button></li>
-                        <li class="nav-item" role="presentation"><button class="nav-link" id="${modalId}-tab-extra" data-bs-toggle="tab" data-bs-target="#${modalId}-extra" type="button" role="tab">${this._escapeHtml(I18N.audit_tab_extra)}</button></li>
-                        <li class="nav-item" role="presentation"><button class="nav-link" id="${modalId}-tab-raw" data-bs-toggle="tab" data-bs-target="#${modalId}-raw" type="button" role="tab">${this._escapeHtml(I18N.audit_tab_raw)}</button></li>
+                        ${allowFullMetadata ? '<li class="nav-item" role="presentation"><button class="nav-link" id="' + modalId + '-tab-extra" data-bs-toggle="tab" data-bs-target="#' + modalId + '-extra" type="button" role="tab">' + this._escapeHtml(I18N.audit_tab_extra) + '</button></li>' : ''}
+                        ${allowFullMetadata ? '<li class="nav-item" role="presentation"><button class="nav-link" id="' + modalId + '-tab-raw" data-bs-toggle="tab" data-bs-target="#' + modalId + '-raw" type="button" role="tab">' + this._escapeHtml(I18N.audit_tab_raw) + '</button></li>' : ''}
                       </ul>
 
                       <div class="tab-content">
@@ -652,20 +654,24 @@
                           </div>
                         </div>
 
-                        <div class="tab-pane fade" id="${modalId}-extra" role="tabpanel">
+                        ${allowFullMetadata ? '<div class="tab-pane fade" id="' + modalId + '-extra" role="tabpanel">' : ''}
+                        ${allowFullMetadata ? `
                           <div class="audit-pane-card">
                             <div class="audit-title">${this._escapeHtml(I18N.audit_extra_info)}</div>
                             <div class="audit-section-subtitle">${this._escapeHtml(I18N.audit_summary_short)}</div>
                             <div class="json-block">${this._escapeHtml(prettyMeta)}</div>
                           </div>
                         </div>
+                        ` : ''}
 
-                        <div class="tab-pane fade" id="${modalId}-raw" role="tabpanel">
+                        ${allowFullMetadata ? '<div class="tab-pane fade" id="' + modalId + '-raw" role="tabpanel">' : ''}
+                        ${allowFullMetadata ? `
                           <div class="audit-pane-card">
                             <div class="audit-title">${this._escapeHtml(I18N.audit_raw_data)}</div>
                             <pre class="json-block mb-0">${this._escapeHtml(prettyMeta)}\n\n${this._escapeHtml(I18N.audit_changes_separator || '-- Changes --')}\n\n${this._escapeHtml(prettyCs)}</pre>
                           </div>
                         </div>
+                        ` : ''}
                       </div>
                     </div>
                   </div>
@@ -858,10 +864,6 @@
         if (!btn) return;
         e.preventDefault();
         e.stopPropagation();
-        if (!PERMISSIONS.canViewAuditMetadata) {
-          void this.showMetadataForbiddenAlert();
-          return;
-        }
         const payload = btn.getAttribute('data-event-payload') || '';
         if (!payload) return;
         try {
@@ -870,7 +872,9 @@
           const metaJson = obj.meta ? JSON.stringify(obj.meta) : '';
           const changeSets = obj.change_sets ? JSON.stringify(obj.change_sets) : '';
           const eventId = obj.id || obj.event_id || '';
-          this.openAuditMetaModal(metaJson, changeSets, eventId);
+          this.openAuditMetaModal(metaJson, changeSets, eventId, {
+            fullAccess: !!PERMISSIONS.canViewAuditMetadata
+          });
         } catch (err) {
           console.error('Failed to decode audit payload', err);
         }
@@ -881,10 +885,6 @@
         if (!btn) return;
         e.preventDefault();
         e.stopPropagation();
-        if (!PERMISSIONS.canViewAuditMetadata) {
-          void this.showMetadataForbiddenAlert();
-          return;
-        }
         const eventId = btn.getAttribute('data-event-id') || btn.dataset.eventId || '';
         if (!eventId) return;
 
@@ -903,7 +903,9 @@
         }).then((data) => {
           const metaJson = data.meta ? JSON.stringify(data.meta) : '';
           const changeSets = data.change_sets ? JSON.stringify(data.change_sets) : '';
-          this.openAuditMetaModal(metaJson, changeSets, eventId);
+          this.openAuditMetaModal(metaJson, changeSets, eventId, {
+            fullAccess: !!data.allow_full_metadata
+          });
         }).catch((err) => {
           console.error('Failed to load audit meta for event', eventId, err);
           if (err && err.status === 403 && window.Swal && typeof Swal.fire === 'function') {

@@ -57,7 +57,7 @@ foreach ($rows as $r) {
   // Actions HTML (same as server rendered)
   if ($isCurrent) {
     $actions = '<span class="text-muted small">—</span>';
-  } elseif ($isActive || !$isCurrent) {
+  } elseif ($isActive) {
     $sid = h((string)($r['session_id'] ?? ''));
     $actions = '<button class="btn btn-sm btn-outline-danger btn-kill-session" type="button" data-session-id="' . $sid . '" aria-label="' . h((__('profile_login_kill_session') ?: 'Tamatkan sesi')) . '" title="' . h((__('profile_login_kill_session') ?: 'Tamatkan sesi')) . '"><i class="ri-close-circle-line"></i></button>';
   } else {

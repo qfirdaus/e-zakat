@@ -15,7 +15,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 $controller = new ProfileController();
 $limit = defined('PROFILE_CONFIG') && isset(PROFILE_CONFIG['AUDIT_EVENTS_LIMIT']) ? PROFILE_CONFIG['AUDIT_EVENTS_LIMIT'] : 30;
-$rows = $controller->getAuditEvents((int)$limit);
+$rows = $controller->getAuditEvents((int)$limit, false);
 $pdo = Database::getInstance()->getConnection();
 $profile = null;
 $isSuperAdmin = false;
@@ -75,7 +75,7 @@ foreach ($rows as $event) {
         $eid = h((string)($event['id'] ?? ''));
         $btnTitle = $isSuperAdmin
             ? h((__('profile_audit_view_meta') ?: 'Lihat metadata'))
-            : h((__('profile_metadata_forbidden_text') ?: 'Metadata jejak audit hanya tersedia untuk semakan Super Admin.'));
+            : h((__('profile_audit_view_summary') ?: 'Lihat ringkasan audit'));
         $actions = '<button class="btn btn-sm btn-outline-primary btn-open-audit-meta" type="button" data-event-id="' . $eid . '" data-super-admin="' . ($isSuperAdmin ? '1' : '0') . '" title="' . $btnTitle . '"><i class="ri-information-line"></i></button>';
     } else {
         $actions = '<span class="text-muted">—</span>';
