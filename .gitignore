@@ -8,3 +8,4 @@ node_modules/
 app/cache/
 app/cache/*
 public/cache/
+public_backup_*

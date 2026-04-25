@@ -303,6 +303,7 @@ $version = date('ymdHis');
         .sync-groups-btn {
             height: 36px !important;
             min-height: 36px !important;
+            min-width: 148px !important;
             padding: 0.5rem 0.75rem !important;
             font-size: 0.875rem !important;
             line-height: 1.4 !important;
@@ -317,9 +318,32 @@ $version = date('ymdHis');
             box-shadow: 0 12px 26px rgba(37, 99, 235, 0.18) !important;
             vertical-align: middle !important;
         }
+        .sync-groups-btn .sync-groups-spinner {
+            display: none;
+            width: 0.95rem;
+            height: 0.95rem;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            border-top-color: #ffffff;
+            animation: manual-sync-spin 0.75s linear infinite;
+            flex: 0 0 auto;
+        }
+        .sync-groups-btn.is-busy .sync-groups-spinner {
+            display: inline-block;
+        }
+        .sync-groups-btn.is-busy .sync-groups-icon {
+            display: none;
+        }
+        .sync-groups-btn:disabled {
+            opacity: 0.92 !important;
+            cursor: wait !important;
+        }
         .sync-groups-btn:hover,
         .sync-groups-btn:focus {
             box-shadow: 0 12px 26px rgba(37, 99, 235, 0.18) !important;
+        }
+        @keyframes manual-sync-spin {
+            to { transform: rotate(360deg); }
         }
         .manual-link {
             font-size: .875rem;
@@ -456,6 +480,45 @@ $version = date('ymdHis');
         .swal2-manual-popup {
             border-radius: 8px !important;
             box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18) !important;
+        }
+        .swal2-manual-toast {
+            width: min(34rem, calc(100vw - 1.5rem)) !important;
+            max-width: min(34rem, calc(100vw - 1.5rem)) !important;
+            padding: 1rem 1.15rem !important;
+            border-radius: 10px !important;
+        }
+        .swal2-manual-toast.swal2-toast {
+            align-items: flex-start !important;
+        }
+        .swal2-manual-toast .swal2-title {
+            font-size: 1rem !important;
+            line-height: 1.35 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            text-align: left !important;
+        }
+        .swal2-manual-toast .swal2-html-container,
+        .swal2-manual-toast .swal2-content {
+            font-size: 0.92rem !important;
+            line-height: 1.45 !important;
+            margin: 0.3rem 0 0 !important;
+            width: 100% !important;
+            text-align: left !important;
+        }
+        .swal2-manual-toast .swal2-icon {
+            margin-top: 0.1rem !important;
+            margin-bottom: 0.1rem !important;
+        }
+        .swal2-manual-toast .swal2-icon + .swal2-title,
+        .swal2-manual-toast .swal2-icon + .swal2-html-container {
+            margin-left: 0 !important;
+        }
+        .swal2-manual-toast-message {
+            display: block;
+            white-space: normal;
+            word-break: break-word;
+            width: 100%;
+            text-align: left;
         }
         .swal2-manual-title {
             font-size: 1.4rem !important;
@@ -861,6 +924,45 @@ $version = date('ymdHis');
                 }
             }
 
+            function showSyncNotice(icon, title, text) {
+                if (!window.Swal) {
+                    return Promise.resolve();
+                }
+
+                const escapedText = String(text || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+
+                return Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    width: '34rem',
+                    icon,
+                    title,
+                    html: `<div class="swal2-manual-toast-message">${escapedText}</div>`,
+                    showConfirmButton: false,
+                    timer: 5000,
+                    timerProgressBar: true,
+                    customClass: {
+                        popup: 'swal2-manual-popup swal2-manual-toast',
+                        title: 'swal2-manual-title',
+                        htmlContainer: 'swal2-manual-toast-html'
+                    }
+                });
+            }
+
+            function setSyncButtonBusy(btn, isBusy) {
+                if (!btn) {
+                    return;
+                }
+                btn.disabled = isBusy;
+                btn.classList.toggle('is-busy', isBusy);
+                btn.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+            }
+
             if (window.jQuery && jQuery.fn && jQuery.fn.DataTable) {
                 jQuery('#userDT').DataTable({
                     pageLength: 10,
@@ -913,22 +1015,17 @@ $version = date('ymdHis');
                         if ($topRight.length && !jQuery('#btnSyncManualGroups').length) {
                             const $btn = jQuery(
                                 '<button type="button" id="btnSyncManualGroups" class="btn btn-primary sync-groups-btn">' +
-                                '<i class="ri-loop-right-line"></i><span><?= h(__('manual_btn_sync_groups')) ?></span>' +
+                                '<span class="sync-groups-spinner" aria-hidden="true"></span>' +
+                                '<i class="ri-loop-right-line sync-groups-icon" aria-hidden="true"></i><span><?= h(__('manual_btn_sync_groups')) ?></span>' +
                                 '</button>'
                             );
                             $topRight.append($btn);
                             $btn.on('click', async function () {
                                 const btn = this;
-                                btn.disabled = true;
-
-                                if (window.Swal) {
-                                    Swal.fire({
-                                        title: <?= json_encode(__('manual_sync_loading_title'), JSON_UNESCAPED_UNICODE) ?>,
-                                        text: <?= json_encode(__('manual_sync_loading_text'), JSON_UNESCAPED_UNICODE) ?>,
-                                        allowOutsideClick: false,
-                                        didOpen: () => Swal.showLoading()
-                                    });
+                                if (btn.disabled) {
+                                    return;
                                 }
+                                setSyncButtonBusy(btn, true);
 
                                 try {
                                     const response = await fetch('<?= h(base_url('ajax/manual-sync-groups.php')) ?>', {
@@ -944,37 +1041,19 @@ $version = date('ymdHis');
                                         throw new Error((result && result.message) || <?= json_encode(__('manual_sync_failed'), JSON_UNESCAPED_UNICODE) ?>);
                                     }
 
-                                    if (window.Swal) {
-                                        await Swal.fire({
-                                            icon: 'success',
-                                            title: <?= json_encode(__('manual_sync_success_title'), JSON_UNESCAPED_UNICODE) ?>,
-                                            text: result.message || <?= json_encode(__('manual_sync_success_fallback'), JSON_UNESCAPED_UNICODE) ?>,
-                                            confirmButtonText: <?= json_encode(__('manual_btn_close'), JSON_UNESCAPED_UNICODE) ?>,
-                                            confirmButtonColor: '#2563eb',
-                                            customClass: {
-                                                popup: 'swal2-manual-popup',
-                                                title: 'swal2-manual-title',
-                                                confirmButton: 'swal2-manual-confirm'
-                                            }
-                                        });
-                                    }
+                                    await showSyncNotice(
+                                        'success',
+                                        <?= json_encode(__('manual_sync_success_title'), JSON_UNESCAPED_UNICODE) ?>,
+                                        result.message || <?= json_encode(__('manual_sync_success_fallback'), JSON_UNESCAPED_UNICODE) ?>
+                                    );
                                 } catch (error) {
-                                    if (window.Swal) {
-                                        await Swal.fire({
-                                            icon: 'error',
-                                            title: <?= json_encode(__('manual_sync_error_title'), JSON_UNESCAPED_UNICODE) ?>,
-                                            text: error.message || <?= json_encode(__('manual_unknown_error'), JSON_UNESCAPED_UNICODE) ?>,
-                                            confirmButtonText: <?= json_encode(__('manual_btn_close'), JSON_UNESCAPED_UNICODE) ?>,
-                                            confirmButtonColor: '#dc3545',
-                                            customClass: {
-                                                popup: 'swal2-manual-popup',
-                                                title: 'swal2-manual-title',
-                                                confirmButton: 'swal2-manual-confirm'
-                                            }
-                                        });
-                                    }
+                                    await showSyncNotice(
+                                        'error',
+                                        <?= json_encode(__('manual_sync_error_title'), JSON_UNESCAPED_UNICODE) ?>,
+                                        error.message || <?= json_encode(__('manual_unknown_error'), JSON_UNESCAPED_UNICODE) ?>
+                                    );
                                 } finally {
-                                    btn.disabled = false;
+                                    setSyncButtonBusy(btn, false);
                                 }
                             });
                         }
