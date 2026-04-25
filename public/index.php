@@ -616,6 +616,10 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
         linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
     }
 
+    .facility-auth-panel--compact {
+      align-self: start;
+    }
+
     .facility-auth-card {
       padding: 26px;
       border-radius: 26px;
@@ -1065,7 +1069,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
         </div>
       </section>
 
-      <aside class="facility-auth-panel">
+      <aside class="facility-auth-panel<?= $showOneIdButton ? ' facility-auth-panel--compact' : '' ?>">
         <div class="facility-auth-card">
           <div class="facility-form-head">
             <div class="facility-panel-logo">
@@ -1127,6 +1131,18 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
             </div>
           <?php endif; ?>
         </div>
+
+        <?php if (!$showOneIdButton): ?>
+          <div class="facility-support-panel">
+            <h3><?= htmlspecialchars($lang === 'en' ? 'Core platform support channels' : 'Saluran sokongan platform teras', ENT_QUOTES, 'UTF-8') ?></h3>
+            <p><?= htmlspecialchars($lang === 'en' ? 'Use the channels below if you need help with framework access, shared modules, or core account services used by connected systems.' : 'Gunakan saluran di bawah jika anda memerlukan bantuan berkaitan akses framework, modul bersama, atau servis akaun teras yang digunakan oleh sistem-sistem berkaitan.', ENT_QUOTES, 'UTF-8') ?></p>
+            <div class="facility-support-links">
+              <?php if ($supportEmail !== ''): ?>
+                <a href="mailto:<?= htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8') ?>"><i class="ri-mail-line"></i> <?= htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8') ?></a>
+              <?php endif; ?>
+            </div>
+          </div>
+        <?php endif; ?>
 
       </aside>
     </div>
