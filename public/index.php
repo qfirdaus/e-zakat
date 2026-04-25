@@ -1119,7 +1119,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
                   <span class="facility-oneid-badge">ID</span>
                   <span class="facility-oneid-copy">
                     <strong><?= h(__('login_btnOneId') ?: 'OneID Login') ?></strong>
-                    <span><?= htmlspecialchars($lang === 'en' ? 'Use central identity authentication when your framework access path requires single sign-on.' : 'Gunakan autentikasi identiti pusat apabila laluan akses framework anda memerlukan single sign-on.', ENT_QUOTES, 'UTF-8') ?></span>
+                    <span><?= htmlspecialchars($lang === 'en' ? 'Use OneID UPNM for SSO authentication' : 'Gunakan OneID UPNM untuk pengesahan SSO.', ENT_QUOTES, 'UTF-8') ?></span>
                   </span>
                 </span>
                 <i class="ri-arrow-right-up-line"></i>
