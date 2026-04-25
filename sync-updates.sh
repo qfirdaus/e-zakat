@@ -4,6 +4,7 @@
 # CONFIG
 # =========================
 BASE_PATH="/mnt/d/www"
+MASTER_PROJECT="iqs-framework"
 
 PROJECTS=(
     "e-base"
@@ -33,18 +34,53 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # =========================
-# GLOBAL COUNTER
+# COUNTER
 # =========================
 UPDATED_COUNT=0
 NEW_COUNT=0
 CONFLICT_COUNT=0
 
-# =========================
-# PER PROJECT COUNTER
-# =========================
 declare -A P_UPDATED
 declare -A P_NEW
 declare -A P_CONFLICT
+
+# =========================
+# COLLECT FROM MASTER (GIT BASED)
+# =========================
+collect_updates() {
+
+    MASTER="$BASE_PATH/$MASTER_PROJECT"
+    DEST="updates/public"
+
+    echo "🔍 Detecting git changes..."
+
+    cd "$MASTER" || exit
+
+    git status --porcelain | while read status file; do
+
+        # focus hanya public/
+        if [[ "$file" != public/* ]]; then
+            continue
+        fi
+
+        REL="${file#public/}"
+        SOURCE="$MASTER/$file"
+        TARGET="$DEST/$REL"
+
+        mkdir -p "$(dirname "$TARGET")"
+        cp "$SOURCE" "$TARGET"
+
+        case "$status" in
+            M*) echo -e "${CYAN}MODIFIED → $REL${NC}" ;;
+            A*) echo -e "${GREEN}NEW      → $REL${NC}" ;;
+            \?\?) echo -e "${GREEN}UNTRACKED → $REL${NC}" ;;
+            *) echo -e "${YELLOW}CHANGE   → $REL${NC}" ;;
+        esac
+
+    done
+
+    echo "✅ Collect complete"
+}
 
 # =========================
 # MENU
@@ -62,6 +98,7 @@ show_menu() {
     echo "6. Fix Permission"
     echo "7. Sync Specific Project"
     echo "8. Exit"
+    echo "9. Collect Updates from Master (Git)"
     echo "========================================"
 
     read -p "Pilih option: " choice
@@ -103,6 +140,10 @@ show_menu() {
             read -p "Masukkan nama project: " ONLY
             ;;
         8) exit 0 ;;
+        9)
+            collect_updates
+            exit 0
+            ;;
         *) echo "Invalid"; sleep 1; show_menu ;;
     esac
 }
@@ -149,30 +190,18 @@ echo "🚀 Starting sync..."
 echo "" > $LOG_FILE
 echo "" > $CONFLICT_LOG
 
-# =========================
-# TABLE HEADER
-# =========================
 echo ""
 echo "┌──────────────┬──────────┬──────────────────────────────────────────────┐"
 printf "│ %-12s │ %-8s │ %-44s │\n" "PROJECT" "ACTION" "FILE"
 echo "├──────────────┼──────────┼──────────────────────────────────────────────┤"
 
-# =========================
-# CONFIRM
-# =========================
 if [ "$DRY_RUN" = false ]; then
     read -p "Proceed with sync? (y/n): " confirm
     [ "$confirm" != "y" ] && rm -f "$LOCK_FILE" && exit 0
 fi
 
-# =========================
-# PREP FILE LIST
-# =========================
 mapfile -t FILES < <(find updates -type f)
 
-# =========================
-# LOOP PROJECT
-# =========================
 for project in "${PROJECTS[@]}"; do
 
     if [[ -n "$ONLY" && "$project" != "$ONLY" ]]; then
@@ -182,7 +211,6 @@ for project in "${PROJECTS[@]}"; do
     TARGET="$BASE_PATH/$project"
     [ ! -d "$TARGET" ] && continue
 
-    # backup
     if [ "$BACKUP" = true ]; then
         cp -r "$TARGET/public" "$TARGET/public_backup_$(date +%Y%m%d_%H%M%S)"
     fi

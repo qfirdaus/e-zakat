@@ -17,25 +17,68 @@ $__ssoDebugLog = static function (string $message, array $context = []): void {
     @file_put_contents($dir . '/sso-debug.log', $line, FILE_APPEND | LOCK_EX);
 };
 
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self';");
+
+$isHttps = isset($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off';
 $hasIncomingSsoToken = isset($_GET['new_sso_cre']) && trim((string)$_GET['new_sso_cre']) !== '';
 if (!$hasIncomingSsoToken && isset($_COOKIE['sso_cre'])) {
-    echo '<script>document.cookie = "sso_cre=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";</script>';
+    setcookie('sso_cre', '', [
+        'expires' => time() - 3600,
+        'path' => '/',
+        'secure' => $isHttps,
+        'httponly' => false,
+        'samesite' => 'Lax',
+    ]);
 }
 
 $version = time();
-
-// ✅ Secure Session Settings
-ini_set('session.cookie_samesite', 'Lax');
-ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) ? '1' : '0');
-ini_set('session.cookie_httponly', '1');
-
-if (session_status() === PHP_SESSION_NONE) session_start();
 
 // ✅ Include & Init
 require_once __DIR__ . '/includes/init.php';
 require_once __DIR__ . '/includes/functions-db.php';
 require_once __DIR__ . '/includes/sso-config.php';
 require_once __DIR__ . '/classes/Config.php';
+
+$normalizeLocalAssetPath = static function ($value, string $fallback): string {
+    $path = trim((string)$value);
+    if ($path === '') {
+        return $fallback;
+    }
+
+    if (preg_match('#^(?:[a-z][a-z0-9+\-.]*:)?//#i', $path) === 1) {
+        return $fallback;
+    }
+
+    $path = ltrim(str_replace('\\', '/', $path), '/');
+    if ($path === '' || str_contains($path, '..')) {
+        return $fallback;
+    }
+
+    return $path;
+};
+
+$normalizeExternalUrl = static function ($value): string {
+    $url = trim((string)$value);
+    if ($url === '' || $url === '#') {
+        return '';
+    }
+
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        return '';
+    }
+
+    $scheme = strtolower((string)(parse_url($url, PHP_URL_SCHEME) ?? ''));
+    return in_array($scheme, ['http', 'https'], true) ? $url : '';
+};
+
+$normalizeEmail = static function ($value): string {
+    $email = trim((string)$value);
+    return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '';
+};
 
 $requestedMissingPage = function_exists('prestasi_requested_missing_page_from_uri')
     ? prestasi_requested_missing_page_from_uri()
@@ -85,9 +128,6 @@ $ssoConfig = function_exists('sso_shared_config') ? sso_shared_config() : [
 ];
 $oneIdLauncherUrl = (string)($ssoConfig['launcher_url'] ?? '');
 $oneIdLoginUrl = base_url('sso_sp_client.php');
-$referer = trim((string)($_SERVER['HTTP_REFERER'] ?? ''));
-$refererHost = strtolower((string)(parse_url($referer, PHP_URL_HOST) ?? ''));
-$isOneIdReferer = $refererHost !== '' && $refererHost === strtolower((string)($ssoConfig['idp_host'] ?? ''));
 $showOneIdButton = $hasActiveSsoRoute && $oneIdLoginUrl !== '';
 
 $loginManualCategories = [];
@@ -151,20 +191,6 @@ $loginIdPlaceholder = $loginPlaceholderList !== ''
     : (string)__('login_userid_placeholder_unavailable');
 
 $hasPendingLoginAlert = !empty($_SESSION['alert']);
-if ($showOneIdButton && $isOneIdReferer && empty($_SESSION['f_stafID']) && !$hasPendingLoginAlert) {
-    $__ssoDebugLog('INDEX_ONEID_REFERER_HANDOFF', [
-        'referer' => $referer,
-        'session_id' => session_id(),
-        'target' => $oneIdLoginUrl,
-    ]);
-    redirect('sso_sp_client.php');
-}
-if ($showOneIdButton && $isOneIdReferer && empty($_SESSION['f_stafID']) && $hasPendingLoginAlert) {
-    $__ssoDebugLog('INDEX_ONEID_REFERER_KEEP_ALERT', [
-        'referer' => $referer,
-        'session_id' => session_id(),
-    ]);
-}
 
 // ✅ Language Detection
 $uri  = $_SERVER['REQUEST_URI'];
@@ -198,7 +224,7 @@ if (!isset($_SESSION['csrf_token'])) {
 $csrf_token = $_SESSION['csrf_token'];
 
 // ✅ Redirect if already logged in
-if (!empty($_SESSION['f_stafID'])) {
+if (!empty($_SESSION['f_loginID'])) {
     redirect(app_config('site.default_home', 'pages/dashboard.php'));
 }
 
@@ -208,12 +234,13 @@ $locked_seconds = $locked_seconds ?? 0;
 $attempts_left  = $attempts_left ?? 3;
 
 $defaultHome      = app_config('site.default_home', 'pages/dashboard.php');
-$loginHeaderLogo  = app_config('branding.login_header_logo', 'assets/images/logo-upnm.png');
-$loginPanelLogo   = app_config('branding.login_panel_logo', 'assets/images/upnm30-logo.png');
-$supportEmail     = trim((string)app_config('system.support', ''));
+$loginHeaderLogo  = $normalizeLocalAssetPath(app_config('branding.login_header_logo', 'assets/images/logo-upnm.png'), 'assets/images/logo-upnm.png');
+$loginPanelLogo   = $normalizeLocalAssetPath(app_config('branding.login_panel_logo', 'assets/images/upnm30-logo.png'), 'assets/images/upnm30-logo.png');
+$supportEmail     = $normalizeEmail(app_config('system.support', ''));
 $systemName       = trim((string)app_config('system.name', 'IQS Framework'));
 $organizationName = trim((string)app_config('organization.name', app_config('system.name', 'IQS Framework')));
-$organizationWebsite = trim((string)app_config('organization.website', ''));
+$organizationWebsite = $normalizeExternalUrl(app_config('organization.website', ''));
+$faviconPath = $normalizeLocalAssetPath(app_config('site.favicon', 'assets/images/default.ico'), 'assets/images/default.ico');
 $sidebarTheme = strtolower(trim((string)($globalThemeSettings['sidebarColor'] ?? $_SESSION['theme.menu'] ?? 'light')));
 $themeStyleMap = [
   'light' => ['start' => '#6f86a3', 'end' => '#8ea2bb', 'primary' => '#64748b', 'primaryStrong' => '#475569', 'accent' => '#94a3b8', 'primaryRgb' => '100, 116, 139', 'accentRgb' => '148, 163, 184'],
@@ -242,7 +269,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= __('login_title') ?> | <?= htmlspecialchars(app_config('site.title', 'IQS Framework')) ?></title>
-  <link rel="icon" href="<?= base_url(app_config('site.favicon', 'assets/images/default.ico')) ?>" type="image/x-icon">
+  <link rel="icon" href="<?= base_url($faviconPath) ?>" type="image/x-icon">
 
   <link rel="stylesheet" href="<?= base_url('assets/css/icons.min.css?v=' . $version) ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/app.min.css?v=' . $version) ?>">

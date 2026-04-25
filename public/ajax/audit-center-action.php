@@ -16,6 +16,31 @@ function ac(string $key, string $fallback): string
     return ($value === 'audit_center_' . $key || $value === null || $value === '') ? $fallback : (string)$value;
 }
 
+function ac_normalize_login_id(?string $loginId): string
+{
+    return function_exists('auth_normalize_login_id')
+        ? auth_normalize_login_id($loginId)
+        : trim((string)$loginId);
+}
+
+function ac_normalize_scope_key(string $scopeType, ?string $scopeKey): string
+{
+    $scopeType = strtoupper(trim($scopeType));
+    $scopeKey = trim((string)$scopeKey);
+    if ($scopeType !== 'LOGIN_IP' || $scopeKey === '') {
+        return $scopeKey;
+    }
+
+    $parts = explode('|', $scopeKey, 2);
+    $normalizedLoginId = ac_normalize_login_id($parts[0] ?? '');
+    $normalizedIp = trim((string)($parts[1] ?? ''));
+    if ($normalizedLoginId === '' || $normalizedIp === '') {
+        return $scopeKey;
+    }
+
+    return $normalizedLoginId . '|' . $normalizedIp;
+}
+
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         jsonErrorResponse('Method not allowed', 405);
@@ -53,7 +78,7 @@ try {
     $userAgent = trim((string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
 
     if ($action === 'clear_lockout') {
-        $loginId = trim((string)($input['login_id'] ?? ''));
+        $loginId = ac_normalize_login_id((string)($input['login_id'] ?? ''));
         if ($loginId === '') {
             jsonErrorResponse(ac('action_lockout_missing', 'Login ID untuk lockout tidak diberikan.'), 422);
         }
@@ -86,7 +111,7 @@ try {
 
     if ($action === 'clear_throttle') {
         $scopeType = strtoupper(trim((string)($input['scope_type'] ?? '')));
-        $scopeKey = trim((string)($input['scope_key'] ?? ''));
+        $scopeKey = ac_normalize_scope_key($scopeType, (string)($input['scope_key'] ?? ''));
         if ($scopeType === '' || $scopeKey === '') {
             jsonErrorResponse(ac('action_throttle_missing', 'Maklumat throttle tidak lengkap.'), 422);
         }

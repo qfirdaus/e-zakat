@@ -90,7 +90,9 @@ class User extends BaseModel
     /** Cari pengguna ikut f_loginID (auth identifier baharu) */
     public function findByLoginID(string $loginID): ?array
     {
-        $loginID = trim($loginID);
+        $loginID = function_exists('auth_normalize_login_id')
+            ? auth_normalize_login_id($loginID)
+            : trim($loginID);
         if ($loginID === '') {
             return null;
         }
@@ -513,7 +515,9 @@ class User extends BaseModel
 
     public function getLoginLockoutState(string $loginID, int $maxAttempts = 3): array
     {
-        $loginID = trim($loginID);
+        $loginID = function_exists('auth_normalize_login_id')
+            ? auth_normalize_login_id($loginID)
+            : trim($loginID);
         $maxAttempts = max(1, $maxAttempts);
 
         $defaultState = [
@@ -554,7 +558,9 @@ class User extends BaseModel
 
     public function clearLoginLockout(string $loginID, ?string $ip = null, ?string $userAgent = null): bool
     {
-        $loginID = trim($loginID);
+        $loginID = function_exists('auth_normalize_login_id')
+            ? auth_normalize_login_id($loginID)
+            : trim($loginID);
         if ($loginID === '' || !$this->loginLockoutTableExists()) {
             return false;
         }
@@ -594,7 +600,9 @@ class User extends BaseModel
         ?string $ip = null,
         ?string $userAgent = null
     ): array {
-        $loginID = trim($loginID);
+        $loginID = function_exists('auth_normalize_login_id')
+            ? auth_normalize_login_id($loginID)
+            : trim($loginID);
         $maxAttempts = max(1, $maxAttempts);
         $lockSeconds = max(30, $lockSeconds);
 
@@ -709,6 +717,11 @@ class User extends BaseModel
     {
         $scopeType = strtoupper(trim($scopeType));
         $scopeKey = trim($scopeKey);
+        if ($scopeType === 'LOGIN_IP') {
+            $parts = explode('|', $scopeKey, 2);
+            $scopeKey = (function_exists('auth_normalize_login_id') ? auth_normalize_login_id($parts[0] ?? '') : trim((string)($parts[0] ?? '')))
+                . (isset($parts[1]) && trim((string)$parts[1]) !== '' ? '|' . trim((string)$parts[1]) : '');
+        }
         $maxAttempts = max(1, $maxAttempts);
 
         $defaultState = [
@@ -757,6 +770,11 @@ class User extends BaseModel
     {
         $scopeType = strtoupper(trim($scopeType));
         $scopeKey = trim($scopeKey);
+        if ($scopeType === 'LOGIN_IP') {
+            $parts = explode('|', $scopeKey, 2);
+            $scopeKey = (function_exists('auth_normalize_login_id') ? auth_normalize_login_id($parts[0] ?? '') : trim((string)($parts[0] ?? '')))
+                . (isset($parts[1]) && trim((string)$parts[1]) !== '' ? '|' . trim((string)$parts[1]) : '');
+        }
         if ($scopeType === '' || $scopeKey === '' || !$this->loginThrottleTableExists()) {
             return false;
         }
@@ -801,6 +819,11 @@ class User extends BaseModel
     ): array {
         $scopeType = strtoupper(trim($scopeType));
         $scopeKey = trim($scopeKey);
+        if ($scopeType === 'LOGIN_IP') {
+            $parts = explode('|', $scopeKey, 2);
+            $scopeKey = (function_exists('auth_normalize_login_id') ? auth_normalize_login_id($parts[0] ?? '') : trim((string)($parts[0] ?? '')))
+                . (isset($parts[1]) && trim((string)$parts[1]) !== '' ? '|' . trim((string)$parts[1]) : '');
+        }
         $maxAttempts = max(1, $maxAttempts);
         $lockSeconds = max(30, $lockSeconds);
 

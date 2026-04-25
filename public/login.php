@@ -5,14 +5,9 @@ declare(strict_types=1);
 // 🔐 Security Headers
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
+header("X-Content-Type-Options: nosniff");
+header("Referrer-Policy: strict-origin-when-cross-origin");
 header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none';");
-
-// 🔒 Secure Session Setup
-ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) ? '1' : '0');
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
 
 // 🧩 Init
 require_once __DIR__ . '/includes/init.php';
@@ -22,6 +17,8 @@ require_once __DIR__ . '/classes/Database.php'; // untuk query f_jabatanKod
 define('SSO_SP_CLIENT_NOAUTO', true);
 @include_once __DIR__ . '/sso_sp_client.php';
 
+$requestMethod = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
 // 🛑 POST only
 // if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
 //     http_response_code(405);
@@ -29,9 +26,21 @@ define('SSO_SP_CLIENT_NOAUTO', true);
 // }
 
 // ✅ CSRF Check
-// if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== ($_SESSION['csrf_token'] ?? '')) {
-//     exit("CSRF token tidak sah");
-// }
+if ($requestMethod === 'POST') {
+    $csrfToken = (string)($_POST['csrf_token'] ?? '');
+    $sessionCsrfToken = (string)($_SESSION['csrf_token'] ?? '');
+    if ($csrfToken === '' || $sessionCsrfToken === '' || !hash_equals($sessionCsrfToken, $csrfToken)) {
+        set_alert([
+            'type'  => 'sweet',
+            'title' => 'login_form_validation_error',
+            'text'  => 'config_login_error_message',
+            'icon'  => 'warning',
+            'confirm' => true,
+        ]);
+        redirect('index.php');
+        exit;
+    }
+}
 
 // ✅ Helper Function
 function GET_REALIPADDRESS(): string {
@@ -64,7 +73,9 @@ function login_locked_until_to_ts($value): int {
 }
 
 function login_build_identifier_ip_scope(string $loginID, ?string $ip): string {
-    $normalizedLoginId = strtolower(trim($loginID));
+    $normalizedLoginId = function_exists('auth_normalize_login_id')
+        ? auth_normalize_login_id($loginID)
+        : trim($loginID);
     $normalizedIp = trim((string)$ip);
     if ($normalizedLoginId === '' || $normalizedIp === '') {
         return '';
@@ -72,8 +83,10 @@ function login_build_identifier_ip_scope(string $loginID, ?string $ip): string {
     return $normalizedLoginId . '|' . $normalizedIp;
 }
 
-function sanitize_string(?string $val): string {
-    return htmlspecialchars(trim($val ?? ''), ENT_QUOTES, 'UTF-8');
+function normalize_auth_identifier(?string $val): string {
+    return function_exists('auth_normalize_login_id')
+        ? auth_normalize_login_id($val)
+        : trim((string)$val);
 }
 
 function log_login_event(string $status, string $id): void {
@@ -84,6 +97,7 @@ function log_login_event(string $status, string $id): void {
         'TERKUNCI_ID' => 'LOCKED',
     ];
 
+    $id = normalize_auth_identifier($id);
     $ip = GET_REALIPADDRESS();
     $time = date('Y-m-d H:i:s');
     $log_path = __DIR__ . '/log/login_attempts.log';
@@ -116,7 +130,7 @@ function audit_login_guardrail_event(
         return;
     }
 
-    $loginID = trim($loginID);
+    $loginID = normalize_auth_identifier($loginID);
     $authMethod = strtoupper(trim($authMethod)) === 'SSO' ? 'SSO' : 'MANUAL';
     $clientIp = login_client_ip();
     $userAgent = trim((string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
@@ -161,8 +175,34 @@ function audit_login_guardrail_event(
     }
 }
 
+function login_guardrail_wait_message(string $guardrailScope, int $waitSeconds): string {
+    $waitSeconds = max(1, $waitSeconds);
+    $secondsLabel = (string)__('login_seconds');
+    $scope = strtoupper(trim($guardrailScope));
+
+    return match ($scope) {
+        'IP' => (string)(__('login_locked_msg_ip') !== 'login_locked_msg_ip'
+            ? __('login_locked_msg_ip')
+            : 'Terlalu banyak cubaan dari IP semasa. Sila cuba lagi selepas') . ' ' . $waitSeconds . ' ' . $secondsLabel,
+        'LOGIN_IP' => (string)(__('login_locked_msg_login_ip') !== 'login_locked_msg_login_ip'
+            ? __('login_locked_msg_login_ip')
+            : 'Terlalu banyak cubaan untuk Login ID ini dari IP semasa. Sila cuba lagi selepas') . ' ' . $waitSeconds . ' ' . $secondsLabel,
+        default => (string)(__('login_locked_msg_login_id') !== 'login_locked_msg_login_id'
+            ? __('login_locked_msg_login_id')
+            : __('login_locked_msg')) . ' ' . $waitSeconds . ' ' . $secondsLabel,
+    };
+}
+
 function clear_sso_auth_handoff(): void {
     unset($_SESSION['sso_auth_handoff']);
+}
+
+function consume_sso_auth_handoff(): void {
+    if (!isset($_SESSION['sso_auth_handoff']) || !is_array($_SESSION['sso_auth_handoff'])) {
+        return;
+    }
+
+    $_SESSION['sso_auth_handoff']['consumed_at'] = time();
 }
 
 function validate_sso_auth_handoff($handoff, int $now, int $ttlSeconds): array {
@@ -170,9 +210,9 @@ function validate_sso_auth_handoff($handoff, int $now, int $ttlSeconds): array {
         return ['ok' => false, 'reason' => 'missing'];
     }
 
-    $issuedAtRaw = trim((string)($handoff['issued_at'] ?? ''));
-    $issuedAtTs = $issuedAtRaw !== '' ? strtotime($issuedAtRaw) : false;
-    if ($issuedAtTs === false || ($now - (int)$issuedAtTs) > $ttlSeconds) {
+    $issuedAtRaw = $handoff['issued_at'] ?? null;
+    $issuedAtTs = is_numeric($issuedAtRaw) ? (int)$issuedAtRaw : strtotime(trim((string)$issuedAtRaw));
+    if ($issuedAtTs === false || $issuedAtTs <= 0 || ($now - (int)$issuedAtTs) > $ttlSeconds) {
         return ['ok' => false, 'reason' => 'expired'];
     }
 
@@ -180,9 +220,15 @@ function validate_sso_auth_handoff($handoff, int $now, int $ttlSeconds): array {
     $resolvedSource = trim((string)($handoff['resolved_source'] ?? ''));
     $validToken = !empty($handoff['valid_token']);
     $validSource = in_array($resolvedSource, ['data3', 'data4'], true);
+    $nonce = trim((string)($handoff['nonce'] ?? ''));
+    $consumedAt = (int)($handoff['consumed_at'] ?? 0);
     $hasValidIdentifier = $resolvedLoginId !== '' && ($validSource || !empty($handoff['data3_valid']) || !empty($handoff['data4_valid']));
 
-    if (!$validToken || !$hasValidIdentifier) {
+    if ($consumedAt > 0) {
+        return ['ok' => false, 'reason' => 'consumed'];
+    }
+
+    if (!$validToken || !$hasValidIdentifier || $nonce === '') {
         return ['ok' => false, 'reason' => 'invalid'];
     }
 
@@ -191,6 +237,7 @@ function validate_sso_auth_handoff($handoff, int $now, int $ttlSeconds): array {
         'reason' => 'ok',
         'login_id' => $resolvedLoginId,
         'source' => $resolvedSource,
+        'nonce' => $nonce,
     ];
 }
 
@@ -259,10 +306,9 @@ function validate_bdr_self_confirm_sso_context($context, int $now, int $ttlSecon
 }
 
 // 📥 Input
-$f_loginID  = sanitize_string($_POST['f_loginID'] ?? ($_POST['f_stafID'] ?? ''));
+$f_loginID  = normalize_auth_identifier($_POST['f_loginID'] ?? ($_POST['f_stafID'] ?? ''));
 $f_password = $_POST['f_password'] ?? '';
 $now        = time();
-$requestMethod = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $ssoHandoffTtlSeconds = 300;
 
 $rawSsoHandoff = $_SESSION['sso_auth_handoff'] ?? null;
@@ -272,10 +318,10 @@ if (!$ssoHandoffValidation['ok'] && $ssoHandoffValidation['reason'] !== 'missing
     $rawSsoHandoff = null;
 }
 $ssoHandoff = is_array($rawSsoHandoff) ? $rawSsoHandoff : [];
-$isSsoAttempt = $requestMethod !== 'POST' && !empty($ssoHandoff['valid_token']);
+$isSsoAttempt = $requestMethod !== 'POST' && !empty($ssoHandoffValidation['ok']);
 
 if ($isSsoAttempt) {
-    $f_loginID = sanitize_string((string)($ssoHandoff['resolved_login_id'] ?? ''));
+    $f_loginID = normalize_auth_identifier((string)($ssoHandoff['resolved_login_id'] ?? ''));
     $f_password = '';
 }
 
@@ -369,93 +415,76 @@ $loginClientIp = login_client_ip();
 $loginUserAgent = trim((string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
 $identifierIpScope = login_build_identifier_ip_scope($f_loginID, $loginClientIp);
 $attempts = $MAX_ATTEMPTS;
+$attemptedAuthMethod = $isSsoAttempt ? 'SSO' : 'MANUAL';
 
-if (!$isSsoAttempt) {
-    $lockoutState = $lockoutModel->getLoginLockoutState($f_loginID, $MAX_ATTEMPTS);
-    $attempts = max(0, (int)($lockoutState['attempts_remaining'] ?? $MAX_ATTEMPTS));
-    $lockoutLockedUntilTs = login_locked_until_to_ts($lockoutState['locked_until'] ?? null);
+$lockoutState = $lockoutModel->getLoginLockoutState($f_loginID, $MAX_ATTEMPTS);
+$attempts = max(0, (int)($lockoutState['attempts_remaining'] ?? $MAX_ATTEMPTS));
+$lockoutLockedUntilTs = login_locked_until_to_ts($lockoutState['locked_until'] ?? null);
 
-    $identifierIpState = ['is_locked' => false, 'locked_until' => null];
-    $identifierIpLockedUntilTs = 0;
-    $identifierIpAttemptsRemaining = $IDENTIFIER_IP_MAX_ATTEMPTS;
-    if ($identifierIpScope !== '') {
-        $identifierIpState = $lockoutModel->getLoginThrottleState('LOGIN_IP', $identifierIpScope, $IDENTIFIER_IP_MAX_ATTEMPTS);
-        $identifierIpLockedUntilTs = login_locked_until_to_ts($identifierIpState['locked_until'] ?? null);
-        $identifierIpAttemptsRemaining = max(0, (int)($identifierIpState['attempts_remaining'] ?? $IDENTIFIER_IP_MAX_ATTEMPTS));
-    }
+$identifierIpState = ['is_locked' => false, 'locked_until' => null];
+$identifierIpLockedUntilTs = 0;
+$identifierIpAttemptsRemaining = $IDENTIFIER_IP_MAX_ATTEMPTS;
+if ($identifierIpScope !== '') {
+    $identifierIpState = $lockoutModel->getLoginThrottleState('LOGIN_IP', $identifierIpScope, $IDENTIFIER_IP_MAX_ATTEMPTS);
+    $identifierIpLockedUntilTs = login_locked_until_to_ts($identifierIpState['locked_until'] ?? null);
+    $identifierIpAttemptsRemaining = max(0, (int)($identifierIpState['attempts_remaining'] ?? $IDENTIFIER_IP_MAX_ATTEMPTS));
+}
 
-    $ipState = ['is_locked' => false, 'locked_until' => null];
-    $ipLockedUntilTs = 0;
-    $ipAttemptsRemaining = $IP_MAX_ATTEMPTS;
-    if ($loginClientIp !== null && $loginClientIp !== '') {
-        $ipState = $lockoutModel->getLoginThrottleState('IP', $loginClientIp, $IP_MAX_ATTEMPTS);
-        $ipLockedUntilTs = login_locked_until_to_ts($ipState['locked_until'] ?? null);
-        $ipAttemptsRemaining = max(0, (int)($ipState['attempts_remaining'] ?? $IP_MAX_ATTEMPTS));
-    }
+$ipState = ['is_locked' => false, 'locked_until' => null];
+$ipLockedUntilTs = 0;
+$ipAttemptsRemaining = $IP_MAX_ATTEMPTS;
+if ($loginClientIp !== null && $loginClientIp !== '') {
+    $ipState = $lockoutModel->getLoginThrottleState('IP', $loginClientIp, $IP_MAX_ATTEMPTS);
+    $ipLockedUntilTs = login_locked_until_to_ts($ipState['locked_until'] ?? null);
+    $ipAttemptsRemaining = max(0, (int)($ipState['attempts_remaining'] ?? $IP_MAX_ATTEMPTS));
+}
 
-    $attempts = min(
-        max(0, (int)($lockoutState['attempts_remaining'] ?? $MAX_ATTEMPTS)),
-        $identifierIpAttemptsRemaining,
-        $ipAttemptsRemaining
+$attempts = min(
+    max(0, (int)($lockoutState['attempts_remaining'] ?? $MAX_ATTEMPTS)),
+    $identifierIpAttemptsRemaining,
+    $ipAttemptsRemaining
+);
+
+$activeLockUntilTs = max($lockoutLockedUntilTs, $identifierIpLockedUntilTs, $ipLockedUntilTs);
+if ($activeLockUntilTs > $now) {
+    $wait = $activeLockUntilTs - $now;
+    $guardrailScope = login_guardrail_scope(
+        $lockoutLockedUntilTs > $now,
+        $identifierIpLockedUntilTs > $now,
+        $ipLockedUntilTs > $now
     );
+    set_alert([
+        'type'  => 'sweet',
+        'title' => 'login_locked_title',
+        'text'  => login_guardrail_wait_message($guardrailScope, $wait),
+        'icon'  => 'error',
+        'confirm' => true
+    ]);
+    audit_login_guardrail_event(
+        match ($guardrailScope) {
+            'IP' => 'ip_locked',
+            'LOGIN_IP' => 'login_ip_locked',
+            default => 'login_id_locked',
+        },
+        $f_loginID,
+        $attemptedAuthMethod,
+        $guardrailScope,
+        date('Y-m-d H:i:s', $activeLockUntilTs),
+        $attempts
+    );
+    log_login_event("LOCKED_ID", $f_loginID);
+    redirect('index.php');
+    exit;
+}
 
-    $activeLockUntilTs = max($lockoutLockedUntilTs, $identifierIpLockedUntilTs, $ipLockedUntilTs);
-    if ($activeLockUntilTs > $now) {
-        $wait = $activeLockUntilTs - $now;
-        $guardrailScope = login_guardrail_scope(
-            $lockoutLockedUntilTs > $now,
-            $identifierIpLockedUntilTs > $now,
-            $ipLockedUntilTs > $now
-        );
-        set_alert([
-            'type'  => 'sweet',
-            'title' => 'login_locked_title',
-            'text'  => __('login_locked_msg') . ' ' . $wait . ' ' . __('login_seconds'),
-            'icon'  => 'error',
-            'confirm' => true
-        ]);
-        audit_login_guardrail_event(
-            match ($guardrailScope) {
-                'IP' => 'ip_locked',
-                'LOGIN_IP' => 'login_ip_locked',
-                default => 'login_id_locked',
-            },
-            $f_loginID,
-            'MANUAL',
-            $guardrailScope,
-            date('Y-m-d H:i:s', $activeLockUntilTs),
-            $attempts
-        );
-        log_login_event("LOCKED_ID", $f_loginID);
-        redirect('index.php');
-        exit;
-    }
-
-    if ($lockoutLockedUntilTs > 0 && $lockoutLockedUntilTs <= $now) {
-        $lockoutModel->clearLoginLockout($f_loginID, $loginClientIp, $loginUserAgent);
-    }
-    if ($identifierIpLockedUntilTs > 0 && $identifierIpLockedUntilTs <= $now && $identifierIpScope !== '') {
-        $lockoutModel->clearLoginThrottle('LOGIN_IP', $identifierIpScope, $loginClientIp, $loginUserAgent);
-    }
-    if ($ipLockedUntilTs > 0 && $ipLockedUntilTs <= $now && $loginClientIp !== null && $loginClientIp !== '') {
-        $lockoutModel->clearLoginThrottle('IP', $loginClientIp, $loginClientIp, $loginUserAgent);
-    }
-
-    if (
-        ($lockoutLockedUntilTs > 0 && $lockoutLockedUntilTs <= $now)
-        || ($identifierIpLockedUntilTs > 0 && $identifierIpLockedUntilTs <= $now)
-        || ($ipLockedUntilTs > 0 && $ipLockedUntilTs <= $now)
-    ) {
-        set_alert([
-            'type'  => 'sweet',
-            'title' => 'login_unlocked_title',
-            'text'  => 'login_unlocked_msg',
-            'icon'  => 'info',
-            'confirm' => true
-        ]);
-        redirect('index.php');
-        exit;
-    }
+if ($lockoutLockedUntilTs > 0 && $lockoutLockedUntilTs <= $now) {
+    $lockoutModel->clearLoginLockout($f_loginID, $loginClientIp, $loginUserAgent);
+}
+if ($identifierIpLockedUntilTs > 0 && $identifierIpLockedUntilTs <= $now && $identifierIpScope !== '') {
+    $lockoutModel->clearLoginThrottle('LOGIN_IP', $identifierIpScope, $loginClientIp, $loginUserAgent);
+}
+if ($ipLockedUntilTs > 0 && $ipLockedUntilTs <= $now && $loginClientIp !== null && $loginClientIp !== '') {
+    $lockoutModel->clearLoginThrottle('IP', $loginClientIp, $loginClientIp, $loginUserAgent);
 }
 
 // ==========================
@@ -465,6 +494,9 @@ if (!$isSsoAttempt) {
 $loginOk = false;
 try {
     $loginController = new LoginController();
+    if ($isSsoAttempt) {
+        consume_sso_auth_handoff();
+    }
     $loginOk = $loginController->authenticate($f_loginID, $isSsoAttempt ? null : $f_password);
 } catch (Throwable $e) {
     clear_sso_auth_handoff();
@@ -684,14 +716,12 @@ try {
 // ==========================
 if ($loginOk) {
     // ✅ Berjaya login
-    if (!$isSsoAttempt) {
-        $lockoutModel->clearLoginLockout($f_loginID, $loginClientIp, $loginUserAgent);
-        if ($identifierIpScope !== '') {
-            $lockoutModel->clearLoginThrottle('LOGIN_IP', $identifierIpScope, $loginClientIp, $loginUserAgent);
-        }
-        if ($loginClientIp !== null && $loginClientIp !== '') {
-            $lockoutModel->clearLoginThrottle('IP', $loginClientIp, $loginClientIp, $loginUserAgent);
-        }
+    $lockoutModel->clearLoginLockout($f_loginID, $loginClientIp, $loginUserAgent);
+    if ($identifierIpScope !== '') {
+        $lockoutModel->clearLoginThrottle('LOGIN_IP', $identifierIpScope, $loginClientIp, $loginUserAgent);
+    }
+    if ($loginClientIp !== null && $loginClientIp !== '') {
+        $lockoutModel->clearLoginThrottle('IP', $loginClientIp, $loginClientIp, $loginUserAgent);
     }
     clear_sso_auth_handoff();
 
@@ -762,20 +792,6 @@ if ($loginOk) {
     // ❌ Gagal login (ID/Password salah)
     clear_sso_auth_handoff();
 
-    if ($isSsoAttempt) {
-        set_alert([
-            'type'  => 'sweet',
-            'title' => 'login_sso_user_not_found_title',
-            'text'  => 'login_sso_user_not_found_msg',
-            'icon'  => 'warning',
-            'confirm' => true,
-            'close_on_confirm' => true,
-        ]);
-        log_login_event("SSO_USER_NOT_FOUND", $f_loginID);
-        redirect('index.php');
-        exit;
-    }
-
     $failedState = $lockoutModel->recordFailedLoginAttempt(
         $f_loginID,
         $MAX_ATTEMPTS,
@@ -828,7 +844,7 @@ if ($loginOk) {
         set_alert([
             'type'  => 'sweet',
             'title' => 'login_locked_title',
-            'text'  => __('login_locked_msg') . ' ' . $wait . ' ' . __('login_seconds'),
+            'text'  => login_guardrail_wait_message($guardrailScope, $wait),
             'icon'  => 'error',
             'confirm' => true
         ]);
@@ -839,22 +855,34 @@ if ($loginOk) {
                 default => 'login_id_locked',
             },
             $f_loginID,
-            'MANUAL',
+            $attemptedAuthMethod,
             $guardrailScope,
             date('Y-m-d H:i:s', $effectiveLockedUntilTs),
             $attempts
         );
         log_login_event("TERKUNCI_ID", $f_loginID);
     } else {
-        // Papar baki cubaan dalam mesej
-        set_alert([
-            'type'  => 'sweet',
-            'title' => 'login_fail_title',
-            'text'  => __('login_fail_msg') . ' ' . $attempts,
-            'icon'  => 'warning',
-            'confirm' => true
-        ]);
-        log_login_event("GAGAL", $f_loginID);
+        if ($isSsoAttempt) {
+            set_alert([
+                'type'  => 'sweet',
+                'title' => 'login_sso_user_not_found_title',
+                'text'  => 'login_sso_user_not_found_msg',
+                'icon'  => 'warning',
+                'confirm' => true,
+                'close_on_confirm' => true,
+            ]);
+            log_login_event("SSO_USER_NOT_FOUND", $f_loginID);
+        } else {
+            // Papar baki cubaan dalam mesej
+            set_alert([
+                'type'  => 'sweet',
+                'title' => 'login_fail_title',
+                'text'  => __('login_fail_msg') . ' ' . $attempts,
+                'icon'  => 'warning',
+                'confirm' => true
+            ]);
+            log_login_event("GAGAL", $f_loginID);
+        }
     }
 
     redirect('index.php');

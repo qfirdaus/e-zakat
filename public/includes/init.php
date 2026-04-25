@@ -21,6 +21,10 @@ if (isset($_COOKIE[session_name()])) {
         if (isset($_POST[session_name()])) unset($_POST[session_name()]);
     }
 }
+ini_set('session.cookie_samesite', 'Lax');
+ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) ? '1' : '0');
+ini_set('session.cookie_httponly', '1');
+ini_set('session.use_strict_mode', '1');
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -111,6 +115,22 @@ if (!function_exists('request_is_ajax_like')) {
 
         $accept = strtolower(trim((string)($_SERVER['HTTP_ACCEPT'] ?? '')));
         return $accept !== '' && (str_contains($accept, 'application/json') || str_contains($accept, 'text/json'));
+    }
+}
+
+if (!function_exists('auth_normalize_login_id')) {
+    function auth_normalize_login_id(?string $loginID): string
+    {
+        $value = trim((string)$loginID);
+        if ($value === '') {
+            return '';
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            return strtolower($value);
+        }
+
+        return $value;
     }
 }
 

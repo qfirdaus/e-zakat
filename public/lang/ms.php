@@ -76,6 +76,12 @@ return [
 
 // Status & mesej masa
 'login_locked_msg'         => 'Akaun anda telah dikunci. Sila cuba lagi selepas',
+'login_locked_msg_login_id'
+                          => 'Akaun anda telah dikunci sementara. Sila cuba lagi selepas',
+'login_locked_msg_login_ip'
+                          => 'Terlalu banyak cubaan untuk Login ID ini dari IP semasa. Sila cuba lagi selepas',
+'login_locked_msg_ip'
+                          => 'Terlalu banyak cubaan dari IP semasa. Sila cuba lagi selepas',
 'login_seconds'            => 'saat',
 
 // Gagal / ralat log masuk

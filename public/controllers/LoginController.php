@@ -65,10 +65,23 @@ class LoginController
         unset($_SESSION['pending_password_change']);
 
         // Normalisasi input
-        $loginID = trim($loginID);
+        $loginID = function_exists('auth_normalize_login_id')
+            ? auth_normalize_login_id($loginID)
+            : trim($loginID);
         if ($loginID === '') {
             $this->auditLoginFail($loginID, 'empty_input', null, $attemptedMethod);
             return false;
+        }
+
+        if ($attemptedMethod === 'SSO') {
+            $handoff = is_array($_SESSION['sso_auth_handoff'] ?? null) ? $_SESSION['sso_auth_handoff'] : [];
+            $handoffLoginId = function_exists('auth_normalize_login_id')
+                ? auth_normalize_login_id((string)($handoff['resolved_login_id'] ?? ''))
+                : trim((string)($handoff['resolved_login_id'] ?? ''));
+            if (empty($handoff['valid_token']) || $handoffLoginId === '' || $handoffLoginId !== $loginID) {
+                $this->auditLoginFail($loginID, 'sso_handoff_invalid', null, $attemptedMethod);
+                throw new \RuntimeException('SSO_LOGIN_NOT_ALLOWED');
+            }
         }
 
         // Cari user
@@ -78,19 +91,6 @@ class LoginController
         }
         if (!$user) {
             $this->auditLoginFail($loginID, 'user_not_found', null, $attemptedMethod);
-            if ($attemptedMethod === 'MANUAL') {
-                $category = $this->normalizeLoginCategory(null, $loginID);
-                $policy = function_exists('get_auth_policy_config') ? get_auth_policy_config() : [];
-                if (in_array($category, ['STAF', 'PELAJAR'], true) && is_array($policy) && $policy !== []) {
-                    if ($this->isLoginCategoryEnabled($policy, $category)) {
-                        $allowedMethod = $this->resolveAllowedLoginMethod($policy, $category);
-                        if ($allowedMethod === 'SSO') {
-                            throw new \RuntimeException('SSO_FIRST_LOGIN_REQUIRED');
-                        }
-                        throw new \RuntimeException('MANUAL_ACCOUNT_NOT_READY');
-                    }
-                }
-            }
             return false;
         }
 
@@ -1066,6 +1066,9 @@ class LoginController
         try {
             if (!function_exists('audit_event')) return;
 
+            $loginID = function_exists('auth_normalize_login_id')
+                ? auth_normalize_login_id($loginID)
+                : trim($loginID);
             $authMethod = $this->normalizeAuthLoginMethod($authMethod);
 
             $ipText = $_SERVER['HTTP_CF_CONNECTING_IP']

@@ -100,7 +100,9 @@ function LOCAL_SESSION_HANDLER($IDP_RESPOND_USER_PACKET){
 		'resolved_source' => $handoff['resolved_source'],
 		'data3_valid' => $handoff['data3_valid'],
 		'data4_valid' => $handoff['data4_valid'],
-		'issued_at' => date('c'),
+		'issued_at' => time(),
+		'nonce' => bin2hex(random_bytes(16)),
+		'consumed_at' => null,
 	];
 }
 //If your site are using Cookies.

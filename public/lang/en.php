@@ -76,6 +76,12 @@ return [
 
 // Status & mesej masa
 'login_locked_msg'         => 'Your account has been locked. Please try again after',
+'login_locked_msg_login_id'
+                          => 'Your account has been temporarily locked. Please try again after',
+'login_locked_msg_login_ip'
+                          => 'Too many attempts for this Login ID from the current IP. Please try again after',
+'login_locked_msg_ip'
+                          => 'Too many attempts from the current IP. Please try again after',
 'login_seconds'            => 'seconds',
 
 // Gagal / ralat log masuk
