@@ -259,6 +259,7 @@ $systemName       = trim((string)app_config('system.name', 'IQS Framework'));
 $organizationName = trim((string)app_config('organization.name', app_config('system.name', 'IQS Framework')));
 $organizationWebsite = $normalizeExternalUrl(app_config('organization.website', ''));
 $faviconPath = $normalizeLocalAssetPath(app_config('site.favicon', 'assets/images/default.ico'), 'assets/images/default.ico');
+$loginBannerImages = ['banner1.jpg', 'banner2.jpg', 'banner3.jpg', 'banner4.jpg'];
 $sidebarTheme = strtolower(trim((string)($globalThemeSettings['sidebarColor'] ?? $_SESSION['theme.menu'] ?? 'light')));
 $themeStyleMap = [
   'light' => ['start' => '#6f86a3', 'end' => '#8ea2bb', 'primary' => '#64748b', 'primaryStrong' => '#475569', 'accent' => '#94a3b8', 'primaryRgb' => '100, 116, 139', 'accentRgb' => '148, 163, 184'],
@@ -293,7 +294,6 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
   <link rel="stylesheet" href="<?= base_url('assets/css/app.min.css?v=' . $version) ?>">
   <link rel="stylesheet" href="<?= base_url('assets/css/output.css?v=' . $version) ?>">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js?v=<?= $version ?>"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11?v=<?= $version ?>"></script>
 
   <style>
@@ -456,6 +456,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
     }
 
     .facility-overview-panel {
+      position: relative;
       display: flex;
       flex-direction: column;
       padding: 28px;
@@ -463,19 +464,48 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       align-self: stretch;
     }
 
+    .facility-overview-panel::before {
+      content: "";
+      position: absolute;
+      top: 28px;
+      left: 28px;
+      right: 28px;
+      height: 380px;
+      background: linear-gradient(135deg, #183760, #2b4f7f 58%, #426e9b);
+      border-radius: 28px;
+      pointer-events: none;
+    }
+
     .facility-visual-panel {
       position: relative;
+      z-index: 1;
       min-height: 380px;
-      border-radius: 28px;
+      border-radius: 28px 28px 0 0;
       overflow: hidden;
-      background: #0c1b32;
-      box-shadow: var(--facility-soft-shadow);
+      background: linear-gradient(135deg, #183760, #2b4f7f 58%, #426e9b);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .facility-visual-panel-inner {
+      position: absolute;
+      inset: 0;
+      border-radius: 28px 28px 0 0;
+      overflow: hidden;
+      background: transparent;
     }
 
     .facility-showcase-media,
     .facility-showcase-media::after {
       position: absolute;
       inset: 0;
+      border-radius: 28px 28px 0 0;
+    }
+
+    .facility-showcase-media {
+      border-radius: 28px 28px 0 0;
+      overflow: hidden;
+      transform: translateZ(0);
+      backface-visibility: hidden;
     }
 
     .facility-showcase-media::after {
@@ -483,7 +513,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       background:
         linear-gradient(90deg, rgba(12,27,50,0.82) 0%, rgba(12,27,50,0.38) 48%, rgba(12,27,50,0.72) 100%),
         linear-gradient(180deg, rgba(var(--facility-primary-rgb), 0.12), rgba(var(--facility-accent-rgb), 0.26));
-      z-index: 1;
+      z-index: 2;
       pointer-events: none;
     }
 
@@ -493,12 +523,18 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      border-radius: 28px 28px 0 0;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      will-change: opacity;
     }
 
     .facility-visual-content {
       position: relative;
       z-index: 2;
       min-height: 380px;
+      border-radius: 28px 28px 0 0;
+      overflow: hidden;
       padding: 30px;
       display: flex;
       flex-direction: column;
@@ -559,9 +595,12 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
     }
 
     .facility-info-grid {
+      position: relative;
+      z-index: 1;
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 16px;
+      margin-top: 8px;
     }
 
     .facility-info-card {
@@ -570,6 +609,21 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       background: var(--facility-card-soft);
       border: 1px solid var(--facility-line);
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+
+    .facility-info-grid .facility-info-card:first-child {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+
+    .facility-info-grid .facility-info-card:nth-child(2) {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+
+    .facility-info-grid .facility-info-card:last-child {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
     }
 
     .facility-info-card .facility-card-label {
@@ -629,7 +683,6 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       border-radius: 26px;
       background: #ffffff;
       border: 1px solid rgba(226, 232, 240, 0.92);
-      box-shadow: var(--facility-soft-shadow);
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -1002,7 +1055,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
     }
   </style>
 </head>
-<body class="authentication-bg facility-login-page" x-data="{ active: 0, banners: ['banner1.jpg', 'banner2.jpg', 'banner3.jpg', 'banner4.jpg'] }" x-init="setInterval(() => { active = (active + 1) % banners.length }, 5200)">
+<body class="authentication-bg facility-login-page">
 <div class="facility-auth-shell">
   <div class="facility-workspace">
     <header class="facility-masthead">
@@ -1020,7 +1073,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
           <span><?= htmlspecialchars(app_current_version_label(), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
         <a class="facility-top-link" href="<?= h(base_url('index.php')) ?>"><i class="ri-home-5-line"></i> <?= __('login_nav.home') ?></a>
-        <button class="facility-top-button" type="button" @click="$store.faq?.showFaq?.()"><i class="ri-question-line"></i> <?= __('login_nav.faq') ?></button>
+        <a class="facility-top-link" href="<?= h(base_url('pages/soalan-lazim.php')) ?>"><i class="ri-question-line"></i> <?= __('login_nav.faq') ?></a>
         <a class="facility-top-link" href="https://directory.upnm.edu.my" target="_blank" rel="noopener noreferrer"><i class="ri-building-line"></i> <?= __('login_nav.directory') ?></a>
       </div>
     </header>
@@ -1028,20 +1081,23 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
     <div class="facility-auth-board">
       <section class="facility-overview-panel">
         <div class="facility-visual-panel">
-          <div class="facility-showcase-media">
-            <template x-for="(banner, index) in banners" :key="index">
-              <img :src="`<?= base_url('assets/images/') ?>${banner}`"
-                   alt="Banner"
-                   class="transition-opacity duration-700 ease-in-out"
-                   :class="{ 'opacity-0': active !== index, 'opacity-100': active === index }">
-            </template>
-          </div>
+          <div class="facility-visual-panel-inner">
+            <div class="facility-showcase-media">
+              <?php foreach ($loginBannerImages as $bannerIndex => $bannerImage): ?>
+                <img
+                  src="<?= h(base_url('assets/images/' . $bannerImage)) ?>"
+                  alt="Banner"
+                  class="transition-opacity duration-700 ease-in-out<?= $bannerIndex === 0 ? ' opacity-100' : ' opacity-0' ?>"
+                  data-login-banner="<?= h((string)$bannerIndex) ?>">
+              <?php endforeach; ?>
+            </div>
 
-          <div class="facility-visual-content">
-            <div class="facility-visual-body">
-              <div class="facility-visual-copy">
-                <h2><?= htmlspecialchars($lang === 'en' ? 'One core framework for consistent governance across every future system.' : 'Satu framework teras untuk tadbir urus yang konsisten merentas setiap sistem akan datang.', ENT_QUOTES, 'UTF-8') ?></h2>
-                <p><?= htmlspecialchars($lang === 'en' ? 'IQS Framework is developed as the shared base so teams can move straight into business features while common capabilities stay standardized.' : 'IQS Framework dibangunkan sebagai asas bersama supaya pasukan boleh terus fokus pada ciri kerja sebenar sementara keupayaan umum kekal standard.', ENT_QUOTES, 'UTF-8') ?></p>
+            <div class="facility-visual-content">
+              <div class="facility-visual-body">
+                <div class="facility-visual-copy">
+                  <h2><?= htmlspecialchars($lang === 'en' ? 'One core framework for consistent governance across every future system.' : 'Satu framework teras untuk tadbir urus yang konsisten merentas setiap sistem akan datang.', ENT_QUOTES, 'UTF-8') ?></h2>
+                  <p><?= htmlspecialchars($lang === 'en' ? 'IQS Framework is developed as the shared base so teams can move straight into business features while common capabilities stay standardized.' : 'IQS Framework dibangunkan sebagai asas bersama supaya pasukan boleh terus fokus pada ciri kerja sebenar sementara keupayaan umum kekal standard.', ENT_QUOTES, 'UTF-8') ?></p>
+                </div>
               </div>
             </div>
           </div>
@@ -1156,6 +1212,24 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
 
 <!-- ✅ Alert rendering -->
 <?php if (function_exists('render_alert')) render_alert(); ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const banners = Array.from(document.querySelectorAll('[data-login-banner]'));
+  if (banners.length < 2) {
+    return;
+  }
+
+  let activeIndex = 0;
+  window.setInterval(function () {
+    banners[activeIndex].classList.remove('opacity-100');
+    banners[activeIndex].classList.add('opacity-0');
+    activeIndex = (activeIndex + 1) % banners.length;
+    banners[activeIndex].classList.remove('opacity-0');
+    banners[activeIndex].classList.add('opacity-100');
+  }, 5200);
+});
+</script>
 
 </body>
 </html>
