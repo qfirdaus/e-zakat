@@ -1128,15 +1128,6 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
           <?php endif; ?>
         </div>
 
-        <div class="facility-support-panel">
-          <h3><?= htmlspecialchars($lang === 'en' ? 'Core platform support channels' : 'Saluran sokongan platform teras', ENT_QUOTES, 'UTF-8') ?></h3>
-          <p><?= htmlspecialchars($lang === 'en' ? 'Use the channels below if you need help with framework access, shared modules, or core account services used by connected systems.' : 'Gunakan saluran di bawah jika anda memerlukan bantuan berkaitan akses framework, modul bersama, atau servis akaun teras yang digunakan oleh sistem-sistem berkaitan.', ENT_QUOTES, 'UTF-8') ?></p>
-          <div class="facility-support-links">
-            <?php if ($supportEmail !== ''): ?>
-              <a href="mailto:<?= htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8') ?>"><i class="ri-mail-line"></i> <?= htmlspecialchars($supportEmail, ENT_QUOTES, 'UTF-8') ?></a>
-            <?php endif; ?>
-          </div>
-        </div>
       </aside>
     </div>
   </div>
