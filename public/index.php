@@ -443,7 +443,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       display: grid;
       grid-template-columns: minmax(0, 1.25fr) minmax(360px, 430px);
       gap: 24px;
-      align-items: stretch;
+      align-items: start;
     }
 
     .facility-overview-panel,
@@ -460,6 +460,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       flex-direction: column;
       padding: 28px;
       gap: 22px;
+      align-self: stretch;
     }
 
     .facility-visual-panel {
@@ -612,12 +613,15 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       display: flex;
       flex-direction: column;
       gap: 22px;
+      align-self: start;
+      height: fit-content;
       background:
         linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
     }
 
     .facility-auth-panel--compact {
       align-self: start;
+      background: #ffffff;
     }
 
     .facility-auth-card {
@@ -629,6 +633,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       display: flex;
       flex-direction: column;
       gap: 20px;
+      overflow: hidden;
     }
 
     .facility-form-head {
