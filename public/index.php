@@ -129,6 +129,10 @@ $ssoConfig = function_exists('sso_shared_config') ? sso_shared_config() : [
 $oneIdLauncherUrl = (string)($ssoConfig['launcher_url'] ?? '');
 $oneIdLoginUrl = base_url('sso_sp_client.php');
 $showOneIdButton = $hasActiveSsoRoute && $oneIdLoginUrl !== '';
+$referer = trim((string)($_SERVER['HTTP_REFERER'] ?? ''));
+$refererHost = strtolower((string)(parse_url($referer, PHP_URL_HOST) ?? ''));
+$trustedSsoHost = strtolower(trim((string)($ssoConfig['idp_host'] ?? '')));
+$isTrustedSsoReferer = $refererHost !== '' && $trustedSsoHost !== '' && $refererHost === $trustedSsoHost;
 
 $loginManualCategories = [];
 $authCategories = is_array($authPolicy['categories'] ?? null) ? $authPolicy['categories'] : [];
@@ -191,6 +195,20 @@ $loginIdPlaceholder = $loginPlaceholderList !== ''
     : (string)__('login_userid_placeholder_unavailable');
 
 $hasPendingLoginAlert = !empty($_SESSION['alert']);
+if (
+    $showOneIdButton
+    && $isTrustedSsoReferer
+    && empty($_SESSION['f_loginID'])
+    && !$hasPendingLoginAlert
+    && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET'
+) {
+    $__ssoDebugLog('INDEX_ONEID_REFERER_HANDOFF_RESTORED', [
+        'referer' => $referer,
+        'session_id' => session_id(),
+        'target' => $oneIdLoginUrl,
+    ]);
+    redirect('sso_sp_client.php');
+}
 
 // ✅ Language Detection
 $uri  = $_SERVER['REQUEST_URI'];
