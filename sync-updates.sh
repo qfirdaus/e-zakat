@@ -17,13 +17,9 @@ LOG_FILE="sync.log"
 CONFLICT_LOG="conflict.log"
 LOCK_FILE=".sync.lock"
 
-PREV_LIST=".master_file_list_prev"
-CUR_LIST=".master_file_list_current"
-
 DRY_RUN=false
 FORCE=false
 BACKUP=false
-SAFE_DELETE=false
 FIX_PERM=false
 ONLY=""
 
@@ -62,7 +58,7 @@ show_menu() {
     echo "2. Dry Run (Preview sahaja)"
     echo "3. Force Sync (Overwrite semua)"
     echo "4. Backup + Sync"
-    echo "5. Safe Delete"
+    echo "5. Clear Updates Folder"
     echo "6. Fix Permission"
     echo "7. Sync Specific Project"
     echo "8. Exit"
@@ -75,7 +71,27 @@ show_menu() {
         2) DRY_RUN=true ;;
         3) FORCE=true ;;
         4) BACKUP=true ;;
-        5) SAFE_DELETE=true ;;
+        5)
+            echo ""
+            echo "⚠ This will DELETE all files in updates/"
+            read -p "Archive before delete? (y/n): " arc
+
+            if [ "$arc" = "y" ]; then
+                ARCHIVE_DIR="$BASE_PATH/_updates_archive/$(date +%Y%m%d_%H%M%S)"
+                mkdir -p "$ARCHIVE_DIR"
+                cp -r updates/* "$ARCHIVE_DIR"/ 2>/dev/null
+                echo "📦 Archived to $ARCHIVE_DIR"
+            fi
+
+            read -p "Proceed to clear updates? (y/n): " confirm
+            if [ "$confirm" = "y" ]; then
+                find updates -type f -delete
+                echo "✅ updates/ cleaned"
+            else
+                echo "❌ Cancelled"
+            fi
+            exit 0
+            ;;
         6) FIX_PERM=true ;;
         7)
             echo ""
@@ -106,7 +122,6 @@ for arg in "$@"; do
         --dry-run) DRY_RUN=true ;;
         --force) FORCE=true ;;
         --backup) BACKUP=true ;;
-        --safe-delete) SAFE_DELETE=true ;;
         --fix-permission) FIX_PERM=true ;;
         --only=*) ONLY="${arg#*=}" ;;
     esac
@@ -151,7 +166,7 @@ if [ "$DRY_RUN" = false ]; then
 fi
 
 # =========================
-# PREP FILE LIST (FIX)
+# PREP FILE LIST
 # =========================
 mapfile -t FILES < <(find updates -type f)
 
@@ -160,7 +175,6 @@ mapfile -t FILES < <(find updates -type f)
 # =========================
 for project in "${PROJECTS[@]}"; do
 
-    # ONLY filter (project level)
     if [[ -n "$ONLY" && "$project" != "$ONLY" ]]; then
         continue
     fi
@@ -173,9 +187,6 @@ for project in "${PROJECTS[@]}"; do
         cp -r "$TARGET/public" "$TARGET/public_backup_$(date +%Y%m%d_%H%M%S)"
     fi
 
-    # =========================
-    # LOOP FILES (FIXED)
-    # =========================
     for file in "${FILES[@]}"; do
 
         REL_PATH="${file#updates/}"
@@ -184,13 +195,11 @@ for project in "${PROJECTS[@]}"; do
 
         mkdir -p "$(dirname "$TARGET_FILE")"
 
-        # DRY RUN
         if [ "$DRY_RUN" = true ]; then
             print_row "$project" "DRY" "$REL_PATH" "$CYAN"
             continue
         fi
 
-        # FORCE
         if [ "$FORCE" = true ]; then
             cp "$SOURCE" "$TARGET_FILE.tmp" && mv "$TARGET_FILE.tmp" "$TARGET_FILE"
             print_row "$project" "FORCE" "$REL_PATH" "$RED"
@@ -199,7 +208,6 @@ for project in "${PROJECTS[@]}"; do
             continue
         fi
 
-        # EXISTING
         if [ -f "$TARGET_FILE" ]; then
 
             if cmp -s "$SOURCE" "$TARGET_FILE"; then
@@ -227,40 +235,16 @@ for project in "${PROJECTS[@]}"; do
 
     done
 
-    # =========================
-    # SAFE DELETE
-    # =========================
-    if [ "$SAFE_DELETE" = true ] && [ -f "$PREV_LIST" ] && [ -f "$CUR_LIST" ]; then
-        comm -23 "$PREV_LIST" "$CUR_LIST" > deleted_files.txt
-
-        while read del; do
-            TARGET_DEL="$TARGET/$del"
-            if [ -f "$TARGET_DEL" ]; then
-                rm "$TARGET_DEL"
-                print_row "$project" "DELETE" "$del" "$RED"
-            fi
-        done < deleted_files.txt
-    fi
-
-    # =========================
-    # FIX PERMISSION
-    # =========================
     if [ "$FIX_PERM" = true ]; then
         chown -R www-data:www-data "$TARGET/public"
     fi
 
 done
 
-# =========================
-# FOOTER
-# =========================
 echo "└──────────────┴──────────┴──────────────────────────────────────────────┘"
 
 rm -f "$LOCK_FILE"
 
-# =========================
-# SUMMARY
-# =========================
 echo ""
 echo "====== PER PROJECT SUMMARY ======"
 
