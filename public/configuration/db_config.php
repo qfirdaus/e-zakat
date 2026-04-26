@@ -102,21 +102,80 @@ if (!function_exists('db_env_required')) {
     }
 }
 
+if (!function_exists('db_env_first')) {
+    /**
+     * Return the first non-empty environment value from a list of keys.
+     */
+    function db_env_first(array $keys, ?string $default = null): ?string
+    {
+        foreach ($keys as $key) {
+            $value = db_env((string)$key, null);
+            if ($value !== null && $value !== '') {
+                return $value;
+            }
+        }
+
+        return $default;
+    }
+}
+
+if (!function_exists('db_env_required_first')) {
+    /**
+     * Return the first non-empty environment value from a list of keys or fail fast.
+     */
+    function db_env_required_first(array $keys): string
+    {
+        $value = db_env_first($keys, null);
+        if ($value === null || $value === '') {
+            throw new RuntimeException('Missing required environment variable from candidates: ' . implode(', ', $keys));
+        }
+
+        return $value;
+    }
+}
+
 return [
 
     // ===================================================
-    // ✅ MySQL Utama
+    // ✅ MySQL Utama (environment-aware)
     // ===================================================
+    'mysql_prod' => [
+        'driver' => 'mysql',
+        'dsn'    => sprintf(
+            'mysql:host=%s;port=%s;dbname=%s;charset=%s',
+            db_env_first(['DB_MYSQL_MAIN_PROD_HOST', 'DB_MYSQL_HOST'], '172.16.2.141'),
+            db_env_first(['DB_MYSQL_MAIN_PROD_PORT', 'DB_MYSQL_PORT'], '3306'),
+            db_env_first(['DB_MYSQL_MAIN_PROD_NAME', 'DB_MYSQL_NAME'], 'ebasedb'),
+            db_env_first(['DB_MYSQL_MAIN_PROD_CHARSET', 'DB_MYSQL_CHARSET'], 'utf8mb4')
+        ),
+        'user'   => db_env_required_first(['DB_MYSQL_MAIN_PROD_USER', 'DB_MYSQL_USER']),
+        'pass'   => db_env_required_first(['DB_MYSQL_MAIN_PROD_PASS', 'DB_MYSQL_PASS']),
+    ],
+
+    'mysql_dev' => [
+        'driver' => 'mysql',
+        'dsn'    => sprintf(
+            'mysql:host=%s;port=%s;dbname=%s;charset=%s',
+            db_env_first(['DB_MYSQL_MAIN_DEV_HOST', 'DB_MYSQL_MAIN_PROD_HOST', 'DB_MYSQL_HOST'], '172.16.2.141'),
+            db_env_first(['DB_MYSQL_MAIN_DEV_PORT', 'DB_MYSQL_MAIN_PROD_PORT', 'DB_MYSQL_PORT'], '3306'),
+            db_env_first(['DB_MYSQL_MAIN_DEV_NAME', 'DB_MYSQL_MAIN_PROD_NAME', 'DB_MYSQL_NAME'], 'ebasedb'),
+            db_env_first(['DB_MYSQL_MAIN_DEV_CHARSET', 'DB_MYSQL_MAIN_PROD_CHARSET', 'DB_MYSQL_CHARSET'], 'utf8mb4')
+        ),
+        'user'   => db_env_required_first(['DB_MYSQL_MAIN_DEV_USER', 'DB_MYSQL_MAIN_PROD_USER', 'DB_MYSQL_USER']),
+        'pass'   => db_env_required_first(['DB_MYSQL_MAIN_DEV_PASS', 'DB_MYSQL_MAIN_PROD_PASS', 'DB_MYSQL_PASS']),
+    ],
+
     'mysql' => [
         'driver' => 'mysql',
         'dsn'    => sprintf(
-            'mysql:host=%s;dbname=%s;charset=%s',
-            db_env('DB_MYSQL_HOST', '172.16.2.141'),
-            db_env('DB_MYSQL_NAME', 'ebasedb'),
-            db_env('DB_MYSQL_CHARSET', 'utf8mb4')
+            'mysql:host=%s;port=%s;dbname=%s;charset=%s',
+            db_env_first(['DB_MYSQL_MAIN_PROD_HOST', 'DB_MYSQL_HOST'], '172.16.2.141'),
+            db_env_first(['DB_MYSQL_MAIN_PROD_PORT', 'DB_MYSQL_PORT'], '3306'),
+            db_env_first(['DB_MYSQL_MAIN_PROD_NAME', 'DB_MYSQL_NAME'], 'ebasedb'),
+            db_env_first(['DB_MYSQL_MAIN_PROD_CHARSET', 'DB_MYSQL_CHARSET'], 'utf8mb4')
         ),
-        'user'   => db_env_required('DB_MYSQL_USER'),
-        'pass'   => db_env_required('DB_MYSQL_PASS'),
+        'user'   => db_env_required_first(['DB_MYSQL_MAIN_PROD_USER', 'DB_MYSQL_USER']),
+        'pass'   => db_env_required_first(['DB_MYSQL_MAIN_PROD_PASS', 'DB_MYSQL_PASS']),
     ],
 
     // ===================================================

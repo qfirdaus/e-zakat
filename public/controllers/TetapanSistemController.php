@@ -9,6 +9,9 @@ require_once __DIR__ . '/../classes/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 require_once __DIR__ . '/../classes/Config.php';
 require_once __DIR__ . '/../classes/SystemConfigConstants.php';
+require_once __DIR__ . '/../classes/DatabaseConnectionRepository.php';
+require_once __DIR__ . '/../classes/DatabaseConnectionValidator.php';
+require_once __DIR__ . '/../classes/DatabaseConnectionFactory.php';
 require_once __DIR__ . '/../setting/constants/prestasi_constants.php';
 require_once __DIR__ . '/../setting/helper/config_helper.php';
 require_once __DIR__ . '/../includes/functions-db.php';
@@ -25,6 +28,9 @@ class TetapanSistemController {
 
   private PDO $pdo;
   private Config $configModel;
+  private DatabaseConnectionRepository $additionalConnectionRepository;
+  private DatabaseConnectionValidator $additionalConnectionValidator;
+  private DatabaseConnectionFactory $additionalConnectionFactory;
 
   public function __construct() {
     $this->lang = $_SESSION['lang'] ?? SystemConfigConstants::DEFAULT_LANGUAGE;
@@ -33,6 +39,9 @@ class TetapanSistemController {
     $pdo_mysql         = Database::getInstance('mysql')->getConnection();
     $this->pdo         = $pdo_mysql;
     $this->configModel = new Config($this->pdo);
+    $this->additionalConnectionRepository = new DatabaseConnectionRepository($this->pdo);
+    $this->additionalConnectionValidator = new DatabaseConnectionValidator();
+    $this->additionalConnectionFactory = new DatabaseConnectionFactory();
 
     // ✅ Profil user
     $userModel  = new User($pdo_mysql);
@@ -125,6 +134,22 @@ class TetapanSistemController {
         $response = $this->processLanguageUpdate();
       } elseif ($formType === 'theme_settings') {
         $response = $this->processThemeUpdate();
+      } elseif ($formType === 'db_additional_list') {
+        $response = $this->processAdditionalConnectionList();
+      } elseif ($formType === 'db_additional_create') {
+        $response = $this->processAdditionalConnectionCreate();
+      } elseif ($formType === 'db_additional_update') {
+        $response = $this->processAdditionalConnectionUpdate();
+      } elseif ($formType === 'db_additional_toggle') {
+        $response = $this->processAdditionalConnectionToggle();
+      } elseif ($formType === 'db_additional_test') {
+        $response = $this->processAdditionalConnectionTest();
+      } elseif ($formType === 'db_additional_inspect') {
+        $response = $this->processAdditionalConnectionInspect();
+      } elseif ($formType === 'db_additional_schema_preview') {
+        $response = $this->processAdditionalConnectionSchemaPreview();
+      } elseif ($formType === 'db_additional_object_preview') {
+        $response = $this->processAdditionalConnectionObjectPreview();
       }
 
       if (!$response) {
@@ -745,6 +770,13 @@ class TetapanSistemController {
       : '';
   }
 
+  private function normalizeMainDbEnvironment(string $environment): string {
+    $environment = strtolower(trim($environment));
+    return in_array($environment, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)
+      ? $environment
+      : '';
+  }
+
   private function normalizeOperationalMode(string $mode): string {
     $mode = strtolower(trim($mode));
     return in_array($mode, SystemConfigConstants::ALLOWED_SYBASE_OPERATIONAL_MODES, true)
@@ -805,7 +837,21 @@ class TetapanSistemController {
   }
 
   public function getMysqlInfo(): array {
-    return $this->db_configs['mysql'] ?? [];
+    $environment = $this->getSelectedMainDbEnvironment();
+    $key = $environment === 'development' ? 'mysql_dev' : 'mysql_prod';
+    return $this->db_configs[$key] ?? ($this->db_configs['mysql'] ?? []);
+  }
+
+  private function getSelectedMainDbEnvironment(): string {
+    $sessionEnvironment = strtolower(trim((string)($_SESSION['MAIN_DB_ENVIRONMENT'] ?? '')));
+    if (in_array($sessionEnvironment, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)) {
+      return $sessionEnvironment;
+    }
+
+    $configEnvironment = (string)$this->configModel->getMainDbEnvironment(SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT);
+    return in_array($configEnvironment, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)
+      ? $configEnvironment
+      : SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT;
   }
 
   public function getThemeSettings(): array {
@@ -836,6 +882,7 @@ class TetapanSistemController {
   public function getDatabaseRuntimeViewModel(): array {
     $environment = $this->getSelectedEnvironment();
     $operationalMode = $this->getSelectedOperationalMode();
+    $mainMysqlEnvironment = $this->getSelectedMainDbEnvironment();
     $mysqlInfo = $this->getMysqlInfo();
 
     $mysqlDriver = trim((string)($mysqlInfo['driver'] ?? 'mysql'));
@@ -865,6 +912,7 @@ class TetapanSistemController {
       'studentRuntimeLabel' => $operationalMode === 'staff_student'
         ? $runtimeStudentBase
         : $this->tr('config_tab_db_runtime_disabled', 'Disabled'),
+      'mainMysqlEnvironment' => $mainMysqlEnvironment,
       'mysqlDriver' => $mysqlDriver,
       'mysqlDsn' => $mysqlDsn,
       'mysqlUser' => $mysqlUser,
@@ -922,6 +970,12 @@ class TetapanSistemController {
       fn(): array => $this->getDatabaseRuntimeViewModel()
     );
 
+    $additionalConnections = $this->getCachedValue(
+      'db-additional',
+      SystemConfigConstants::CACHE_TTL_DB_CONFIG,
+      fn(): array => $this->safeGetAdditionalConnections()
+    );
+
     $themeSettings = $this->getCachedValue(
       'theme',
       SystemConfigConstants::CACHE_TTL_DB_CONFIG,
@@ -938,9 +992,18 @@ class TetapanSistemController {
       'authSettings' => $authSettings,
       'languageData' => $languageData,
       'dbRuntime' => $dbRuntime,
+      'additionalConnections' => $additionalConnections,
       'themeSettings' => $themeSettings,
       'sidebarSmallImages' => $sidebarSmallImages,
     ];
+  }
+
+  private function safeGetAdditionalConnections(): array {
+    try {
+      return $this->additionalConnectionRepository->findAllAdditional();
+    } catch (Throwable $e) {
+      return [];
+    }
   }
 
   /**
@@ -995,8 +1058,9 @@ class TetapanSistemController {
     $this->ensureSession();
     $selectedEnvironment = $this->normalizeEnvironment((string)($_POST['sybase_environment'] ?? ''));
     $selectedOperationalMode = $this->normalizeOperationalMode((string)($_POST['sybase_operational_mode'] ?? ''));
+    $selectedMainDbEnvironment = $this->normalizeMainDbEnvironment((string)($_POST['main_db_environment'] ?? ''));
 
-    if ($selectedEnvironment === '' || $selectedOperationalMode === '') {
+    if ($selectedEnvironment === '' || $selectedOperationalMode === '' || $selectedMainDbEnvironment === '') {
       return [
         'success' => false,
         'status' => 422,
@@ -1009,13 +1073,18 @@ class TetapanSistemController {
 
     try {
       $oldBase = $this->active_sybase_name;
+      $oldMainDbEnvironment = $this->configModel->getMainDbEnvironment(SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT);
       $oldEnvironment = $this->configModel->getSybaseEnvironment(SystemConfigConstants::DEFAULT_SYBASE_ENVIRONMENT);
       $oldOperationalMode = $this->configModel->getSybaseOperationalMode(SystemConfigConstants::DEFAULT_SYBASE_OPERATIONAL_MODE);
 
+      $this->configModel->setMainDbEnvironment($selectedMainDbEnvironment);
       $this->configModel->setSybaseEnvironment($selectedEnvironment);
       $this->configModel->setSybaseOperationalMode($selectedOperationalMode);
+      $_SESSION['MAIN_DB_ENVIRONMENT'] = $selectedMainDbEnvironment;
       $_SESSION['SYBASE_ENVIRONMENT'] = $selectedEnvironment;
       $_SESSION['SYBASE_OPERATIONAL_MODE'] = $selectedOperationalMode;
+
+      Database::clearInstance('mysql');
 
       $legacyLogical = ($selectedEnvironment === 'development') ? 'ehrmdb_dev' : 'ehrmdb';
       $this->activateSybaseBase($legacyLogical);
@@ -1030,6 +1099,10 @@ class TetapanSistemController {
         $selectedOperationalMode === 'staff_student' ? 'config_tab_db_mode_staff_student' : 'config_tab_db_mode_staff_only',
         $selectedOperationalMode
       );
+      $mainMysqlEnvironmentLabel = $this->tr(
+        $selectedMainDbEnvironment === 'development' ? 'config_tab_db_environment_development' : 'config_tab_db_environment_production',
+        ucfirst($selectedMainDbEnvironment)
+      );
       
       // Audit logging
       $this->auditDatabaseUpdate($oldBase, $this->active_sybase_name, (string)$oldEnvironment, (string)$selectedEnvironment, (string)$oldOperationalMode, (string)$selectedOperationalMode);
@@ -1039,7 +1112,8 @@ class TetapanSistemController {
         'tab' => 'db',
         'title' => $this->tr('config_db_success_title', 'Berjaya'),
         'message' => sprintf(
-          $this->tr('config_db_success_text_summary', 'Tetapan pangkalan data berjaya disimpan. Environment: %s. Mode: %s.'),
+          $this->tr('config_db_success_text_summary', 'Tetapan pangkalan data berjaya disimpan. MySQL: %s. Sybase environment: %s. Mode: %s.'),
+          $mainMysqlEnvironmentLabel,
           $environmentLabel,
           $modeLabel
         ),
@@ -1072,6 +1146,841 @@ class TetapanSistemController {
         'errors' => [$this->tr('config_db_system_error_text', 'Ralat berlaku semasa mengaktifkan pangkalan data. Sila cuba lagi atau hubungi pentadbir sistem.')],
       ];
     }
+  }
+
+  private function processAdditionalConnectionList(): array {
+    $this->checkAuthorization();
+    $this->validateCSRF();
+    $this->ensureSession();
+
+    try {
+      return [
+        'success' => true,
+        'tab' => 'db',
+        'title' => 'Berjaya',
+        'message' => 'Senarai sambungan tambahan berjaya dimuatkan.',
+        'data' => [
+          'additionalConnections' => $this->additionalConnectionRepository->findAllAdditional(),
+        ],
+      ];
+    } catch (Throwable $e) {
+      return [
+        'success' => false,
+        'status' => 500,
+        'tab' => 'db',
+        'title' => 'Ralat Sistem',
+        'message' => $e->getMessage(),
+        'errors' => [$e->getMessage()],
+      ];
+    }
+  }
+
+  private function processAdditionalConnectionCreate(): array {
+    $this->checkAuthorization();
+    $this->validateCSRF();
+    $this->ensureSession();
+
+    $payload = $this->collectAdditionalConnectionPayload();
+    $envRows = $this->collectAdditionalConnectionEnvRows();
+    $errors = $this->additionalConnectionValidator->validateAdditionalPayload($payload, $envRows, false);
+
+    try {
+      if ($payload['f_code'] !== '' && $this->additionalConnectionRepository->connectionCodeExists((string)$payload['f_code'])) {
+        $errors[] = 'Kod sambungan tambahan sudah wujud.';
+      }
+    } catch (Throwable $e) {
+      $errors[] = $e->getMessage();
+    }
+
+    if ($errors !== []) {
+      return [
+        'success' => false,
+        'status' => 422,
+        'tab' => 'db',
+        'title' => 'Ralat Validasi',
+        'message' => implode("\n", $errors),
+        'errors' => $errors,
+      ];
+    }
+
+    try {
+      $code = $this->additionalConnectionRepository->createAdditional($payload, $envRows);
+      $this->invalidateTsCache('db-additional');
+      $this->auditAdditionalConnectionAction('CREATE', $code, ['payload' => $payload]);
+
+      return [
+        'success' => true,
+        'tab' => 'db',
+        'title' => 'Berjaya',
+        'message' => 'Sambungan tambahan berjaya ditambah.',
+        'data' => [
+          'connection' => $this->additionalConnectionRepository->findAdditionalByCode($code),
+          'additionalConnections' => $this->additionalConnectionRepository->findAllAdditional(),
+        ],
+      ];
+    } catch (Throwable $e) {
+      $this->auditAdditionalConnectionAction('CREATE_FAILED', (string)($payload['f_code'] ?? ''), [
+        'payload' => $payload,
+        'error' => $e->getMessage(),
+      ]);
+      return [
+        'success' => false,
+        'status' => 500,
+        'tab' => 'db',
+        'title' => 'Ralat Sistem',
+        'message' => $e->getMessage(),
+        'errors' => [$e->getMessage()],
+      ];
+    }
+  }
+
+  private function processAdditionalConnectionUpdate(): array {
+    $this->checkAuthorization();
+    $this->validateCSRF();
+    $this->ensureSession();
+
+    $code = strtolower(trim((string)($_POST['existing_code'] ?? $_POST['connection_code'] ?? $_POST['f_code'] ?? '')));
+    $payload = $this->collectAdditionalConnectionPayload($code);
+    $envRows = $this->collectAdditionalConnectionEnvRows();
+    $errors = $this->additionalConnectionValidator->validateAdditionalPayload($payload, $envRows, true);
+
+    if ($code === '') {
+      $errors[] = 'Kod sambungan tambahan sedia ada wajib diisi.';
+    }
+
+    if ($errors !== []) {
+      return [
+        'success' => false,
+        'status' => 422,
+        'tab' => 'db',
+        'title' => 'Ralat Validasi',
+        'message' => implode("\n", $errors),
+        'errors' => $errors,
+      ];
+    }
+
+    try {
+      $existing = $this->additionalConnectionRepository->findAdditionalByCode($code);
+      if (!$existing) {
+        throw new RuntimeException('Sambungan tambahan tidak ditemui.');
+      }
+
+      $this->additionalConnectionRepository->updateAdditional($code, $payload, $envRows);
+      $this->invalidateTsCache('db-additional');
+      $this->auditAdditionalConnectionAction('UPDATE', $code, [
+        'old' => $existing,
+        'new' => $payload,
+      ]);
+
+      return [
+        'success' => true,
+        'tab' => 'db',
+        'title' => 'Berjaya',
+        'message' => 'Sambungan tambahan berjaya dikemas kini.',
+        'data' => [
+          'connection' => $this->additionalConnectionRepository->findAdditionalByCode($code),
+          'additionalConnections' => $this->additionalConnectionRepository->findAllAdditional(),
+        ],
+      ];
+    } catch (Throwable $e) {
+      $this->auditAdditionalConnectionAction('UPDATE_FAILED', $code, [
+        'new' => $payload,
+        'error' => $e->getMessage(),
+      ]);
+      return [
+        'success' => false,
+        'status' => 500,
+        'tab' => 'db',
+        'title' => 'Ralat Sistem',
+        'message' => $e->getMessage(),
+        'errors' => [$e->getMessage()],
+      ];
+    }
+  }
+
+  private function processAdditionalConnectionToggle(): array {
+    $this->checkAuthorization();
+    $this->validateCSRF();
+    $this->ensureSession();
+
+    $code = strtolower(trim((string)($_POST['connection_code'] ?? '')));
+    $enabled = in_array(strtolower(trim((string)($_POST['enabled'] ?? ''))), ['1', 'true', 'yes', 'on'], true);
+
+    if ($code === '') {
+      return [
+        'success' => false,
+        'status' => 422,
+        'tab' => 'db',
+        'title' => 'Ralat Validasi',
+        'message' => 'Kod sambungan tambahan wajib diisi.',
+        'errors' => ['Kod sambungan tambahan wajib diisi.'],
+      ];
+    }
+
+    try {
+      $existing = $this->additionalConnectionRepository->findAdditionalByCode($code);
+      if (!$existing) {
+        throw new RuntimeException('Sambungan tambahan tidak ditemui.');
+      }
+
+      if (in_array($code, SystemConfigConstants::RESERVED_DATABASE_CODES, true)) {
+        throw new RuntimeException('Kod sambungan ini dikhaskan untuk sistem utama dan tidak boleh diubah melalui registry tambahan.');
+      }
+
+      $this->additionalConnectionRepository->setEnabled($code, $enabled);
+      $this->invalidateTsCache('db-additional');
+      $this->auditAdditionalConnectionAction($enabled ? 'ENABLE' : 'DISABLE', $code, ['enabled' => $enabled]);
+
+      return [
+        'success' => true,
+        'tab' => 'db',
+        'title' => 'Berjaya',
+        'message' => $enabled ? 'Sambungan tambahan berjaya diaktifkan.' : 'Sambungan tambahan berjaya dinyahaktifkan.',
+        'data' => [
+          'connection' => $this->additionalConnectionRepository->findAdditionalByCode($code),
+          'additionalConnections' => $this->additionalConnectionRepository->findAllAdditional(),
+        ],
+      ];
+    } catch (Throwable $e) {
+      $this->auditAdditionalConnectionAction('TOGGLE_FAILED', $code, [
+        'enabled' => $enabled,
+        'error' => $e->getMessage(),
+      ]);
+      return [
+        'success' => false,
+        'status' => 500,
+        'tab' => 'db',
+        'title' => 'Ralat Sistem',
+        'message' => $e->getMessage(),
+        'errors' => [$e->getMessage()],
+      ];
+    }
+  }
+
+  private function processAdditionalConnectionTest(): array {
+    $this->checkAuthorization();
+    $this->validateCSRF();
+    $this->ensureSession();
+
+    $code = strtolower(trim((string)($_POST['connection_code'] ?? '')));
+    if ($code === '') {
+      return [
+        'success' => false,
+        'status' => 422,
+        'tab' => 'db',
+        'title' => 'Ralat Validasi',
+        'message' => 'Kod sambungan tambahan wajib diisi.',
+        'errors' => ['Kod sambungan tambahan wajib diisi.'],
+      ];
+    }
+
+    try {
+      $connection = $this->additionalConnectionRepository->findAdditionalByCode($code, true);
+      if (!$connection) {
+        throw new RuntimeException('Sambungan tambahan tidak ditemui.');
+      }
+
+      if (empty($connection['f_is_enabled'])) {
+        throw new RuntimeException('Sambungan tambahan ini sedang dinyahaktifkan. Aktifkan semula sebelum menjalankan ujian.');
+      }
+
+      $testTarget = $this->selectAdditionalConnectionEnvRowForTesting($connection, $_POST);
+      $pdoConfig = $this->buildAdditionalTestPdoConfig($testTarget);
+      $pdo = $this->additionalConnectionFactory->make($pdoConfig);
+      $pdo->query('select 1');
+
+      $this->additionalConnectionRepository->saveTestResult(
+        $code,
+        (string)$testTarget['f_environment'],
+        (string)$testTarget['f_os_family'],
+        'SUCCESS',
+        'Connection test passed.',
+        (string)($testTarget['f_driver'] ?? 'auto')
+      );
+      $this->auditAdditionalConnectionAction('TEST', $code, [
+        'environment' => $testTarget['f_environment'],
+        'os_family' => $testTarget['f_os_family'],
+        'driver' => $testTarget['f_driver'],
+        'status' => 'SUCCESS',
+      ]);
+
+      return [
+        'success' => true,
+        'tab' => 'db',
+        'title' => 'Berjaya',
+        'message' => 'Ujian sambungan tambahan berjaya.',
+        'data' => [
+          'connection_code' => $code,
+          'environment' => $testTarget['f_environment'],
+          'os_family' => $testTarget['f_os_family'],
+          'driver' => $testTarget['f_driver'],
+          'status' => 'SUCCESS',
+        ],
+      ];
+    } catch (Throwable $e) {
+      try {
+        if ($code !== '') {
+          $this->additionalConnectionRepository->saveTestResult(
+            $code,
+            strtolower(trim((string)($_POST['environment'] ?? 'production'))),
+            strtolower(trim((string)($_POST['os_family'] ?? (PHP_OS_FAMILY === 'Windows' ? 'windows' : 'linux')))),
+            'ERROR',
+            $e->getMessage(),
+            strtolower(trim((string)($_POST['driver'] ?? 'auto')))
+          );
+        }
+      } catch (Throwable $ignored) {
+      }
+
+      $this->auditAdditionalConnectionAction('TEST_FAILED', $code, [
+        'environment' => strtolower(trim((string)($_POST['environment'] ?? 'production'))),
+        'os_family' => strtolower(trim((string)($_POST['os_family'] ?? (PHP_OS_FAMILY === 'Windows' ? 'windows' : 'linux')))),
+        'driver' => strtolower(trim((string)($_POST['driver'] ?? 'auto'))),
+        'status' => 'ERROR',
+        'error' => $e->getMessage(),
+      ]);
+
+      return [
+        'success' => false,
+        'status' => 500,
+        'tab' => 'db',
+        'title' => 'Ralat Sambungan Database',
+        'message' => $e->getMessage(),
+        'errors' => [$e->getMessage()],
+      ];
+    }
+  }
+
+  private function processAdditionalConnectionInspect(): array {
+    $this->checkAuthorization();
+    $this->validateCSRF();
+    $this->ensureSession();
+
+    $code = strtolower(trim((string)($_POST['connection_code'] ?? '')));
+    if ($code === '') {
+      return [
+        'success' => false,
+        'status' => 422,
+        'tab' => 'db',
+        'title' => 'Ralat Validasi',
+        'message' => 'Kod sambungan tambahan wajib diisi.',
+        'errors' => ['Kod sambungan tambahan wajib diisi.'],
+      ];
+    }
+
+    try {
+      $connection = $this->additionalConnectionRepository->findAdditionalByCode($code, true);
+      if (!$connection) {
+        throw new RuntimeException('Sambungan tambahan tidak ditemui.');
+      }
+
+      if (empty($connection['f_is_enabled'])) {
+        throw new RuntimeException('Sambungan tambahan ini sedang dinyahaktifkan. Aktifkan semula sebelum melihat butiran sambungan.');
+      }
+
+      $target = $this->selectAdditionalConnectionEnvRowForTesting($connection, $_POST);
+      $environment = (string)($target['f_environment'] ?? 'production');
+
+      $manager = new DatabaseManager();
+      $pdo = $manager->additional($code, $environment);
+      $probe = $this->buildAdditionalConnectionProbe($pdo, $connection, $target);
+
+      $this->auditAdditionalConnectionAction('INSPECT', $code, [
+        'environment' => $target['f_environment'],
+        'os_family' => $target['f_os_family'],
+        'driver' => $target['f_driver'],
+        'status' => 'SUCCESS',
+      ]);
+
+      return [
+        'success' => true,
+        'tab' => 'db',
+        'title' => 'Butiran Sambungan Tambahan',
+        'message' => 'Maklumat sambungan tambahan berjaya dimuatkan.',
+        'data' => [
+          'probe' => $probe,
+        ],
+      ];
+    } catch (Throwable $e) {
+      $this->auditAdditionalConnectionAction('INSPECT_FAILED', $code, [
+        'environment' => strtolower(trim((string)($_POST['environment'] ?? 'production'))),
+        'os_family' => strtolower(trim((string)($_POST['os_family'] ?? (PHP_OS_FAMILY === 'Windows' ? 'windows' : 'linux')))),
+        'driver' => strtolower(trim((string)($_POST['driver'] ?? 'auto'))),
+        'status' => 'ERROR',
+        'error' => $e->getMessage(),
+      ]);
+
+      return [
+        'success' => false,
+        'status' => 500,
+        'tab' => 'db',
+        'title' => 'Ralat Sambungan Database',
+        'message' => $e->getMessage(),
+        'errors' => [$e->getMessage()],
+      ];
+    }
+  }
+
+  private function processAdditionalConnectionSchemaPreview(): array {
+    $this->checkAuthorization();
+    $this->validateCSRF();
+    $this->ensureSession();
+
+    $code = strtolower(trim((string)($_POST['connection_code'] ?? '')));
+    if ($code === '') {
+      return [
+        'success' => false,
+        'status' => 422,
+        'tab' => 'db',
+        'title' => 'Ralat Validasi',
+        'message' => 'Kod sambungan tambahan wajib diisi.',
+        'errors' => ['Kod sambungan tambahan wajib diisi.'],
+      ];
+    }
+
+    try {
+      $connection = $this->additionalConnectionRepository->findAdditionalByCode($code, true);
+      if (!$connection) {
+        throw new RuntimeException('Sambungan tambahan tidak ditemui.');
+      }
+
+      if (empty($connection['f_is_enabled'])) {
+        throw new RuntimeException('Sambungan tambahan ini sedang dinyahaktifkan. Aktifkan semula sebelum melihat schema preview.');
+      }
+
+      $target = $this->selectAdditionalConnectionEnvRowForTesting($connection, $_POST);
+      $environment = (string)($target['f_environment'] ?? 'production');
+
+      $manager = new DatabaseManager();
+      $pdo = $manager->additional($code, $environment);
+      $schemaPreview = $this->buildAdditionalConnectionSchemaPreview($pdo, $connection, $target);
+
+      $this->auditAdditionalConnectionAction('SCHEMA_PREVIEW', $code, [
+        'environment' => $target['f_environment'],
+        'os_family' => $target['f_os_family'],
+        'driver' => $target['f_driver'],
+        'status' => 'SUCCESS',
+      ]);
+
+      return [
+        'success' => true,
+        'tab' => 'db',
+        'title' => 'Schema Preview Sambungan Tambahan',
+        'message' => 'Schema preview berjaya dimuatkan.',
+        'data' => [
+          'schemaPreview' => $schemaPreview,
+        ],
+      ];
+    } catch (Throwable $e) {
+      $this->auditAdditionalConnectionAction('SCHEMA_PREVIEW_FAILED', $code, [
+        'environment' => strtolower(trim((string)($_POST['environment'] ?? 'production'))),
+        'os_family' => strtolower(trim((string)($_POST['os_family'] ?? (PHP_OS_FAMILY === 'Windows' ? 'windows' : 'linux')))),
+        'driver' => strtolower(trim((string)($_POST['driver'] ?? 'auto'))),
+        'status' => 'ERROR',
+        'error' => $e->getMessage(),
+      ]);
+
+      return [
+        'success' => false,
+        'status' => 500,
+        'tab' => 'db',
+        'title' => 'Ralat Sambungan Database',
+        'message' => $e->getMessage(),
+        'errors' => [$e->getMessage()],
+      ];
+    }
+  }
+
+  private function processAdditionalConnectionObjectPreview(): array {
+    $this->checkAuthorization();
+    $this->validateCSRF();
+    $this->ensureSession();
+
+    $code = strtolower(trim((string)($_POST['connection_code'] ?? '')));
+    $objectName = trim((string)($_POST['object_name'] ?? ''));
+
+    if ($code === '' || $objectName === '') {
+      return [
+        'success' => false,
+        'status' => 422,
+        'tab' => 'db',
+        'title' => 'Ralat Validasi',
+        'message' => 'Kod sambungan tambahan dan nama objek wajib diisi.',
+        'errors' => ['Kod sambungan tambahan dan nama objek wajib diisi.'],
+      ];
+    }
+
+    if (preg_match('/^[A-Za-z0-9_.$#]+$/', $objectName) !== 1) {
+      return [
+        'success' => false,
+        'status' => 422,
+        'tab' => 'db',
+        'title' => 'Ralat Validasi',
+        'message' => 'Nama objek schema preview mengandungi aksara yang tidak dibenarkan.',
+        'errors' => ['Nama objek schema preview mengandungi aksara yang tidak dibenarkan.'],
+      ];
+    }
+
+    try {
+      $connection = $this->additionalConnectionRepository->findAdditionalByCode($code, true);
+      if (!$connection) {
+        throw new RuntimeException('Sambungan tambahan tidak ditemui.');
+      }
+
+      if (empty($connection['f_is_enabled'])) {
+        throw new RuntimeException('Sambungan tambahan ini sedang dinyahaktifkan. Aktifkan semula sebelum melihat data preview.');
+      }
+
+      $target = $this->selectAdditionalConnectionEnvRowForTesting($connection, $_POST);
+      $environment = (string)($target['f_environment'] ?? 'production');
+
+      $manager = new DatabaseManager();
+      $pdo = $manager->additional($code, $environment);
+      $preview = $this->buildAdditionalConnectionObjectPreview($pdo, $connection, $target, $objectName);
+
+      $this->auditAdditionalConnectionAction('OBJECT_PREVIEW', $code, [
+        'environment' => $target['f_environment'],
+        'os_family' => $target['f_os_family'],
+        'driver' => $target['f_driver'],
+        'object_name' => $objectName,
+        'status' => 'SUCCESS',
+      ]);
+
+      return [
+        'success' => true,
+        'tab' => 'db',
+        'title' => 'Data Preview',
+        'message' => 'Data preview berjaya dimuatkan.',
+        'data' => [
+          'objectPreview' => $preview,
+        ],
+      ];
+    } catch (Throwable $e) {
+      $this->auditAdditionalConnectionAction('OBJECT_PREVIEW_FAILED', $code, [
+        'environment' => strtolower(trim((string)($_POST['environment'] ?? 'production'))),
+        'os_family' => strtolower(trim((string)($_POST['os_family'] ?? (PHP_OS_FAMILY === 'Windows' ? 'windows' : 'linux')))),
+        'driver' => strtolower(trim((string)($_POST['driver'] ?? 'auto'))),
+        'object_name' => $objectName,
+        'status' => 'ERROR',
+        'error' => $e->getMessage(),
+      ]);
+
+      return [
+        'success' => false,
+        'status' => 500,
+        'tab' => 'db',
+        'title' => 'Ralat Sambungan Database',
+        'message' => $e->getMessage(),
+        'errors' => [$e->getMessage()],
+      ];
+    }
+  }
+
+  private function collectAdditionalConnectionPayload(?string $forcedCode = null): array {
+    $code = $forcedCode !== null && $forcedCode !== ''
+      ? strtolower(trim($forcedCode))
+      : strtolower(trim((string)($_POST['f_code'] ?? $_POST['connection_code'] ?? '')));
+
+    return [
+      'f_code' => $code,
+      'f_name' => trim((string)($_POST['f_name'] ?? $_POST['connection_name'] ?? $code)),
+      'f_family' => strtolower(trim((string)($_POST['f_family'] ?? $_POST['connection_family'] ?? ''))),
+      'f_purpose' => trim((string)($_POST['f_purpose'] ?? $_POST['connection_purpose'] ?? 'reference')),
+      'f_driver_mode' => strtolower(trim((string)($_POST['f_driver_mode'] ?? $_POST['connection_driver_mode'] ?? 'auto'))),
+      'f_is_enabled' => in_array(strtolower(trim((string)($_POST['f_is_enabled'] ?? $_POST['connection_enabled'] ?? '1'))), ['1', 'true', 'yes', 'on'], true),
+      'f_supports_prod' => in_array(strtolower(trim((string)($_POST['f_supports_prod'] ?? '1'))), ['1', 'true', 'yes', 'on'], true),
+      'f_supports_dev' => in_array(strtolower(trim((string)($_POST['f_supports_dev'] ?? '1'))), ['1', 'true', 'yes', 'on'], true),
+      'f_notes' => trim((string)($_POST['f_notes'] ?? $_POST['connection_notes'] ?? '')),
+      'f_created_by' => (string)($_SESSION['f_loginID'] ?? $_SESSION['f_stafID'] ?? ''),
+      'f_updated_by' => (string)($_SESSION['f_loginID'] ?? $_SESSION['f_stafID'] ?? ''),
+    ];
+  }
+
+  private function collectAdditionalConnectionEnvRows(): array {
+    $raw = $_POST['env_rows'] ?? null;
+    $rows = [];
+
+    if (is_string($raw) && trim($raw) !== '') {
+      $decoded = json_decode($raw, true);
+      if (is_array($decoded)) {
+        $rows = $decoded;
+      }
+    } elseif (is_array($raw)) {
+      $rows = $raw;
+    }
+
+    $normalized = [];
+    foreach ($rows as $row) {
+      if (!is_array($row)) {
+        continue;
+      }
+
+      $normalized[] = [
+        'f_environment' => strtolower(trim((string)($row['f_environment'] ?? $row['environment'] ?? 'production'))),
+        'f_os_family' => strtolower(trim((string)($row['f_os_family'] ?? $row['os_family'] ?? 'any'))),
+        'f_driver' => strtolower(trim((string)($row['f_driver'] ?? $row['driver'] ?? ''))),
+        'f_host' => trim((string)($row['f_host'] ?? $row['host'] ?? '')),
+        'f_port' => trim((string)($row['f_port'] ?? $row['port'] ?? '')),
+        'f_database_name' => trim((string)($row['f_database_name'] ?? $row['database_name'] ?? $row['dbname'] ?? '')),
+        'f_dsn_name' => trim((string)($row['f_dsn_name'] ?? $row['dsn_name'] ?? $row['dsn'] ?? '')),
+        'f_username' => trim((string)($row['f_username'] ?? $row['username'] ?? '')),
+        'f_password_ciphertext' => (string)($row['f_password_ciphertext'] ?? $row['password'] ?? ''),
+        'f_charset' => trim((string)($row['f_charset'] ?? $row['charset'] ?? '')),
+        'f_extra_json' => $row['f_extra_json'] ?? $row['extra_json'] ?? null,
+        'f_is_active' => in_array(strtolower(trim((string)($row['f_is_active'] ?? $row['is_active'] ?? '1'))), ['1', 'true', 'yes', 'on'], true),
+      ];
+    }
+
+    return $normalized;
+  }
+
+  private function selectAdditionalConnectionEnvRowForTesting(array $connection, array $input): array {
+    $envRows = is_array($connection['env_rows'] ?? null) ? $connection['env_rows'] : [];
+    if ($envRows === []) {
+      throw new RuntimeException('Tiada konfigurasi environment untuk sambungan tambahan ini.');
+    }
+
+    $targetEnvironment = strtolower(trim((string)($input['environment'] ?? 'production')));
+    $targetOsFamily = strtolower(trim((string)($input['os_family'] ?? (PHP_OS_FAMILY === 'Windows' ? 'windows' : 'linux'))));
+    $targetDriver = strtolower(trim((string)($input['driver'] ?? '')));
+    $supportsProd = !empty($connection['f_supports_prod']);
+    $supportsDev = !empty($connection['f_supports_dev']);
+
+    if ($targetEnvironment === 'production' && !$supportsProd) {
+      throw new RuntimeException('Sambungan tambahan ini tidak menyokong environment production.');
+    }
+
+    if ($targetEnvironment === 'development' && !$supportsDev) {
+      throw new RuntimeException('Sambungan tambahan ini tidak menyokong environment development.');
+    }
+
+    foreach ($envRows as $row) {
+      $rowEnvironment = strtolower(trim((string)($row['f_environment'] ?? '')));
+      $rowOsFamily = strtolower(trim((string)($row['f_os_family'] ?? 'any')));
+      $rowDriver = strtolower(trim((string)($row['f_driver'] ?? '')));
+      $rowIsActive = !empty($row['f_is_active']);
+
+      if (!$rowIsActive) {
+        continue;
+      }
+
+      if ($rowEnvironment !== $targetEnvironment) {
+        continue;
+      }
+      if ($rowOsFamily !== 'any' && $rowOsFamily !== $targetOsFamily) {
+        continue;
+      }
+      if ($targetDriver !== '' && $rowDriver !== $targetDriver) {
+        continue;
+      }
+
+      return $row;
+    }
+
+    foreach ($envRows as $row) {
+      if (
+        !empty($row['f_is_active'])
+        && strtolower(trim((string)($row['f_environment'] ?? ''))) === $targetEnvironment
+      ) {
+        return $row;
+      }
+    }
+
+    foreach ($envRows as $row) {
+      if (!empty($row['f_is_active'])) {
+        return $row;
+      }
+    }
+
+    throw new RuntimeException('Tiada env row aktif yang sesuai untuk ujian sambungan tambahan ini.');
+  }
+
+  private function buildAdditionalTestPdoConfig(array $envRow): array {
+    $driver = strtolower(trim((string)($envRow['f_driver'] ?? '')));
+    $host = trim((string)($envRow['f_host'] ?? ''));
+    $port = trim((string)($envRow['f_port'] ?? ''));
+    $databaseName = trim((string)($envRow['f_database_name'] ?? ''));
+    $dsnName = trim((string)($envRow['f_dsn_name'] ?? ''));
+    $charset = trim((string)($envRow['f_charset'] ?? 'utf8mb4'));
+
+    $dsn = match ($driver) {
+      'mysql' => sprintf('mysql:host=%s;port=%s;dbname=%s;charset=%s', $host, $port !== '' ? $port : '3306', $databaseName, $charset !== '' ? $charset : 'utf8mb4'),
+      'dblib' => sprintf('dblib:host=%s:%s;dbname=%s', $host, $port !== '' ? $port : '5000', $databaseName),
+      'sqlsrv' => sprintf('sqlsrv:Server=%s%s;Database=%s', $host, $port !== '' ? ',' . $port : '', $databaseName),
+      'odbc' => 'odbc:' . $dsnName,
+      default => throw new RuntimeException('Driver tambahan tidak disokong untuk ujian sambungan.'),
+    };
+
+    return [
+      'driver' => $driver,
+      'dsn' => $dsn,
+      'user' => (string)($envRow['f_username'] ?? ''),
+      'pass' => (string)($envRow['f_password_ciphertext'] ?? ''),
+    ];
+  }
+
+  private function buildAdditionalConnectionProbe(PDO $pdo, array $connection, array $envRow): array {
+    $driverName = 'unknown';
+    $serverVersion = null;
+    $connectionStatus = null;
+
+    try {
+      $driverName = (string)$pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    } catch (Throwable $e) {
+    }
+
+    try {
+      $serverVersion = (string)$pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
+    } catch (Throwable $e) {
+    }
+
+    try {
+      $connectionStatus = (string)$pdo->getAttribute(PDO::ATTR_CONNECTION_STATUS);
+    } catch (Throwable $e) {
+    }
+
+    $pingValue = null;
+    try {
+      $pingValue = $pdo->query('SELECT 1 AS ping')->fetch(PDO::FETCH_ASSOC)['ping'] ?? null;
+    } catch (Throwable $e) {
+    }
+
+    $snapshot = [
+      'connection_code' => (string)($connection['f_code'] ?? ''),
+      'connection_name' => (string)($connection['f_name'] ?? ''),
+      'family' => strtolower(trim((string)($connection['f_family'] ?? ''))),
+      'purpose' => (string)($connection['f_purpose'] ?? ''),
+      'environment' => (string)($envRow['f_environment'] ?? ''),
+      'os_family' => (string)($envRow['f_os_family'] ?? ''),
+      'configured_driver' => (string)($envRow['f_driver'] ?? ''),
+      'active_driver' => $driverName,
+      'host' => (string)($envRow['f_host'] ?? ''),
+      'port' => (string)($envRow['f_port'] ?? ''),
+      'database_name' => (string)($envRow['f_database_name'] ?? ''),
+      'dsn_name' => (string)($envRow['f_dsn_name'] ?? ''),
+      'username' => (string)($envRow['f_username'] ?? ''),
+      'server_version' => $serverVersion,
+      'connection_status' => $connectionStatus,
+      'ping' => $pingValue,
+    ];
+
+    $family = $snapshot['family'];
+    $infoQuery = null;
+
+    if ($family === 'mysql') {
+      $infoQuery = 'SELECT DATABASE() AS current_database, CURRENT_USER() AS current_user, NOW() AS server_time';
+    } elseif (in_array($family, ['sybase', 'mssql'], true)) {
+      $infoQuery = 'SELECT db_name() AS current_database, suser_name() AS current_user, getdate() AS server_time';
+    }
+
+    if ($infoQuery !== null) {
+      try {
+        $info = $pdo->query($infoQuery)->fetch(PDO::FETCH_ASSOC);
+        if (is_array($info)) {
+          $snapshot['current_database'] = (string)($info['current_database'] ?? $snapshot['database_name']);
+          $snapshot['current_user'] = (string)($info['current_user'] ?? $snapshot['username']);
+          $snapshot['server_time'] = (string)($info['server_time'] ?? '');
+        }
+      } catch (Throwable $e) {
+        $snapshot['current_database'] = $snapshot['database_name'];
+        $snapshot['current_user'] = $snapshot['username'];
+        $snapshot['server_time'] = null;
+      }
+    }
+
+    return $snapshot;
+  }
+
+  private function buildAdditionalConnectionSchemaPreview(PDO $pdo, array $connection, array $envRow): array {
+    $family = strtolower(trim((string)($connection['f_family'] ?? '')));
+    $databaseName = trim((string)($envRow['f_database_name'] ?? ''));
+    $rows = [];
+
+    if ($family === 'mysql') {
+      $stmt = $pdo->prepare("
+        SELECT TABLE_NAME AS object_name, TABLE_TYPE AS object_type
+        FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = COALESCE(NULLIF(:database_name, ''), DATABASE())
+        ORDER BY TABLE_NAME ASC
+        LIMIT 30
+      ");
+      $stmt->execute([':database_name' => $databaseName]);
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } elseif (in_array($family, ['sybase', 'mssql'], true)) {
+      $stmt = $pdo->query("
+        SELECT TOP 30 name AS object_name,
+               CASE type WHEN 'U' THEN 'TABLE' WHEN 'V' THEN 'VIEW' ELSE type END AS object_type
+        FROM sysobjects
+        WHERE type IN ('U', 'V')
+        ORDER BY name ASC
+      ");
+      $rows = $stmt ? ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
+    } else {
+      throw new RuntimeException('Family database ini belum disokong untuk schema preview.');
+    }
+
+    return [
+      'connection_code' => (string)($connection['f_code'] ?? ''),
+      'connection_name' => (string)($connection['f_name'] ?? ''),
+      'family' => $family,
+      'environment' => (string)($envRow['f_environment'] ?? ''),
+      'os_family' => (string)($envRow['f_os_family'] ?? ''),
+      'driver' => (string)($envRow['f_driver'] ?? ''),
+      'database_name' => $databaseName,
+      'objects' => array_map(static function (array $row): array {
+        return [
+          'object_name' => (string)($row['object_name'] ?? ''),
+          'object_type' => strtoupper(trim((string)($row['object_type'] ?? ''))),
+        ];
+      }, $rows),
+    ];
+  }
+
+  private function buildAdditionalConnectionObjectPreview(PDO $pdo, array $connection, array $envRow, string $objectName): array {
+    $family = strtolower(trim((string)($connection['f_family'] ?? '')));
+    $safeObjectName = $this->quoteAdditionalPreviewObjectName($family, $objectName);
+
+    if ($family === 'mysql') {
+      $sql = "SELECT * FROM {$safeObjectName} LIMIT 20";
+    } elseif (in_array($family, ['sybase', 'mssql'], true)) {
+      $sql = "SELECT TOP 20 * FROM {$safeObjectName}";
+    } else {
+      throw new RuntimeException('Family database ini belum disokong untuk data preview.');
+    }
+
+    $stmt = $pdo->query($sql);
+    $rows = $stmt ? ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
+    $columns = $rows !== [] ? array_keys($rows[0]) : [];
+
+    return [
+      'connection_code' => (string)($connection['f_code'] ?? ''),
+      'connection_name' => (string)($connection['f_name'] ?? ''),
+      'family' => $family,
+      'environment' => (string)($envRow['f_environment'] ?? ''),
+      'database_name' => (string)($envRow['f_database_name'] ?? ''),
+      'object_name' => $objectName,
+      'columns' => array_values($columns),
+      'rows' => $rows,
+    ];
+  }
+
+  private function quoteAdditionalPreviewObjectName(string $family, string $objectName): string {
+    $parts = array_values(array_filter(array_map('trim', explode('.', $objectName)), static fn(string $part): bool => $part !== ''));
+    if ($parts === []) {
+      throw new RuntimeException('Nama objek preview tidak sah.');
+    }
+
+    return implode('.', array_map(static function (string $part) use ($family): string {
+      if (preg_match('/^[A-Za-z0-9_#$]+$/', $part) !== 1) {
+        throw new RuntimeException('Nama objek preview mengandungi aksara yang tidak dibenarkan.');
+      }
+
+      if ($family === 'mysql') {
+        return '`' . str_replace('`', '``', $part) . '`';
+      }
+
+      return '[' . str_replace(']', ']]', $part) . ']';
+    }, $parts));
   }
 
   /**
@@ -1588,6 +2497,43 @@ class TetapanSistemController {
     }
 
     return $labels;
+  }
+
+  private function auditAdditionalConnectionAction(string $action, string $code, array $meta = []): void {
+    if (!function_exists('audit_event')) return;
+
+    try {
+      $normalizedAction = strtoupper(trim($action));
+      $isFailureAction = str_contains($normalizedAction, 'FAILED') || str_contains($normalizedAction, 'ERROR');
+      $nama = $this->profile['f_nama'] ?? null;
+      $nostaf = $this->profile['f_nopekerja'] ?? $_SESSION['f_nopekerja'] ?? null;
+      $actorLabel = function_exists('audit_format_actor_label')
+        ? audit_format_actor_label($nama, $nostaf)
+        : $nama;
+
+      $summary = sprintf('Additional DB [%s] action=%s', $code, $normalizedAction);
+      $message = function_exists('audit_format_message')
+        ? audit_format_message('Tetapan sambungan tambahan dikemas kini: ' . $summary, $actorLabel)
+        : ('Tetapan sambungan tambahan dikemas kini: ' . $summary);
+
+      audit_event([
+        'event_type' => $normalizedAction,
+        'severity' => $isFailureAction ? 'ERROR' : 'WARN',
+        'outcome' => $isFailureAction ? 'FAILURE' : 'SUCCESS',
+        'target_type' => SystemConfigConstants::AUDIT_TARGET_DB,
+        'target_id' => $code,
+        'target_label' => 'Additional Database Connection',
+        'message' => $message,
+        'user_id' => $_SESSION['user']['f_userID'] ?? $_SESSION['f_userID'] ?? $_SESSION['f_stafID'] ?? null,
+        'actor_label' => $actorLabel,
+        'meta' => array_merge([
+          'connection_code' => $code,
+          'action' => $normalizedAction,
+        ], $meta),
+      ]);
+    } catch (Throwable $e) {
+      error_log("[TetapanSistem] Additional DB audit logging failed: " . $e->getMessage());
+    }
   }
 
   private function tr(string $key, string $fallback): string {

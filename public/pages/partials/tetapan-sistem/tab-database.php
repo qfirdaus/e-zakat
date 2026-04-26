@@ -27,6 +27,11 @@
                       <i class="ri-server-line me-1"></i> <?= __('config_tab_db_subtab_mysql') ?? 'MySQL' ?>
                     </button>
                   </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="db-subtab-additional-tab" data-bs-toggle="tab" data-bs-target="#db-subtab-additional" type="button" role="tab" aria-controls="db-subtab-additional" aria-selected="false">
+                      <i class="ri-stack-line me-1"></i> <?= __('config_tab_db_subtab_additional') ?? 'Additional Connections' ?>
+                    </button>
+                  </li>
                 </ul>
                 <div class="tab-content">
                   <div class="tab-pane fade show active general-subtab-pane" id="db-subtab-sybase" role="tabpanel" aria-labelledby="db-subtab-sybase-tab">
@@ -235,9 +240,75 @@
 
                   <div class="tab-pane fade general-subtab-pane" id="db-subtab-mysql" role="tabpanel" aria-labelledby="db-subtab-mysql-tab">
                     <div class="general-settings-note mb-3">
-                      <i class="ri-server-line me-2"></i><?= __('config_tab_db_mysql_subtab_note') ?? 'Paparan ini menunjukkan sambungan MySQL utama yang sentiasa aktif untuk sistem.' ?>
+                      <i class="ri-server-line me-2"></i><?= __('config_tab_db_mysql_subtab_note') ?? 'Paparan ini menunjukkan sambungan MySQL utama dan pemilihan environment aktif untuk sistem.' ?>
                     </div>
                     <div class="row g-3">
+                      <div class="col-12">
+                        <div class="card db-settings-card">
+                          <div class="card-header db-settings-header-warning">
+                            <div class="d-flex align-items-center">
+                              <div class="db-settings-icon bg-warning bg-opacity-10 text-warning me-3">
+                                <i class="ri-repeat-line fs-5"></i>
+                              </div>
+                              <div>
+                                <h5 class="mb-1 fw-semibold text-warning"><?= __('config_tab_db_mysql_environment_header') ?? 'MySQL Main Environment' ?></h5>
+                                <small class="text-muted"><?= __('config_tab_db_mysql_environment_sub') ?? 'Pilih environment aktif untuk sambungan MySQL utama sistem.' ?></small>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="card-body">
+                            <div class="table-responsive db-settings-table dt-standard-shell">
+                              <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                  <tr>
+                                    <th class="text-center" style="width:50px">
+                                      <i class="ri-radio-button-line text-muted"></i>
+                                    </th>
+                                    <th style="width:220px" class="fw-semibold"><?= __('config_tab_db_mysql_sambungan') ?? 'Environment' ?></th>
+                                    <th class="fw-semibold"><?= __('config_tab_db_mysql_keterangan') ?? 'Description' ?></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr class="db-option-row <?= ($mainMysqlEnvironment === 'production') ? 'table-primary is-selected' : '' ?>" data-db-radio="#main_db_environment_production">
+                                    <td class="text-center">
+                                      <div class="form-check">
+                                        <input class="db-radio" type="radio" name="main_db_environment" id="main_db_environment_production"
+                                          value="production" <?= ($mainMysqlEnvironment === 'production') ? 'checked="checked"' : '' ?>>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <label class="form-check-label fw-bold cursor-pointer" for="main_db_environment_production">
+                                        <?= __('config_tab_db_environment_production') ?? 'Production' ?>
+                                      </label>
+                                    </td>
+                                    <td>
+                                      <span class="badge bg-success-subtle text-success me-2"><i class="ri-checkbox-circle-line"></i></span>
+                                      <?= __('config_tab_db_mysql_environment_production_desc') ?? 'Gunakan MySQL utama production untuk operasi live sistem.' ?>
+                                    </td>
+                                  </tr>
+                                  <tr class="db-option-row <?= ($mainMysqlEnvironment === 'development') ? 'table-primary is-selected' : '' ?>" data-db-radio="#main_db_environment_development">
+                                    <td class="text-center">
+                                      <div class="form-check">
+                                        <input class="db-radio" type="radio" name="main_db_environment" id="main_db_environment_development"
+                                          value="development" <?= ($mainMysqlEnvironment === 'development') ? 'checked="checked"' : '' ?>>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <label class="form-check-label fw-bold cursor-pointer" for="main_db_environment_development">
+                                        <?= __('config_tab_db_environment_development') ?? 'Development' ?>
+                                      </label>
+                                    </td>
+                                    <td>
+                                      <span class="badge bg-info-subtle text-info me-2"><i class="ri-flask-line"></i></span>
+                                      <?= __('config_tab_db_mysql_environment_development_desc') ?? 'Gunakan MySQL utama development untuk testing dan staging.' ?>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                       <div class="col-12">
                         <div class="card db-settings-card">
                           <div class="card-header db-settings-header-success">
@@ -265,6 +336,10 @@
                                 </thead>
                                 <tbody>
                                   <tr>
+                                    <td><strong><?= __('config_tab_db_runtime_environment') ?? 'Environment' ?></strong></td>
+                                    <td><?= $mainMysqlEnvironment === 'development' ? __('config_tab_db_environment_development') ?? 'Development' : __('config_tab_db_environment_production') ?? 'Production' ?></td>
+                                  </tr>
+                                  <tr>
                                     <td><strong><?= __('config_tab_db_mysql_driver') ?? 'Driver' ?></strong></td>
                                     <td><code class="text-primary"><?= htmlspecialchars($mysqlDriver, ENT_QUOTES, 'UTF-8') ?></code></td>
                                   </tr>
@@ -288,6 +363,90 @@
                       </div>
                     </div>
                   </div>
+
+                  <div class="tab-pane fade general-subtab-pane" id="db-subtab-additional" role="tabpanel" aria-labelledby="db-subtab-additional-tab">
+                    <div class="general-settings-note mb-3">
+                      <i class="ri-stack-line me-2"></i><?= __('config_tab_db_additional_note') ?? 'Sambungan tambahan diurus berasingan untuk reporting, reference, integration, dan transaksi sokongan tanpa mengganggu 3 database utama sistem.' ?>
+                    </div>
+                    <div class="card db-settings-card">
+                      <div class="card-header db-settings-header-success">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                          <div class="d-flex align-items-center">
+                            <div class="db-settings-icon bg-success bg-opacity-10 text-success me-3">
+                              <i class="ri-database-2-line fs-5"></i>
+                            </div>
+                            <div>
+                              <h5 class="mb-1 fw-semibold text-success"><?= __('config_tab_db_additional_header') ?? 'Additional Connections Registry' ?></h5>
+                              <small class="text-muted"><?= __('config_tab_db_additional_sub') ?? 'Setiap connection di sini optional dan hanya digunakan oleh feature tertentu yang memerlukannya.' ?></small>
+                            </div>
+                          </div>
+                          <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-primary" id="btn-db-additional-refresh" onclick="return window.__tetapanRefreshAdditionalConnections ? window.__tetapanRefreshAdditionalConnections(this) : false;">
+                              <i class="ri-refresh-line me-1"></i> <?= __('config_tab_db_additional_refresh') ?? 'Refresh' ?>
+                            </button>
+                            <button type="button" class="btn btn-success" id="btn-db-additional-create" onclick="return window.__tetapanOpenAdditionalConnectionModal ? window.__tetapanOpenAdditionalConnectionModal() : false;">
+                              <i class="ri-add-line me-1"></i> <?= __('config_tab_db_additional_add') ?? 'Add Connection' ?>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        <div class="db-additional-toolbar">
+                          <div class="row g-2">
+                            <div class="col-md-4">
+                              <input type="search" class="form-control" id="db-additional-search" placeholder="<?= __('config_tab_db_additional_search') ?? 'Cari code, nama, jenis, purpose...' ?>">
+                            </div>
+                            <div class="col-md-3">
+                              <select class="form-select" id="db-additional-family-filter">
+                                <option value=""><?= __('config_tab_db_additional_filter_all_types') ?? 'Semua jenis database' ?></option>
+                                <option value="mysql">MySQL</option>
+                                <option value="sybase">Sybase</option>
+                                <option value="mssql">MSSQL</option>
+                              </select>
+                            </div>
+                            <div class="col-md-3">
+                              <select class="form-select" id="db-additional-status-filter">
+                                <option value=""><?= __('config_tab_db_additional_filter_all_status') ?? 'Semua status' ?></option>
+                                <option value="enabled"><?= __('config_tab_db_additional_enabled') ?? 'Enabled' ?></option>
+                                <option value="disabled"><?= __('config_tab_db_additional_disabled') ?? 'Disabled' ?></option>
+                              </select>
+                            </div>
+                            <div class="col-md-2">
+                              <div class="db-additional-counter" id="db-additional-counter">0</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="table-responsive db-settings-table dt-standard-shell">
+                          <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                              <tr>
+                                <th style="width:170px"><?= __('config_tab_db_additional_code') ?? 'Code' ?></th>
+                                <th style="width:220px"><?= __('config_tab_db_additional_name') ?? 'Name' ?></th>
+                                <th style="width:100px"><?= __('config_tab_db_additional_type') ?? 'Type' ?></th>
+                                <th style="width:120px"><?= __('config_tab_db_additional_purpose') ?? 'Purpose' ?></th>
+                                <th style="width:170px"><?= __('config_tab_db_additional_env') ?? 'Environment Support' ?></th>
+                                <th style="width:120px"><?= __('config_tab_db_additional_status') ?? 'Status' ?></th>
+                                <th style="width:220px"><?= __('config_tab_db_additional_last_test') ?? 'Last Test' ?></th>
+                                <th class="text-end" style="width:250px"><?= __('config_tab_db_additional_actions') ?? 'Actions' ?></th>
+                              </tr>
+                            </thead>
+                            <tbody id="db-additional-table-body">
+                              <tr>
+                                <td colspan="8" class="text-center text-muted py-4"><?= __('config_tab_db_additional_loading') ?? 'Memuatkan senarai sambungan tambahan...' ?></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div class="db-additional-empty d-none" id="db-additional-empty">
+                          <i class="ri-inbox-archive-line"></i>
+                          <strong><?= __('config_tab_db_additional_empty_title') ?? 'Belum ada sambungan tambahan.' ?></strong>
+                          <span><?= __('config_tab_db_additional_empty_text') ?? 'Tambah connection pertama untuk reporting, reference, atau integration.' ?></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                   </div>
                 </div>
@@ -301,4 +460,135 @@
                   </button>
                 </div>
               </form>
+
+              <div class="modal fade" id="db-additional-modal" tabindex="-1" aria-hidden="true" aria-labelledby="dbAdditionalModalTitle">
+                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <div class="db-additional-modal-heading">
+                        <div class="db-additional-modal-kicker">
+                          <i class="ri-database-2-line me-2"></i><?= __('config_tab_db_additional_header') ?? 'Additional Connections Registry' ?>
+                        </div>
+                        <h5 class="modal-title" id="db-additional-modal-title"><?= __('config_tab_db_additional_modal_add') ?? 'Add Additional Connection' ?></h5>
+                        <div class="db-additional-modal-subtitle"><?= __('config_tab_db_additional_modal_sub') ?? 'Perubahan di sini tidak akan mengubah main runtime MySQL dan Sybase sistem.' ?></div>
+                      </div>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <form id="form-db-additional" novalidate>
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="form_type" id="db-additional-form-type" value="db_additional_create">
+                        <input type="hidden" name="existing_code" id="db-additional-existing-code" value="">
+
+                        <div class="db-additional-modal-note">
+                          <i class="ri-shield-check-line me-2"></i><?= __('config_tab_db_additional_note') ?? 'Sambungan tambahan diurus berasingan untuk reporting, reference, integration, dan transaksi sokongan tanpa mengganggu 3 database utama sistem.' ?>
+                        </div>
+
+                        <div class="db-additional-form-section">
+                          <div class="db-additional-form-section-title">
+                            <i class="ri-settings-3-line"></i>
+                            <span><?= __('config_tab_db_additional_modal_add') ?? 'Add Additional Connection' ?></span>
+                          </div>
+                          <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                              <label class="form-label" for="db-additional-code"><?= __('config_tab_db_additional_code') ?? 'Code' ?></label>
+                              <input type="text" class="form-control" id="db-additional-code" name="f_code" placeholder="dbx_mysql_reporting">
+                            </div>
+                            <div class="col-md-4">
+                              <label class="form-label" for="db-additional-name"><?= __('config_tab_db_additional_name') ?? 'Name' ?></label>
+                              <input type="text" class="form-control" id="db-additional-name" name="f_name" placeholder="Reporting Database">
+                            </div>
+                            <div class="col-md-4">
+                              <label class="form-label" for="db-additional-purpose"><?= __('config_tab_db_additional_purpose') ?? 'Purpose' ?></label>
+                              <input type="text" class="form-control" id="db-additional-purpose" name="f_purpose" placeholder="reporting">
+                            </div>
+                            <div class="col-md-4">
+                              <label class="form-label" for="db-additional-family"><?= __('config_tab_db_additional_type') ?? 'Type' ?></label>
+                              <select class="form-select" id="db-additional-family" name="f_family">
+                                <option value="mysql">MySQL</option>
+                                <option value="sybase">Sybase</option>
+                                <option value="mssql">MSSQL</option>
+                              </select>
+                            </div>
+                            <div class="col-md-4">
+                              <label class="form-label" for="db-additional-driver-mode"><?= __('config_tab_db_additional_driver_mode') ?? 'Driver Mode' ?></label>
+                              <select class="form-select" id="db-additional-driver-mode" name="f_driver_mode">
+                                <option value="auto">Auto</option>
+                                <option value="dsn">DSN</option>
+                                <option value="dblib">DBLIB</option>
+                                <option value="odbc">ODBC</option>
+                                <option value="sqlsrv">SQLSRV</option>
+                              </select>
+                            </div>
+                            <div class="col-md-4">
+                              <label class="form-label" for="db-additional-notes"><?= __('config_tab_db_additional_notes') ?? 'Notes' ?></label>
+                              <input type="text" class="form-control" id="db-additional-notes" name="f_notes" placeholder="<?= __('config_tab_db_additional_notes_placeholder') ?? 'Optional notes for admin reference' ?>">
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="db-additional-form-section">
+                          <div class="db-additional-form-section-title">
+                            <i class="ri-shield-star-line"></i>
+                            <span><?= __('config_tab_db_runtime_header') ?? 'Current Runtime Summary' ?></span>
+                          </div>
+                          <div class="db-additional-info-card">
+                            <div class="db-additional-info-item">
+                              <div class="db-additional-info-icon"><i class="ri-flashlight-line"></i></div>
+                              <div class="db-additional-info-content">
+                                <div class="db-additional-info-label"><?= __('config_tab_db_additional_enabled_default') ?? 'Connection enabled' ?></div>
+                                <div class="db-additional-info-value"><?= __('config_tab_db_additional_sub') ?? 'Setiap connection di sini optional dan hanya digunakan oleh feature tertentu yang memerlukannya.' ?></div>
+                              </div>
+                            </div>
+                            <div class="row g-3 mb-0">
+                              <div class="col-md-4">
+                                <div class="form-check form-switch db-additional-switch">
+                                  <input class="form-check-input" type="checkbox" id="db-additional-enabled" name="f_is_enabled" checked>
+                                  <label class="form-check-label" for="db-additional-enabled"><?= __('config_tab_db_additional_enabled_default') ?? 'Connection enabled' ?></label>
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <div class="form-check form-switch db-additional-switch">
+                                  <input class="form-check-input" type="checkbox" id="db-additional-supports-prod" name="f_supports_prod" checked>
+                                  <label class="form-check-label" for="db-additional-supports-prod"><?= __('config_tab_db_additional_supports_prod') ?? 'Supports production' ?></label>
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <div class="form-check form-switch db-additional-switch">
+                                  <input class="form-check-input" type="checkbox" id="db-additional-supports-dev" name="f_supports_dev">
+                                  <label class="form-check-label" for="db-additional-supports-dev"><?= __('config_tab_db_additional_supports_dev') ?? 'Supports development' ?></label>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="db-additional-form-section db-additional-form-section-last">
+                          <div class="db-additional-form-section-title">
+                            <i class="ri-stack-line"></i>
+                            <span><?= __('config_tab_db_additional_env_configs') ?? 'Environment Configurations' ?></span>
+                          </div>
+                          <div class="db-additional-env-section">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                              <div>
+                                <small class="text-muted"><?= __('config_tab_db_additional_env_configs_sub') ?? 'Tambah satu atau lebih env row ikut driver dan OS yang diperlukan.' ?></small>
+                              </div>
+                              <button type="button" class="btn btn-primary btn-sm" id="btn-db-additional-env-add">
+                                <i class="ri-add-line me-1"></i> <?= __('config_tab_db_additional_add_env_row') ?? 'Add Env Row' ?>
+                              </button>
+                            </div>
+                            <div id="db-additional-env-rows" class="db-additional-env-rows"></div>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= __('config_alert_no') ?? 'Close' ?></button>
+                      <button type="button" class="btn btn-success" id="btn-db-additional-save" onclick="return window.__tetapanSaveAdditionalConnection ? window.__tetapanSaveAdditionalConnection(this) : false;">
+                        <i class="ri-save-3-line me-1"></i> <?= __('config_tab_db_additional_save') ?? 'Save Connection' ?>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>

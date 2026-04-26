@@ -129,6 +129,33 @@ if (!function_exists('get_sybase_environment')) {
     }
 }
 
+if (!function_exists('get_main_mysql_environment')) {
+    function get_main_mysql_environment(): string {
+        if (defined('MAIN_DB_ENVIRONMENT')) {
+            return sybase_normalize_allowed_value(
+                (string)MAIN_DB_ENVIRONMENT,
+                SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS,
+                SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT
+            );
+        }
+
+        try {
+            $pdo = Database::getInstance('mysql')->getConnection();
+            $config = new Config($pdo);
+            $value = $config->getMainDbEnvironment(SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT);
+            return sybase_normalize_allowed_value(
+                $value,
+                SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS,
+                SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT
+            );
+        } catch (\Throwable $e) {
+            // ignore and fallback
+        }
+
+        return SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT;
+    }
+}
+
 if (!function_exists('get_sybase_operational_mode')) {
     function get_sybase_operational_mode(): string {
         if (defined('SYBASE_OPERATIONAL_MODE')) {

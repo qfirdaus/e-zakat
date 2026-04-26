@@ -211,6 +211,30 @@ class Config extends BaseModel
     }
 
     /** =========================
+     *  Main MySQL Environment
+     * ========================= */
+
+    public function setMainDbEnvironment(string $environment): bool
+    {
+        $allowed = SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS;
+        if (!in_array($environment, $allowed, true)) {
+            return false;
+        }
+        return $this->setValue('MAIN_DB_ENVIRONMENT', $environment, SystemConfigConstants::CONFIG_GROUP_SYSTEM);
+    }
+
+    public function getMainDbEnvironment(?string $default = null): ?string
+    {
+        $val = trim((string)$this->getValue('MAIN_DB_ENVIRONMENT', '', SystemConfigConstants::CONFIG_GROUP_SYSTEM));
+        if ($val === '') {
+            return $default;
+        }
+        return in_array($val, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)
+            ? $val
+            : $default;
+    }
+
+    /** =========================
      *  Sybase Environment + Operational Mode
      * ========================= */
 

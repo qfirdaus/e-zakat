@@ -11,10 +11,16 @@ class SystemConfigConstants {
   
   // Database Types
   const ALLOWED_DB_TYPES = ['ehrmdb', 'ehrmdb_dev'];
+  const ALLOWED_MAIN_DB_ENVIRONMENTS = ['production', 'development'];
   const ALLOWED_SYBASE_ENVIRONMENTS = ['production', 'development'];
   const ALLOWED_SYBASE_OPERATIONAL_MODES = ['staff_only', 'staff_student'];
+  const DEFAULT_MAIN_DB_ENVIRONMENT = 'production';
   const DEFAULT_SYBASE_ENVIRONMENT = 'production';
   const DEFAULT_SYBASE_OPERATIONAL_MODE = 'staff_only';
+  const ALLOWED_DATABASE_FAMILIES = ['mysql', 'sybase', 'mssql'];
+  const ALLOWED_DATABASE_CONNECTION_CATEGORIES = ['main', 'additional'];
+  const ALLOWED_DATABASE_DRIVER_MODES = ['auto', 'dsn', 'dblib', 'odbc', 'sqlsrv'];
+  const RESERVED_DATABASE_CODES = ['mysql', 'mysql_main', 'sybase_staff', 'sybase_student', 'ehrmdb', 'ehrmdb_dev'];
   
   // Theme Settings
   const ALLOWED_THEME_MODES = ['light', 'dark'];

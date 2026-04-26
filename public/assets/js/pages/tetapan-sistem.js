@@ -253,7 +253,9 @@
     const config = window.tetapanSistemConfig || {};
     const __ = window.__ || function (key) { return key; };
     const baseUrl = typeof config.baseUrl === 'string' ? config.baseUrl : '';
+    const csrfToken = typeof config.csrfToken === 'string' ? config.csrfToken : '';
     const initialDbSelection = config.initialDbSelection || {};
+    let additionalConnections = Array.isArray(config.additionalConnections) ? config.additionalConnections.slice() : [];
     const pageUiHelper = window.PageUiHelper || {};
     const formRuntimeState = new WeakMap();
     const buildAssetUrl = function (assetPath) {
@@ -578,8 +580,16 @@
         return;
       }
 
+      var mainMysqlEnvironment = String(runtime.mainMysqlEnvironment || '');
       var environment = String(runtime.dbRenderEnvironment || '');
       var mode = String(runtime.dbRenderOperationalMode || '');
+
+      if (mainMysqlEnvironment) {
+        var mysqlRadio = form.querySelector('input[name="main_db_environment"][value="' + mainMysqlEnvironment + '"]');
+        if (mysqlRadio) {
+          mysqlRadio.checked = true;
+        }
+      }
 
       if (environment) {
         var envRadio = form.querySelector('input[name="sybase_environment"][value="' + environment + '"]');
@@ -606,6 +616,11 @@
         syncDatabaseFormState(form, payload.data.dbRuntime);
       }
 
+      if (payload.tab === 'db' && payload.data && Array.isArray(payload.data.additionalConnections)) {
+        additionalConnections = payload.data.additionalConnections.slice();
+        renderAdditionalConnectionsTable();
+      }
+
       if (payload.tab === 'theme' && payload.data && payload.data.themeSettings) {
         applySavedThemeSettings(payload.data.themeSettings);
         syncThemeFormState(form, payload.data.themeSettings);
@@ -628,6 +643,594 @@
           window.__tetapanRefreshAuthPolicySummary();
         }
       }
+    };
+    const dbAdditionalTableBody = document.getElementById('db-additional-table-body');
+    const dbAdditionalEmpty = document.getElementById('db-additional-empty');
+    const dbAdditionalCounter = document.getElementById('db-additional-counter');
+    const dbAdditionalSearch = document.getElementById('db-additional-search');
+    const dbAdditionalFamilyFilter = document.getElementById('db-additional-family-filter');
+    const dbAdditionalStatusFilter = document.getElementById('db-additional-status-filter');
+    const dbAdditionalCreateButton = document.getElementById('btn-db-additional-create');
+    const dbAdditionalRefreshButton = document.getElementById('btn-db-additional-refresh');
+    const dbAdditionalModalEl = document.getElementById('db-additional-modal');
+    const dbAdditionalForm = document.getElementById('form-db-additional');
+    const dbAdditionalSaveButton = document.getElementById('btn-db-additional-save');
+    const dbAdditionalEnvRows = document.getElementById('db-additional-env-rows');
+    const dbAdditionalEnvAddButton = document.getElementById('btn-db-additional-env-add');
+
+    const escapeHtml = function (value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    const getAdditionalConnectionFilters = function () {
+      return {
+        search: dbAdditionalSearch ? String(dbAdditionalSearch.value || '').trim().toLowerCase() : '',
+        family: dbAdditionalFamilyFilter ? String(dbAdditionalFamilyFilter.value || '').trim().toLowerCase() : '',
+        status: dbAdditionalStatusFilter ? String(dbAdditionalStatusFilter.value || '').trim().toLowerCase() : ''
+      };
+    };
+
+    const flattenEnvSummary = function (envRows) {
+      if (!Array.isArray(envRows) || envRows.length === 0) {
+        return [];
+      }
+
+      return envRows.map(function (row) {
+        var environment = String(row.f_environment || '-');
+        var osFamily = String(row.f_os_family || 'any');
+        var driver = String(row.f_driver || '-');
+        return environment + ' / ' + osFamily + ' / ' + driver;
+      });
+    };
+
+    const getLastTestSummary = function (envRows) {
+      if (!Array.isArray(envRows) || envRows.length === 0) {
+        return __('config_tab_db_additional_last_test_none') || 'Belum diuji';
+      }
+
+      var datedRows = envRows
+        .filter(function (row) { return row && row.f_last_tested_at; })
+        .sort(function (a, b) {
+          return String(b.f_last_tested_at || '').localeCompare(String(a.f_last_tested_at || ''));
+        });
+
+      if (!datedRows.length) {
+        return __('config_tab_db_additional_last_test_none') || 'Belum diuji';
+      }
+
+      var latest = datedRows[0];
+      var status = String(latest.f_last_test_status || '').toUpperCase();
+      return status + ' · ' + String(latest.f_last_tested_at || '');
+    };
+
+    const getFilteredAdditionalConnections = function () {
+      var filters = getAdditionalConnectionFilters();
+
+      return additionalConnections.filter(function (item) {
+        var family = String(item.f_family || '').toLowerCase();
+        var enabled = !!Number(item.f_is_enabled || 0);
+        var haystack = [
+          item.f_code,
+          item.f_name,
+          item.f_family,
+          item.f_purpose,
+          item.f_notes
+        ].join(' ').toLowerCase();
+
+        if (filters.search && haystack.indexOf(filters.search) === -1) {
+          return false;
+        }
+        if (filters.family && family !== filters.family) {
+          return false;
+        }
+        if (filters.status === 'enabled' && !enabled) {
+          return false;
+        }
+        if (filters.status === 'disabled' && enabled) {
+          return false;
+        }
+        return true;
+      });
+    };
+
+    const renderAdditionalConnectionsTable = function () {
+      if (!dbAdditionalTableBody) {
+        return;
+      }
+
+      var items = getFilteredAdditionalConnections();
+      if (dbAdditionalCounter) {
+        dbAdditionalCounter.textContent = String(items.length);
+      }
+
+      if (!items.length) {
+        dbAdditionalTableBody.innerHTML = '';
+        if (dbAdditionalEmpty) {
+          dbAdditionalEmpty.classList.remove('d-none');
+        }
+        return;
+      }
+
+      if (dbAdditionalEmpty) {
+        dbAdditionalEmpty.classList.add('d-none');
+      }
+
+      dbAdditionalTableBody.innerHTML = items.map(function (item) {
+        var code = String(item.f_code || '');
+        var envSummary = flattenEnvSummary(item.env_rows || []);
+        var enabled = !!Number(item.f_is_enabled || 0);
+        var statusBadge = enabled
+          ? '<span class="badge bg-success-subtle text-success">Enabled</span>'
+          : '<span class="badge bg-secondary-subtle text-secondary">Disabled</span>';
+        var family = escapeHtml(item.f_family || '-');
+        var purpose = escapeHtml(item.f_purpose || '-');
+        var name = escapeHtml(item.f_name || code || '-');
+        var envHtml = envSummary.length
+          ? envSummary.map(function (label) {
+              return '<span class="db-additional-pill">' + escapeHtml(label) + '</span>';
+            }).join('')
+          : '<span class="text-muted small">No env rows</span>';
+        return ''
+          + '<tr data-connection-code="' + escapeHtml(code) + '">'
+          +   '<td>'
+          +     '<div class="db-additional-code">' + escapeHtml(code) + '</div>'
+          +     '<div class="db-additional-meta"><span class="badge bg-light text-dark border">' + family + '</span></div>'
+          +   '</td>'
+          +   '<td>' + name + '</td>'
+          +   '<td><span class="badge bg-info-subtle text-info">' + family.toUpperCase() + '</span></td>'
+          +   '<td>' + purpose + '</td>'
+          +   '<td><div class="db-additional-meta">' + envHtml + '</div></td>'
+          +   '<td>' + statusBadge + '</td>'
+          +   '<td><div class="db-additional-test-result">' + escapeHtml(getLastTestSummary(item.env_rows || [])) + '</div></td>'
+          +   '<td class="text-end">'
+          +     '<div class="db-additional-actions">'
+          +       '<button type="button" class="btn btn-sm btn-outline-secondary icon-btn" title="Schema Preview" aria-label="Schema Preview" data-db-additional-action="schema" data-code="' + escapeHtml(code) + '"><i class="ri-table-line"></i></button>'
+          +       '<button type="button" class="btn btn-sm btn-outline-info icon-btn" title="' + escapeHtml((__('config_tab_db_additional_inspect_title')) || 'Additional Connection Details') + '" aria-label="' + escapeHtml((__('config_tab_db_additional_inspect_title')) || 'Additional Connection Details') + '" data-db-additional-action="inspect" data-code="' + escapeHtml(code) + '"><i class="ri-eye-line"></i></button>'
+          +       '<button type="button" class="btn btn-sm btn-outline-primary icon-btn" title="Edit" aria-label="Edit" data-db-additional-action="edit" data-code="' + escapeHtml(code) + '"><i class="ri-edit-line"></i></button>'
+          +       '<button type="button" class="btn btn-sm btn-outline-success icon-btn" title="Test Connection" aria-label="Test Connection" data-db-additional-action="test" data-code="' + escapeHtml(code) + '"><i class="ri-plug-line"></i></button>'
+          +       '<button type="button" class="btn btn-sm ' + (enabled ? 'btn-outline-warning' : 'btn-outline-secondary') + ' icon-btn" title="' + (enabled ? 'Disable' : 'Enable') + '" aria-label="' + (enabled ? 'Disable' : 'Enable') + '" data-db-additional-action="toggle" data-code="' + escapeHtml(code) + '" data-enabled="' + (enabled ? '1' : '0') + '"><i class="ri-power-line"></i></button>'
+          +     '</div>'
+          +   '</td>'
+          + '</tr>';
+      }).join('');
+    };
+
+    const showAdditionalConnectionProbe = function (probe) {
+      if (!(window.Swal && typeof window.Swal.fire === 'function')) {
+        return;
+      }
+
+      var value = function (key) {
+        return escapeHtml(probe && probe[key] != null && probe[key] !== '' ? probe[key] : '-');
+      };
+
+      var html = ''
+        + '<div class="text-start">'
+        +   '<table class="table table-sm align-middle mb-0">'
+        +     '<tbody>'
+        +       '<tr><th style="width:180px">Code</th><td><code>' + value('connection_code') + '</code></td></tr>'
+        +       '<tr><th>Name</th><td>' + value('connection_name') + '</td></tr>'
+        +       '<tr><th>Family</th><td>' + value('family') + '</td></tr>'
+        +       '<tr><th>Purpose</th><td>' + value('purpose') + '</td></tr>'
+        +       '<tr><th>Environment</th><td>' + value('environment') + '</td></tr>'
+        +       '<tr><th>OS Family</th><td>' + value('os_family') + '</td></tr>'
+        +       '<tr><th>' + ((__('config_tab_db_additional_configured_driver')) || 'Configured Driver') + '</th><td>' + value('configured_driver') + '</td></tr>'
+        +       '<tr><th>' + ((__('config_tab_db_additional_active_driver')) || 'Active Driver') + '</th><td>' + value('active_driver') + '</td></tr>'
+        +       '<tr><th>Host</th><td>' + value('host') + '</td></tr>'
+        +       '<tr><th>Port</th><td>' + value('port') + '</td></tr>'
+        +       '<tr><th>' + ((__('config_tab_db_additional_database')) || 'Database') + '</th><td>' + value('database_name') + '</td></tr>'
+        +       '<tr><th>' + ((__('config_tab_db_additional_current_db')) || 'Current Database') + '</th><td>' + value('current_database') + '</td></tr>'
+        +       '<tr><th>' + ((__('config_tab_db_additional_current_user')) || 'Current User') + '</th><td>' + value('current_user') + '</td></tr>'
+        +       '<tr><th>' + ((__('config_tab_db_additional_server_time')) || 'Server Time') + '</th><td>' + value('server_time') + '</td></tr>'
+        +       '<tr><th>' + ((__('config_tab_db_additional_server_version')) || 'Server Version') + '</th><td>' + value('server_version') + '</td></tr>'
+        +       '<tr><th>' + ((__('config_tab_db_additional_ping')) || 'Ping') + '</th><td>' + value('ping') + '</td></tr>'
+        +     '</tbody>'
+        +   '</table>'
+        + '</div>';
+
+      window.Swal.fire({
+        icon: 'info',
+        title: __('config_tab_db_additional_inspect_title') || 'Additional Connection Details',
+        html: html,
+        width: 760,
+        confirmButtonText: __('config_js_btn_ok') || 'OK'
+      });
+    };
+
+    const showAdditionalConnectionSchemaPreview = function (schemaPreview) {
+      if (!(window.Swal && typeof window.Swal.fire === 'function')) {
+        return;
+      }
+
+      var objects = Array.isArray(schemaPreview && schemaPreview.objects) ? schemaPreview.objects : [];
+      var rowsHtml = objects.length
+        ? objects.map(function (item) {
+            var code = encodeURIComponent(String(schemaPreview.connection_code || ''));
+            var objectName = encodeURIComponent(String(item.object_name || ''));
+            var environment = encodeURIComponent(String(schemaPreview.environment || 'production'));
+            var osFamily = encodeURIComponent(String(schemaPreview.os_family || 'any'));
+            var driver = encodeURIComponent(String(schemaPreview.driver || ''));
+            return '<tr><td>' + escapeHtml(item.object_name || '-') + '</td><td>' + escapeHtml(item.object_type || '-') + '</td><td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary" onclick="return window.__tetapanDataPreviewAdditionalConnection && window.__tetapanDataPreviewAdditionalConnection(\'' + code + '\', \'' + objectName + '\', \'' + environment + '\', \'' + osFamily + '\', \'' + driver + '\', this)"><i class="ri-file-search-line"></i></button></td></tr>';
+          }).join('')
+        : '<tr><td colspan="3" class="text-muted text-center py-3">' + ((__('config_tab_db_additional_no_objects')) || 'No objects found.') + '</td></tr>';
+
+      var html = ''
+        + '<div class="text-start mb-3">'
+        +   '<div><strong>Code:</strong> <code>' + escapeHtml(schemaPreview.connection_code || '-') + '</code></div>'
+        +   '<div><strong>Family:</strong> ' + escapeHtml(schemaPreview.family || '-') + '</div>'
+        +   '<div><strong>Environment:</strong> ' + escapeHtml(schemaPreview.environment || '-') + '</div>'
+        +   '<div><strong>Database:</strong> ' + escapeHtml(schemaPreview.database_name || '-') + '</div>'
+        + '</div>'
+        + '<div class="table-responsive">'
+        +   '<table class="table table-sm align-middle mb-0">'
+        +     '<thead><tr><th>' + ((__('config_tab_db_additional_object_name')) || 'Object Name') + '</th><th style="width:140px">' + ((__('config_tab_db_additional_object_type')) || 'Type') + '</th><th class="text-end" style="width:96px">' + ((__('config_tab_db_additional_preview_action')) || 'Preview') + '</th></tr></thead>'
+        +     '<tbody>' + rowsHtml + '</tbody>'
+        +   '</table>'
+        + '</div>';
+
+      window.Swal.fire({
+        icon: 'info',
+        title: __('config_tab_db_additional_schema_title') || 'Schema Preview',
+        html: html,
+        width: 820,
+        confirmButtonText: __('config_js_btn_ok') || 'OK'
+      });
+    };
+
+    window.__tetapanDataPreviewAdditionalConnection = function (encodedCode, encodedObjectName, encodedEnvironment, encodedOsFamily, encodedDriver, buttonEl) {
+      var code = decodeURIComponent(String(encodedCode || ''));
+      var objectName = decodeURIComponent(String(encodedObjectName || ''));
+      var environment = decodeURIComponent(String(encodedEnvironment || 'production'));
+      var osFamily = decodeURIComponent(String(encodedOsFamily || 'any'));
+      var driver = decodeURIComponent(String(encodedDriver || ''));
+
+      postAdditionalConnectionAction('db_additional_object_preview', {
+        connection_code: code,
+        object_name: objectName,
+        environment: environment,
+        os_family: osFamily,
+        driver: driver
+      }, buttonEl)
+        .then(function (payload) {
+          if (!payload || payload.success !== true || !payload.data || !payload.data.objectPreview) {
+            throw new Error((payload && payload.message) || 'Gagal memuatkan data preview sambungan tambahan.');
+          }
+
+          var preview = payload.data.objectPreview;
+          var columns = Array.isArray(preview.columns) ? preview.columns : [];
+          var rows = Array.isArray(preview.rows) ? preview.rows : [];
+          var headerHtml = columns.map(function (column) {
+            return '<th>' + escapeHtml(column) + '</th>';
+          }).join('');
+          var bodyHtml = rows.length
+            ? rows.map(function (row) {
+                return '<tr>' + columns.map(function (column) {
+                  var value = row && row[column] != null ? String(row[column]) : '';
+                  return '<td>' + escapeHtml(value) + '</td>';
+                }).join('') + '</tr>';
+              }).join('')
+            : '<tr><td colspan="' + Math.max(columns.length, 1) + '" class="text-muted text-center py-3">' + ((__('config_tab_db_additional_no_rows')) || 'No rows found.') + '</td></tr>';
+
+          var html = ''
+            + '<div class="text-start mb-3">'
+            + '<div><strong>Code:</strong> <code>' + escapeHtml(preview.connection_code || '-') + '</code></div>'
+            + '<div><strong>Object:</strong> ' + escapeHtml(preview.object_name || '-') + '</div>'
+            + '<div><strong>Environment:</strong> ' + escapeHtml(preview.environment || '-') + '</div>'
+            + '<div><strong>Database:</strong> ' + escapeHtml(preview.database_name || '-') + '</div>'
+            + '</div>'
+            + '<div class="table-responsive"><table class="table table-sm align-middle mb-0">'
+            + '<thead><tr>' + headerHtml + '</tr></thead>'
+            + '<tbody>' + bodyHtml + '</tbody>'
+            + '</table></div>';
+
+          if (window.Swal && typeof window.Swal.fire === 'function') {
+            window.Swal.fire({
+              icon: 'info',
+              title: __('config_tab_db_additional_data_preview_title') || 'Data Preview',
+              html: html,
+              width: 960,
+              confirmButtonText: __('config_js_btn_ok') || 'OK'
+            });
+          }
+        })
+        .catch(function (error) {
+          showTetapanSystemError(error && error.message ? error.message : 'Gagal memuatkan data preview sambungan tambahan.');
+        });
+
+      return false;
+    };
+
+    const ensureAdditionalModalMountedToBody = function () {
+      if (!dbAdditionalModalEl) {
+        return null;
+      }
+
+      if (dbAdditionalModalEl.parentElement !== document.body) {
+        document.body.appendChild(dbAdditionalModalEl);
+      }
+
+      return dbAdditionalModalEl;
+    };
+
+    const getAdditionalModalInstance = function () {
+      const mountedModalEl = ensureAdditionalModalMountedToBody();
+      if (!mountedModalEl || !(window.bootstrap && window.bootstrap.Modal)) {
+        return null;
+      }
+      return window.bootstrap.Modal.getOrCreateInstance(mountedModalEl);
+    };
+
+    ensureAdditionalModalMountedToBody();
+
+    const buildEnvRowMarkup = function (row, index) {
+      var safe = Object.assign({
+        f_environment: 'production',
+        f_os_family: 'any',
+        f_driver: 'mysql',
+        f_host: '',
+        f_port: '',
+        f_database_name: '',
+        f_dsn_name: '',
+        f_username: '',
+        f_password_ciphertext: '',
+        f_charset: 'utf8mb4',
+        f_is_active: true
+      }, row || {});
+
+      return ''
+        + '<div class="db-additional-env-row" data-env-row>'
+        +   '<div class="db-additional-env-row-header">'
+        +     '<div>'
+        +       '<div class="db-additional-env-row-index">Env Row ' + (index + 1) + '</div>'
+        +       '<div class="db-additional-inline-help">Setiap row mewakili satu kombinasi environment, OS, dan driver.</div>'
+        +     '</div>'
+        +     '<button type="button" class="btn btn-sm btn-outline-danger" data-env-row-remove><i class="ri-delete-bin-line me-1"></i>Remove</button>'
+        +   '</div>'
+        +   '<div class="row g-3">'
+        +     '<div class="col-md-3"><label class="form-label">Environment</label><select class="form-select" data-env-field="f_environment"><option value="production"' + (safe.f_environment === 'production' ? ' selected' : '') + '>Production</option><option value="development"' + (safe.f_environment === 'development' ? ' selected' : '') + '>Development</option></select></div>'
+        +     '<div class="col-md-3"><label class="form-label">OS Family</label><select class="form-select" data-env-field="f_os_family"><option value="any"' + (safe.f_os_family === 'any' ? ' selected' : '') + '>Any</option><option value="windows"' + (safe.f_os_family === 'windows' ? ' selected' : '') + '>Windows</option><option value="linux"' + (safe.f_os_family === 'linux' ? ' selected' : '') + '>Linux</option></select></div>'
+        +     '<div class="col-md-3"><label class="form-label">Driver</label><select class="form-select" data-env-field="f_driver"><option value="mysql"' + (safe.f_driver === 'mysql' ? ' selected' : '') + '>mysql</option><option value="odbc"' + (safe.f_driver === 'odbc' ? ' selected' : '') + '>odbc</option><option value="dblib"' + (safe.f_driver === 'dblib' ? ' selected' : '') + '>dblib</option><option value="sqlsrv"' + (safe.f_driver === 'sqlsrv' ? ' selected' : '') + '>sqlsrv</option></select></div>'
+        +     '<div class="col-md-3"><label class="form-label">Active</label><div class="form-check form-switch pt-2"><input class="form-check-input" type="checkbox" data-env-field="f_is_active"' + (safe.f_is_active ? ' checked' : '') + '></div></div>'
+        +     '<div class="col-md-4"><label class="form-label">Host</label><input type="text" class="form-control" data-env-field="f_host" value="' + escapeHtml(safe.f_host) + '"></div>'
+        +     '<div class="col-md-2"><label class="form-label">Port</label><input type="text" class="form-control" data-env-field="f_port" value="' + escapeHtml(safe.f_port) + '"></div>'
+        +     '<div class="col-md-3"><label class="form-label">Database</label><input type="text" class="form-control" data-env-field="f_database_name" value="' + escapeHtml(safe.f_database_name) + '"></div>'
+        +     '<div class="col-md-3"><label class="form-label">DSN</label><input type="text" class="form-control" data-env-field="f_dsn_name" value="' + escapeHtml(safe.f_dsn_name) + '"></div>'
+        +     '<div class="col-md-4"><label class="form-label">Username</label><input type="text" class="form-control" data-env-field="f_username" value="' + escapeHtml(safe.f_username) + '"></div>'
+        +     '<div class="col-md-4"><label class="form-label">Password</label><input type="password" class="form-control" data-env-field="f_password_ciphertext" value="' + escapeHtml(safe.f_password_ciphertext) + '"></div>'
+        +     '<div class="col-md-4"><label class="form-label">Charset</label><input type="text" class="form-control" data-env-field="f_charset" value="' + escapeHtml(safe.f_charset) + '"></div>'
+        +   '</div>'
+        + '</div>';
+    };
+
+    const reindexEnvRows = function () {
+      if (!dbAdditionalEnvRows) {
+        return;
+      }
+      Array.from(dbAdditionalEnvRows.querySelectorAll('[data-env-row]')).forEach(function (row, index) {
+        var label = row.querySelector('.db-additional-env-row-index');
+        if (label) {
+          label.textContent = 'Env Row ' + (index + 1);
+        }
+      });
+    };
+
+    const appendEnvRow = function (row) {
+      if (!dbAdditionalEnvRows) {
+        return;
+      }
+      var wrapper = document.createElement('div');
+      wrapper.innerHTML = buildEnvRowMarkup(row, dbAdditionalEnvRows.querySelectorAll('[data-env-row]').length);
+      var child = wrapper.firstElementChild;
+      if (child) {
+        dbAdditionalEnvRows.appendChild(child);
+        reindexEnvRows();
+      }
+    };
+
+    const resetAdditionalConnectionForm = function () {
+      if (!dbAdditionalForm) {
+        return;
+      }
+      dbAdditionalForm.reset();
+      document.getElementById('db-additional-form-type').value = 'db_additional_create';
+      document.getElementById('db-additional-existing-code').value = '';
+      document.getElementById('db-additional-code').readOnly = false;
+      document.getElementById('db-additional-enabled').checked = true;
+      document.getElementById('db-additional-supports-prod').checked = true;
+      document.getElementById('db-additional-supports-dev').checked = false;
+      var titleEl = document.getElementById('db-additional-modal-title');
+      if (titleEl) {
+        titleEl.textContent = __('config_tab_db_additional_modal_add') || 'Add Additional Connection';
+      }
+      if (dbAdditionalEnvRows) {
+        dbAdditionalEnvRows.innerHTML = '';
+      }
+      appendEnvRow({ f_environment: 'production', f_os_family: 'any', f_driver: 'mysql', f_charset: 'utf8mb4', f_is_active: true });
+    };
+
+    const openAdditionalConnectionModal = function (connection) {
+      if (!dbAdditionalForm) {
+        return;
+      }
+
+      ensureAdditionalModalMountedToBody();
+      resetAdditionalConnectionForm();
+
+      if (connection) {
+        document.getElementById('db-additional-form-type').value = 'db_additional_update';
+        document.getElementById('db-additional-existing-code').value = String(connection.f_code || '');
+        document.getElementById('db-additional-code').value = String(connection.f_code || '');
+        document.getElementById('db-additional-code').readOnly = true;
+        document.getElementById('db-additional-name').value = String(connection.f_name || '');
+        document.getElementById('db-additional-purpose').value = String(connection.f_purpose || '');
+        document.getElementById('db-additional-family').value = String(connection.f_family || 'mysql');
+        document.getElementById('db-additional-driver-mode').value = String(connection.f_driver_mode || 'auto');
+        document.getElementById('db-additional-notes').value = String(connection.f_notes || '');
+        document.getElementById('db-additional-enabled').checked = !!Number(connection.f_is_enabled || 0);
+        document.getElementById('db-additional-supports-prod').checked = !!Number(connection.f_supports_prod || 0);
+        document.getElementById('db-additional-supports-dev').checked = !!Number(connection.f_supports_dev || 0);
+        if (dbAdditionalEnvRows) {
+          dbAdditionalEnvRows.innerHTML = '';
+        }
+        (Array.isArray(connection.env_rows) && connection.env_rows.length ? connection.env_rows : []).forEach(function (row) {
+          appendEnvRow(row);
+        });
+        if (!dbAdditionalEnvRows.querySelector('[data-env-row]')) {
+          appendEnvRow({ f_environment: 'production', f_os_family: 'any', f_driver: 'mysql', f_charset: 'utf8mb4', f_is_active: true });
+        }
+        var titleEl = document.getElementById('db-additional-modal-title');
+        if (titleEl) {
+          titleEl.textContent = __('config_tab_db_additional_modal_edit') || 'Edit Additional Connection';
+        }
+      }
+
+      var modal = getAdditionalModalInstance();
+      if (modal) {
+        modal.show();
+        return;
+      }
+
+      if (dbAdditionalModalEl) {
+        dbAdditionalModalEl.style.display = 'block';
+        dbAdditionalModalEl.classList.add('show');
+        dbAdditionalModalEl.removeAttribute('aria-hidden');
+        document.body.classList.add('modal-open');
+      }
+    };
+
+    window.__tetapanOpenAdditionalConnectionModal = function (code) {
+      if (code) {
+        var existing = additionalConnections.find(function (item) {
+          return String(item.f_code || '') === String(code);
+        }) || null;
+        openAdditionalConnectionModal(existing);
+        return false;
+      }
+
+      openAdditionalConnectionModal(null);
+      return false;
+    };
+
+    const serializeAdditionalEnvRows = function () {
+      if (!dbAdditionalEnvRows) {
+        return [];
+      }
+
+      return Array.from(dbAdditionalEnvRows.querySelectorAll('[data-env-row]')).map(function (row) {
+        var payload = {};
+        row.querySelectorAll('[data-env-field]').forEach(function (field) {
+          var key = field.getAttribute('data-env-field');
+          if (!key) {
+            return;
+          }
+          if (field.type === 'checkbox') {
+            payload[key] = !!field.checked;
+            return;
+          }
+          payload[key] = String(field.value || '').trim();
+        });
+        return payload;
+      });
+    };
+
+    const postAdditionalConnectionAction = function (formType, extraData, button) {
+      var payload = new FormData();
+      payload.set('ajax', '1');
+      payload.set('csrf_token', csrfToken);
+      payload.set('form_type', formType);
+
+      Object.keys(extraData || {}).forEach(function (key) {
+        payload.set(key, extraData[key]);
+      });
+
+      fallbackSetButtonLoading(button, true);
+
+      return fetch(window.location.href, {
+        method: 'POST',
+        body: payload,
+        noLoader: true,
+        headers: Object.assign({
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          'X-No-Loader': '1'
+        }, csrfToken ? { 'X-CSRF-Token': csrfToken } : {})
+      }).then(function (response) {
+        return response.json().catch(function () {
+          throw new Error(__('config_js_invalid_server_response') || 'Respons pelayan tidak sah.');
+        });
+      }).finally(function () {
+        fallbackSetButtonLoading(button, false);
+      });
+    };
+
+    window.__tetapanRefreshAdditionalConnections = function (buttonEl) {
+      postAdditionalConnectionAction('db_additional_list', {}, buttonEl || dbAdditionalRefreshButton)
+        .then(function (payload) {
+          if (!payload || payload.success !== true) {
+            throw new Error((payload && payload.message) || 'Gagal memuat semula sambungan tambahan.');
+          }
+          if (payload.data && Array.isArray(payload.data.additionalConnections)) {
+            additionalConnections = payload.data.additionalConnections.slice();
+            renderAdditionalConnectionsTable();
+          }
+        })
+        .catch(function (error) {
+          showTetapanSystemError(error && error.message ? error.message : 'Gagal memuat semula sambungan tambahan.');
+        });
+      return false;
+    };
+
+    window.__tetapanSaveAdditionalConnection = function (buttonEl) {
+      if (!dbAdditionalForm) {
+        showTetapanSystemError('Borang sambungan tambahan tidak tersedia.');
+        return false;
+      }
+
+      var formTypeField = document.getElementById('db-additional-form-type');
+      var currentFormType = formTypeField ? String(formTypeField.value || 'db_additional_create') : 'db_additional_create';
+      var extraData = {
+        f_code: document.getElementById('db-additional-code').value,
+        f_name: document.getElementById('db-additional-name').value,
+        f_purpose: document.getElementById('db-additional-purpose').value,
+        f_family: document.getElementById('db-additional-family').value,
+        f_driver_mode: document.getElementById('db-additional-driver-mode').value,
+        f_notes: document.getElementById('db-additional-notes').value,
+        f_is_enabled: document.getElementById('db-additional-enabled').checked ? '1' : '0',
+        f_supports_prod: document.getElementById('db-additional-supports-prod').checked ? '1' : '0',
+        f_supports_dev: document.getElementById('db-additional-supports-dev').checked ? '1' : '0',
+        existing_code: document.getElementById('db-additional-existing-code').value,
+        env_rows: JSON.stringify(serializeAdditionalEnvRows())
+      };
+
+      postAdditionalConnectionAction(currentFormType, extraData, buttonEl || dbAdditionalSaveButton)
+        .then(function (payload) {
+          if (!payload || payload.success !== true) {
+            throw new Error((payload && payload.message) || 'Gagal menyimpan sambungan tambahan.');
+          }
+          applyPayloadUiSync(payload, formDB);
+          var modal = getAdditionalModalInstance();
+          if (modal) {
+            modal.hide();
+          }
+          if (window.Swal && typeof window.Swal.fire === 'function') {
+            window.Swal.fire({
+              icon: 'success',
+              title: payload.title || 'Berjaya',
+              text: payload.message || 'Sambungan tambahan berjaya disimpan.',
+              confirmButtonText: __('config_js_btn_ok') || 'OK'
+            });
+          }
+        })
+        .catch(function (error) {
+          showTetapanSystemError(error && error.message ? error.message : 'Gagal menyimpan sambungan tambahan.');
+        });
+
+      return false;
     };
     const cleanupOrphanedBackdrops = function () {
       const hasOpenModal = document.querySelector('.modal.show');
@@ -1690,7 +2293,7 @@
         });
       });
 
-      formDB.querySelectorAll('input[name="sybase_environment"], input[name="sybase_operational_mode"]').forEach(function (input) {
+      formDB.querySelectorAll('input[name="main_db_environment"], input[name="sybase_environment"], input[name="sybase_operational_mode"]').forEach(function (input) {
         input.addEventListener('change', syncDbOptionRows);
       });
 
@@ -1698,6 +2301,161 @@
       captureFormSnapshot(formDB);
       refreshDirtyIndicator(formDB, btnDB);
     }
+
+    if (dbAdditionalEnvAddButton) {
+      dbAdditionalEnvAddButton.addEventListener('click', function () {
+        appendEnvRow({ f_environment: 'production', f_os_family: 'any', f_driver: 'mysql', f_charset: 'utf8mb4', f_is_active: true });
+      });
+    }
+
+    if (dbAdditionalEnvRows) {
+      dbAdditionalEnvRows.addEventListener('click', function (event) {
+        var removeButton = event.target.closest('[data-env-row-remove]');
+        if (!removeButton) {
+          return;
+        }
+        event.preventDefault();
+        var row = removeButton.closest('[data-env-row]');
+        if (!row) {
+          return;
+        }
+        row.remove();
+        if (!dbAdditionalEnvRows.querySelector('[data-env-row]')) {
+          appendEnvRow({ f_environment: 'production', f_os_family: 'any', f_driver: 'mysql', f_charset: 'utf8mb4', f_is_active: true });
+        } else {
+          reindexEnvRows();
+        }
+      });
+    }
+
+    if (dbAdditionalSearch) {
+      dbAdditionalSearch.addEventListener('input', renderAdditionalConnectionsTable);
+    }
+    if (dbAdditionalFamilyFilter) {
+      dbAdditionalFamilyFilter.addEventListener('change', renderAdditionalConnectionsTable);
+    }
+    if (dbAdditionalStatusFilter) {
+      dbAdditionalStatusFilter.addEventListener('change', renderAdditionalConnectionsTable);
+    }
+
+    if (dbAdditionalTableBody) {
+      dbAdditionalTableBody.addEventListener('click', function (event) {
+        var actionButton = event.target.closest('[data-db-additional-action]');
+        if (!actionButton) {
+          return;
+        }
+
+        var action = actionButton.getAttribute('data-db-additional-action') || '';
+        var code = actionButton.getAttribute('data-code') || '';
+        var connection = additionalConnections.find(function (item) {
+          return String(item.f_code || '') === code;
+        }) || null;
+
+        if (action === 'edit') {
+          openAdditionalConnectionModal(connection);
+          return;
+        }
+
+        if (action === 'inspect') {
+          var inspectEnv = connection && Array.isArray(connection.env_rows) && connection.env_rows.length
+            ? (connection.env_rows.find(function (row) { return !!Number(row.f_is_active || 0); }) || connection.env_rows[0])
+            : null;
+          postAdditionalConnectionAction('db_additional_inspect', {
+            connection_code: code,
+            environment: inspectEnv ? String(inspectEnv.f_environment || 'production') : 'production',
+            os_family: inspectEnv ? String(inspectEnv.f_os_family || 'any') : 'any',
+            driver: inspectEnv ? String(inspectEnv.f_driver || '') : ''
+          }, actionButton)
+            .then(function (payload) {
+              if (!payload || payload.success !== true || !payload.data || !payload.data.probe) {
+                throw new Error((payload && payload.message) || 'Gagal memuatkan butiran sambungan tambahan.');
+              }
+              showAdditionalConnectionProbe(payload.data.probe);
+            })
+            .catch(function (error) {
+              showTetapanSystemError(error && error.message ? error.message : 'Gagal memuatkan butiran sambungan tambahan.');
+            });
+          return;
+        }
+
+        if (action === 'schema') {
+          var schemaEnv = connection && Array.isArray(connection.env_rows) && connection.env_rows.length
+            ? (connection.env_rows.find(function (row) { return !!Number(row.f_is_active || 0); }) || connection.env_rows[0])
+            : null;
+          postAdditionalConnectionAction('db_additional_schema_preview', {
+            connection_code: code,
+            environment: schemaEnv ? String(schemaEnv.f_environment || 'production') : 'production',
+            os_family: schemaEnv ? String(schemaEnv.f_os_family || 'any') : 'any',
+            driver: schemaEnv ? String(schemaEnv.f_driver || '') : ''
+          }, actionButton)
+            .then(function (payload) {
+              if (!payload || payload.success !== true || !payload.data || !payload.data.schemaPreview) {
+                throw new Error((payload && payload.message) || 'Gagal memuatkan schema preview sambungan tambahan.');
+              }
+              showAdditionalConnectionSchemaPreview(payload.data.schemaPreview);
+            })
+            .catch(function (error) {
+              showTetapanSystemError(error && error.message ? error.message : 'Gagal memuatkan schema preview sambungan tambahan.');
+            });
+          return;
+        }
+
+        if (action === 'toggle') {
+          var nextEnabled = actionButton.getAttribute('data-enabled') !== '1';
+          postAdditionalConnectionAction('db_additional_toggle', {
+            connection_code: code,
+            enabled: nextEnabled ? '1' : '0'
+          }, actionButton)
+            .then(function (payload) {
+              if (!payload || payload.success !== true) {
+                throw new Error((payload && payload.message) || 'Gagal mengemas kini status sambungan tambahan.');
+              }
+              applyPayloadUiSync(payload, formDB);
+            })
+            .catch(function (error) {
+              showTetapanSystemError(error && error.message ? error.message : 'Gagal mengemas kini status sambungan tambahan.');
+            });
+          return;
+        }
+
+        if (action === 'test') {
+          var firstEnv = connection && Array.isArray(connection.env_rows) && connection.env_rows.length
+            ? (connection.env_rows.find(function (row) { return !!Number(row.f_is_active || 0); }) || connection.env_rows[0])
+            : null;
+          postAdditionalConnectionAction('db_additional_test', {
+            connection_code: code,
+            environment: firstEnv ? String(firstEnv.f_environment || 'production') : 'production',
+            os_family: firstEnv ? String(firstEnv.f_os_family || 'any') : 'any',
+            driver: firstEnv ? String(firstEnv.f_driver || '') : ''
+          }, actionButton)
+            .then(function (payload) {
+              if (!payload || payload.success !== true) {
+                throw new Error((payload && payload.message) || 'Ujian sambungan tambahan gagal.');
+              }
+              if (window.Swal && typeof window.Swal.fire === 'function') {
+                window.Swal.fire({
+                  icon: 'success',
+                  title: payload.title || 'Berjaya',
+                  text: payload.message || 'Ujian sambungan tambahan berjaya.',
+                  confirmButtonText: __('config_js_btn_ok') || 'OK'
+                });
+              }
+              return postAdditionalConnectionAction('db_additional_list', {}, dbAdditionalRefreshButton || actionButton);
+            })
+            .then(function (listPayload) {
+              if (listPayload && listPayload.success && listPayload.data && Array.isArray(listPayload.data.additionalConnections)) {
+                additionalConnections = listPayload.data.additionalConnections.slice();
+                renderAdditionalConnectionsTable();
+              }
+            })
+            .catch(function (error) {
+              showTetapanSystemError(error && error.message ? error.message : 'Ujian sambungan tambahan gagal.');
+            });
+        }
+      });
+    }
+
+    renderAdditionalConnectionsTable();
 
     const formBahasa = document.getElementById('form-bahasa');
     const btnBahasa = document.getElementById('btn-simpan-bahasa');
@@ -1738,7 +2496,7 @@
         }
         refreshDirtyIndicator(form, button);
       });
-    }
+    });
   }
 
   if (document.readyState === 'loading') {

@@ -13,6 +13,7 @@
 //         include_once __DIR__ . '/../sso_sp_client.php';
 //     }
 // }
+require_once __DIR__ . '/DatabaseManager.php';
 class Database
 {
     private static array $instances = [];
@@ -62,73 +63,23 @@ class Database
      */
     public static function getInstance(string $baseName = 'mysql'): self
     {
-        $platform = PHP_OS_FAMILY;
-        $isSybase = str_starts_with($baseName, 'sybase_');
-        $preferStrictDsn = false;
-
-        // 1) Auto-append suffix untuk Sybase kalau caller bagi base key sahaja
-        if ($isSybase && !str_ends_with($baseName, '_dsn') && !str_ends_with($baseName, '_dblib')) {
-            // Pilih dblib jika tersedia; jika tidak, fallback ikut OS
-            $cfgs = require __DIR__ . '/../configuration/db_config.php';
-            $core = $baseName;
-            $preferDblib = isset($cfgs[$core . '_dblib']);
-            $preferDsn   = isset($cfgs[$core . '_dsn']);
-            // On Windows we must use DSN (ODBC) only; avoid dblib attempts entirely
-            if ($platform === 'Windows' && $preferDsn) {
-                $baseName .= '_dsn';
-                $preferStrictDsn = true; // disable cross-driver fallback later
-            } elseif ($preferDblib) {
-                $baseName .= '_dblib';
-            } elseif ($preferDsn) {
-                $baseName .= '_dsn';
-            } else {
-                $suffix = ($platform === 'Windows') ? '_dsn' : '_dblib';
-                $baseName .= $suffix;
-            }
+        $requestedBaseName = strtolower(trim($baseName));
+        if ($requestedBaseName === '') {
+            $requestedBaseName = 'mysql';
         }
 
-        // 2) Cache instance mengikut $baseName (yang mungkin sudah ditambah suffix)
-        if (!isset(self::$instances[$baseName])) {
-            $configs = require __DIR__ . '/../configuration/db_config.php';
+        if (!isset(self::$instances[$requestedBaseName])) {
+            $manager = new DatabaseManager();
 
-            if (!isset($configs[$baseName])) {
-                // Bantu dev: beritahu nama yang ada kalau miss
-                $hint = implode(', ', array_keys($configs));
-                throw new Exception("⚠️ Konfigurasi '$baseName' tidak ditemui dalam db_config.php. Pilihan tersedia: {$hint}");
-            }
-
-            // Try primary config first; if it fails and this is a Sybase entry,
-            // attempt to fall back between '_dsn' and '_dblib' variants to
-            // improve resilience across environments (Windows vs Linux).
             try {
-                self::$instances[$baseName] = new self($configs[$baseName]);
-            } catch (Exception $e) {
-                if ($isSybase && !$preferStrictDsn) {
-                    $alt = null;
-                    if (str_ends_with($baseName, '_dsn')) {
-                        $alt = substr($baseName, 0, -4) . '_dblib';
-                    } elseif (str_ends_with($baseName, '_dblib')) {
-                        $alt = substr($baseName, 0, -6) . '_dsn';
-                    }
-
-                    if ($alt && isset($configs[$alt])) {
-                        try {
-                            error_log("[Database] Primary sybase config '{$baseName}' failed, trying fallback '{$alt}': " . $e->getMessage());
-                            self::$instances[$alt] = new self($configs[$alt]);
-                            // Return fallback instance so callers get a working PDO
-                            return self::$instances[$alt];
-                        } catch (Exception $_e) {
-                            throw new Exception("⚠️ Gagal sambungan ke DB (dicuba {$baseName} dan {$alt}): " . $e->getMessage() . ' | ' . $_e->getMessage());
-                        }
-                    }
-                }
-
-                // Jika bukan sybase atau tiada fallback, re-throw original exception
-                throw $e;
+                $pdo = $manager->connection($requestedBaseName);
+                self::$instances[$requestedBaseName] = self::fromPdo($pdo);
+            } catch (Throwable $e) {
+                throw new Exception("⚠️ Gagal resolve sambungan '{$requestedBaseName}': " . $e->getMessage());
             }
         }
 
-        return self::$instances[$baseName];
+        return self::$instances[$requestedBaseName];
     }
 
     /**
@@ -189,16 +140,23 @@ class Database
     }
 
     /**
+     * 🎯 PDO Additional connection from registry/runtime manager.
+     */
+    public static function pdoAdditional(string $code, ?string $environment = null): PDO
+    {
+        return (new DatabaseManager())->additional($code, $environment);
+    }
+
+    /**
      * 🔁 Clear a cached instance so callers can force a reconnect.
      *
      * @param string $baseName The base config name (same rules as getInstance)
      */
     public static function clearInstance(string $baseName = 'mysql'): void
     {
-        $platform = PHP_OS_FAMILY;
-        if (str_starts_with($baseName, 'sybase_') && !str_ends_with($baseName, '_dsn') && !str_ends_with($baseName, '_dblib')) {
-            $suffix = ($platform === 'Windows') ? '_dsn' : '_dblib';
-            $baseName .= $suffix;
+        $baseName = strtolower(trim($baseName));
+        if ($baseName === '') {
+            $baseName = 'mysql';
         }
 
         if (isset(self::$instances[$baseName])) {
@@ -210,6 +168,8 @@ class Database
             }
             unset(self::$instances[$baseName]);
         }
+
+        (new DatabaseManager())->clear($baseName);
     }
 
     /**
@@ -225,5 +185,14 @@ class Database
             }
             unset(self::$instances[$k]);
         }
+
+        DatabaseManager::clearAll();
+    }
+
+    private static function fromPdo(PDO $pdo): self
+    {
+        $instance = (new ReflectionClass(self::class))->newInstanceWithoutConstructor();
+        $instance->connection = $pdo;
+        return $instance;
     }
 }

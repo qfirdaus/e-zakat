@@ -573,6 +573,24 @@ if (!defined('SYBASE_ENVIRONMENT')) {
     define('SYBASE_ENVIRONMENT', $sybaseEnvironment);
 }
 
+if (!defined('MAIN_DB_ENVIRONMENT')) {
+    $mainDbEnvironment = SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT;
+    $sessionMainDbEnvironment = strtolower(trim((string)($_SESSION['MAIN_DB_ENVIRONMENT'] ?? '')));
+    if ($sessionMainDbEnvironment !== '' && in_array($sessionMainDbEnvironment, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)) {
+        $mainDbEnvironment = $sessionMainDbEnvironment;
+    } else {
+        try {
+            $cfgMainDbEnvironment = strtolower(trim((string)$config->getMainDbEnvironment(SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT)));
+            if ($cfgMainDbEnvironment !== '' && in_array($cfgMainDbEnvironment, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)) {
+                $mainDbEnvironment = $cfgMainDbEnvironment;
+            }
+        } catch (Throwable $e) {
+            // ignore, fallback below
+        }
+    }
+    define('MAIN_DB_ENVIRONMENT', $mainDbEnvironment);
+}
+
 if (!defined('SYBASE_OPERATIONAL_MODE')) {
     $sybaseOperationalMode = SystemConfigConstants::DEFAULT_SYBASE_OPERATIONAL_MODE;
     $sessionSybaseOperationalMode = strtolower(trim((string)($_SESSION['SYBASE_OPERATIONAL_MODE'] ?? '')));

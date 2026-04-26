@@ -535,12 +535,13 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
       min-height: 380px;
       border-radius: 28px 28px 0 0;
       overflow: hidden;
-      padding: 30px;
+      padding: 30px 30px 114px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       color: #ffffff;
     }
+
 
     .facility-visual-top {
       display: flex;
@@ -1053,6 +1054,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
         grid-template-columns: 1fr;
       }
     }
+
   </style>
 </head>
 <body class="authentication-bg facility-login-page">
@@ -1216,6 +1218,7 @@ if ($organizationWebsite !== '' && $organizationWebsite !== '#') {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const banners = Array.from(document.querySelectorAll('[data-login-banner]'));
+
   if (banners.length < 2) {
     return;
   }
