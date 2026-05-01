@@ -24,11 +24,16 @@ $supportEmail = trim((string)app_config('system.support', ''));
 $systemVersion = app_current_version();
 ?>
 <!-- Footer Start -->
-<footer class="footer">
+<footer class="footer"
+        data-organization-name="<?= h($organizationName) ?>"
+        data-organization-short="<?= h($organizationShort) ?>"
+        data-organization-website="<?= h($organizationWebsite) ?>"
+        data-support-email="<?= h($supportEmail) ?>"
+        data-system-name="<?= h(app_config('system.name', 'Base System')) ?>">
   <div class="container-fluid">
     <div class="row">
       <div class="col-md-6">
-        <?= date('Y') ?> © <?= h($footerText !== '' ? $footerText : (string)__('footer_it')) ?> <span class="small text-muted ms-2"><?= h(app_current_version_label()) ?></span>
+        <span id="footer-runtime-year"><?= date('Y') ?></span> © <span id="footer-runtime-text"><?= h($footerText !== '' ? $footerText : (string)__('footer_it')) ?></span> <span class="small text-muted ms-2"><?= h(app_current_version_label()) ?></span>
       </div>
       <div class="col-md-6">
         <div class="text-md-end footer-links d-none d-md-block">
@@ -592,32 +597,48 @@ function confirmLogout(event) {
 document.addEventListener('DOMContentLoaded', function() {
   const aboutLink = document.getElementById('footer-about-link');
   const contactLink = document.getElementById('footer-contact-link');
-  const orgName = <?= json_encode($organizationName !== '' ? $organizationName : app_config('system.name', 'Base System'), JSON_UNESCAPED_UNICODE) ?>;
-  const orgShort = <?= json_encode($organizationShort, JSON_UNESCAPED_UNICODE) ?>;
-  const orgWebsite = <?= json_encode($organizationWebsite, JSON_UNESCAPED_UNICODE) ?>;
-  const supportEmail = <?= json_encode($supportEmail, JSON_UNESCAPED_UNICODE) ?>;
+  const initialRuntimeInfo = {
+    orgName: <?= json_encode($organizationName !== '' ? $organizationName : app_config('system.name', 'Base System'), JSON_UNESCAPED_UNICODE) ?>,
+    orgShort: <?= json_encode($organizationShort, JSON_UNESCAPED_UNICODE) ?>,
+    orgWebsite: <?= json_encode($organizationWebsite, JSON_UNESCAPED_UNICODE) ?>,
+    supportEmail: <?= json_encode($supportEmail, JSON_UNESCAPED_UNICODE) ?>,
+    systemName: <?= json_encode(app_config('system.name', 'Base System'), JSON_UNESCAPED_UNICODE) ?>
+  };
   const fallbackTitle = <?= json_encode(__('footer_content_updating_title') ?: 'Maklumat', JSON_UNESCAPED_UNICODE) ?>;
   const fallbackText = <?= json_encode(__('footer_content_updating') ?: 'Kandungan sedang dikemaskini.', JSON_UNESCAPED_UNICODE) ?>;
   const okText = <?= json_encode(__('footer_content_updating_ok') ?: 'OK', JSON_UNESCAPED_UNICODE) ?>;
+
+  const readRuntimeInfo = function() {
+    const footer = document.querySelector('.footer');
+    const data = footer ? footer.dataset : {};
+    return {
+      orgName: String(data.organizationName || initialRuntimeInfo.orgName || initialRuntimeInfo.systemName || '').trim(),
+      orgShort: String(data.organizationShort || initialRuntimeInfo.orgShort || '').trim(),
+      orgWebsite: String(data.organizationWebsite || initialRuntimeInfo.orgWebsite || '').trim(),
+      supportEmail: String(data.supportEmail || initialRuntimeInfo.supportEmail || '').trim()
+    };
+  };
   
   const buildAboutHtml = function() {
+    const info = readRuntimeInfo();
     const lines = [];
-    if (orgName) {
-      lines.push(`<div><strong>${escapeHtml(orgName)}</strong>${orgShort ? ` <span class="text-muted">(${escapeHtml(orgShort)})</span>` : ''}</div>`);
+    if (info.orgName) {
+      lines.push(`<div><strong>${escapeHtml(info.orgName)}</strong>${info.orgShort ? ` <span class="text-muted">(${escapeHtml(info.orgShort)})</span>` : ''}</div>`);
     }
-    if (orgWebsite && orgWebsite !== '#') {
-      lines.push(`<div class="mt-2"><a href="${escapeAttribute(orgWebsite)}" target="_blank" rel="noopener noreferrer">${escapeHtml(orgWebsite)}</a></div>`);
+    if (info.orgWebsite && info.orgWebsite !== '#') {
+      lines.push(`<div class="mt-2"><a href="${escapeAttribute(info.orgWebsite)}" target="_blank" rel="noopener noreferrer">${escapeHtml(info.orgWebsite)}</a></div>`);
     }
     return lines.join('') || `<div>${escapeHtml(fallbackText)}</div>`;
   };
 
   const buildContactHtml = function() {
+    const info = readRuntimeInfo();
     const lines = [];
-    if (supportEmail) {
-      lines.push(`<div><a href="mailto:${escapeAttribute(supportEmail)}">${escapeHtml(supportEmail)}</a></div>`);
+    if (info.supportEmail) {
+      lines.push(`<div><a href="mailto:${escapeAttribute(info.supportEmail)}">${escapeHtml(info.supportEmail)}</a></div>`);
     }
-    if (orgWebsite && orgWebsite !== '#') {
-      lines.push(`<div class="mt-2"><a href="${escapeAttribute(orgWebsite)}" target="_blank" rel="noopener noreferrer">${escapeHtml(orgWebsite)}</a></div>`);
+    if (info.orgWebsite && info.orgWebsite !== '#') {
+      lines.push(`<div class="mt-2"><a href="${escapeAttribute(info.orgWebsite)}" target="_blank" rel="noopener noreferrer">${escapeHtml(info.orgWebsite)}</a></div>`);
     }
     return lines.join('') || `<div>${escapeHtml(fallbackText)}</div>`;
   };

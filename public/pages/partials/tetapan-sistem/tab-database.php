@@ -242,8 +242,8 @@
                     <div class="general-settings-note mb-3">
                       <i class="ri-server-line me-2"></i><?= __('config_tab_db_mysql_subtab_note') ?? 'Paparan ini menunjukkan sambungan MySQL utama dan pemilihan environment aktif untuk sistem.' ?>
                     </div>
-                    <div class="row g-3">
-                      <div class="col-12">
+                    <div class="row gx-3 gy-0 align-items-start">
+                      <div class="col-lg-7">
                         <div class="card db-settings-card">
                           <div class="card-header db-settings-header-warning">
                             <div class="d-flex align-items-center">
@@ -309,7 +309,7 @@
                           </div>
                         </div>
                       </div>
-                      <div class="col-12">
+                      <div class="col-lg-5">
                         <div class="card db-settings-card">
                           <div class="card-header db-settings-header-success">
                             <div class="d-flex align-items-center">
@@ -337,23 +337,45 @@
                                 <tbody>
                                   <tr>
                                     <td><strong><?= __('config_tab_db_runtime_environment') ?? 'Environment' ?></strong></td>
-                                    <td><?= $mainMysqlEnvironment === 'development' ? __('config_tab_db_environment_development') ?? 'Development' : __('config_tab_db_environment_production') ?? 'Production' ?></td>
+                                    <td id="db-runtime-mysql-environment"><?= $mainMysqlEnvironment === 'development' ? __('config_tab_db_environment_development') ?? 'Development' : __('config_tab_db_environment_production') ?? 'Production' ?></td>
+                                  </tr>
+                                  <tr>
+                                    <td><strong>Resolved Key</strong></td>
+                                    <td><code class="text-primary" id="db-runtime-mysql-resolved-key"><?= htmlspecialchars($mysqlActiveResolvedKey, ENT_QUOTES, 'UTF-8') ?></code></td>
                                   </tr>
                                   <tr>
                                     <td><strong><?= __('config_tab_db_mysql_driver') ?? 'Driver' ?></strong></td>
-                                    <td><code class="text-primary"><?= htmlspecialchars($mysqlDriver, ENT_QUOTES, 'UTF-8') ?></code></td>
+                                    <td><code class="text-primary" id="db-runtime-mysql-driver"><?= htmlspecialchars($mysqlDriver, ENT_QUOTES, 'UTF-8') ?></code></td>
                                   </tr>
                                   <tr>
                                     <td><strong><?= __('config_tab_db_mysql_host') ?? 'Host' ?></strong></td>
-                                    <td><?= htmlspecialchars($mysqlHost, ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td id="db-runtime-mysql-host"><?= htmlspecialchars($mysqlHost, ENT_QUOTES, 'UTF-8') ?></td>
                                   </tr>
                                   <tr>
                                     <td><strong><?= __('config_tab_db_mysql_database') ?? 'Database' ?></strong></td>
-                                    <td><?= htmlspecialchars($mysqlDatabase, ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td id="db-runtime-mysql-database"><?= htmlspecialchars($mysqlDatabase, ENT_QUOTES, 'UTF-8') ?></td>
                                   </tr>
                                   <tr>
                                     <td><strong><?= __('config_tab_db_mysql_user') ?? 'User' ?></strong></td>
-                                    <td><?= htmlspecialchars($mysqlUser, ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td id="db-runtime-mysql-user"><?= htmlspecialchars($mysqlUser, ENT_QUOTES, 'UTF-8') ?></td>
+                                  </tr>
+                                  <tr>
+                                    <td><strong>Production Target</strong></td>
+                                    <td id="db-runtime-mysql-prod-target"><?= htmlspecialchars($mysqlProdTargetText, ENT_QUOTES, 'UTF-8') ?><?= $mysqlProdDedicated ? ' <span class="badge bg-success-subtle text-success ms-1">dedicated env</span>' : ' <span class="badge bg-secondary-subtle text-secondary ms-1">fallback</span>' ?></td>
+                                  </tr>
+                                  <tr>
+                                    <td><strong>Development Target</strong></td>
+                                    <td id="db-runtime-mysql-dev-target"><?= htmlspecialchars($mysqlDevTargetText, ENT_QUOTES, 'UTF-8') ?><?= $mysqlDevDedicated ? ' <span class="badge bg-success-subtle text-success ms-1">dedicated env</span>' : ' <span class="badge bg-secondary-subtle text-secondary ms-1">fallback</span>' ?></td>
+                                  </tr>
+                                  <tr>
+                                    <td><strong>Diagnostic</strong></td>
+                                    <td id="db-runtime-mysql-diagnostic">
+                                      <?php if ($mysqlSameTarget): ?>
+                                        <span class="badge bg-warning-subtle text-warning"><i class="ri-alert-line me-1"></i>Production dan development resolve ke target yang sama</span>
+                                      <?php else: ?>
+                                        <span class="badge bg-success-subtle text-success"><i class="ri-checkbox-circle-line me-1"></i>Production dan development resolve ke target berbeza</span>
+                                      <?php endif; ?>
+                                    </td>
                                   </tr>
                                 </tbody>
                               </table>
@@ -380,7 +402,7 @@
                               <small class="text-muted"><?= __('config_tab_db_additional_sub') ?? 'Setiap connection di sini optional dan hanya digunakan oleh feature tertentu yang memerlukannya.' ?></small>
                             </div>
                           </div>
-                          <div class="d-flex gap-2 flex-wrap">
+                          <div class="d-flex gap-2 flex-wrap db-additional-header-actions">
                             <button type="button" class="btn btn-primary" id="btn-db-additional-refresh" onclick="return window.__tetapanRefreshAdditionalConnections ? window.__tetapanRefreshAdditionalConnections(this) : false;">
                               <i class="ri-refresh-line me-1"></i> <?= __('config_tab_db_additional_refresh') ?? 'Refresh' ?>
                             </button>
@@ -425,10 +447,10 @@
                                 <th style="width:220px"><?= __('config_tab_db_additional_name') ?? 'Name' ?></th>
                                 <th style="width:100px"><?= __('config_tab_db_additional_type') ?? 'Type' ?></th>
                                 <th style="width:120px"><?= __('config_tab_db_additional_purpose') ?? 'Purpose' ?></th>
-                                <th style="width:170px"><?= __('config_tab_db_additional_env') ?? 'Environment Support' ?></th>
+                                <th style="width:170px"><?= __('config_tab_db_additional_env') ?? 'Environment' ?></th>
                                 <th style="width:120px"><?= __('config_tab_db_additional_status') ?? 'Status' ?></th>
                                 <th style="width:220px"><?= __('config_tab_db_additional_last_test') ?? 'Last Test' ?></th>
-                                <th class="text-end" style="width:250px"><?= __('config_tab_db_additional_actions') ?? 'Actions' ?></th>
+                                <th class="text-start" style="width:250px"><?= __('config_tab_db_additional_actions') ?? 'Actions' ?></th>
                               </tr>
                             </thead>
                             <tbody id="db-additional-table-body">
@@ -461,8 +483,8 @@
                 </div>
               </form>
 
-              <div class="modal fade" id="db-additional-modal" tabindex="-1" aria-hidden="true" aria-labelledby="dbAdditionalModalTitle">
-                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+              <div class="modal fade" id="db-additional-modal" tabindex="-1" aria-hidden="true" aria-labelledby="db-additional-modal-title">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                   <div class="modal-content">
                     <div class="modal-header">
                       <div class="db-additional-modal-heading">
@@ -475,118 +497,190 @@
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                      <ul class="nav nav-tabs db-additional-modal-tabs mb-3" id="db-additional-modal-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                          <button class="nav-link active" id="tab-additional-connection-tab" data-bs-toggle="tab" data-bs-target="#tab-additional-connection" type="button" role="tab" aria-controls="tab-additional-connection" aria-selected="true">
+                            <i class="ri-add-line me-1"></i> <?= __('config_tab_db_additional_modal_add') ?? 'Add Additional Connection' ?>
+                          </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                          <button class="nav-link" id="tab-runtime-summary-tab" data-bs-toggle="tab" data-bs-target="#tab-runtime-summary" type="button" role="tab" aria-controls="tab-runtime-summary" aria-selected="false">
+                            <i class="ri-list-check-2 me-1"></i> <?= __('config_tab_db_runtime_header') ?? 'Current Runtime Summary' ?>
+                          </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                          <button class="nav-link" id="tab-env-configs-tab" data-bs-toggle="tab" data-bs-target="#tab-env-configs" type="button" role="tab" aria-controls="tab-env-configs" aria-selected="false">
+                            <i class="ri-settings-3-line me-1"></i> <?= __('config_tab_db_additional_env_configs') ?? 'Environment Configurations' ?>
+                          </button>
+                        </li>
+                      </ul>
+
                       <form id="form-db-additional" novalidate>
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="form_type" id="db-additional-form-type" value="db_additional_create">
                         <input type="hidden" name="existing_code" id="db-additional-existing-code" value="">
 
-                        <div class="db-additional-modal-note">
-                          <i class="ri-shield-check-line me-2"></i><?= __('config_tab_db_additional_note') ?? 'Sambungan tambahan diurus berasingan untuk reporting, reference, integration, dan transaksi sokongan tanpa mengganggu 3 database utama sistem.' ?>
-                        </div>
+                        <div class="tab-content" id="db-additional-modal-tabs-content">
+                          <div class="tab-pane fade show active" id="tab-additional-connection" role="tabpanel" aria-labelledby="tab-additional-connection-tab">
+                            <div class="db-additional-modal-note">
+                              <i class="ri-shield-check-line me-2"></i><?= __('config_tab_db_additional_note') ?? 'Sambungan tambahan diurus berasingan untuk reporting, reference, integration, dan transaksi sokongan tanpa mengganggu 3 database utama sistem.' ?>
+                            </div>
 
-                        <div class="db-additional-form-section">
-                          <div class="db-additional-form-section-title">
-                            <i class="ri-settings-3-line"></i>
-                            <span><?= __('config_tab_db_additional_modal_add') ?? 'Add Additional Connection' ?></span>
-                          </div>
-                          <div class="row g-3 mb-3">
-                            <div class="col-md-4">
-                              <label class="form-label" for="db-additional-code"><?= __('config_tab_db_additional_code') ?? 'Code' ?></label>
-                              <input type="text" class="form-control" id="db-additional-code" name="f_code" placeholder="dbx_mysql_reporting">
-                            </div>
-                            <div class="col-md-4">
-                              <label class="form-label" for="db-additional-name"><?= __('config_tab_db_additional_name') ?? 'Name' ?></label>
-                              <input type="text" class="form-control" id="db-additional-name" name="f_name" placeholder="Reporting Database">
-                            </div>
-                            <div class="col-md-4">
-                              <label class="form-label" for="db-additional-purpose"><?= __('config_tab_db_additional_purpose') ?? 'Purpose' ?></label>
-                              <input type="text" class="form-control" id="db-additional-purpose" name="f_purpose" placeholder="reporting">
-                            </div>
-                            <div class="col-md-4">
-                              <label class="form-label" for="db-additional-family"><?= __('config_tab_db_additional_type') ?? 'Type' ?></label>
-                              <select class="form-select" id="db-additional-family" name="f_family">
-                                <option value="mysql">MySQL</option>
-                                <option value="sybase">Sybase</option>
-                                <option value="mssql">MSSQL</option>
-                              </select>
-                            </div>
-                            <div class="col-md-4">
-                              <label class="form-label" for="db-additional-driver-mode"><?= __('config_tab_db_additional_driver_mode') ?? 'Driver Mode' ?></label>
-                              <select class="form-select" id="db-additional-driver-mode" name="f_driver_mode">
-                                <option value="auto">Auto</option>
-                                <option value="dsn">DSN</option>
-                                <option value="dblib">DBLIB</option>
-                                <option value="odbc">ODBC</option>
-                                <option value="sqlsrv">SQLSRV</option>
-                              </select>
-                            </div>
-                            <div class="col-md-4">
-                              <label class="form-label" for="db-additional-notes"><?= __('config_tab_db_additional_notes') ?? 'Notes' ?></label>
-                              <input type="text" class="form-control" id="db-additional-notes" name="f_notes" placeholder="<?= __('config_tab_db_additional_notes_placeholder') ?? 'Optional notes for admin reference' ?>">
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="db-additional-form-section">
-                          <div class="db-additional-form-section-title">
-                            <i class="ri-shield-star-line"></i>
-                            <span><?= __('config_tab_db_runtime_header') ?? 'Current Runtime Summary' ?></span>
-                          </div>
-                          <div class="db-additional-info-card">
-                            <div class="db-additional-info-item">
-                              <div class="db-additional-info-icon"><i class="ri-flashlight-line"></i></div>
-                              <div class="db-additional-info-content">
-                                <div class="db-additional-info-label"><?= __('config_tab_db_additional_enabled_default') ?? 'Connection enabled' ?></div>
-                                <div class="db-additional-info-value"><?= __('config_tab_db_additional_sub') ?? 'Setiap connection di sini optional dan hanya digunakan oleh feature tertentu yang memerlukannya.' ?></div>
+                            <div class="db-additional-form-section">
+                              <div class="db-additional-form-section-title">
+                                <i class="ri-settings-3-line"></i>
+                                <span><?= __('config_tab_db_additional_modal_add') ?? 'Add Additional Connection' ?></span>
                               </div>
-                            </div>
-                            <div class="row g-3 mb-0">
-                              <div class="col-md-4">
-                                <div class="form-check form-switch db-additional-switch">
-                                  <input class="form-check-input" type="checkbox" id="db-additional-enabled" name="f_is_enabled" checked>
-                                  <label class="form-check-label" for="db-additional-enabled"><?= __('config_tab_db_additional_enabled_default') ?? 'Connection enabled' ?></label>
+                              <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                  <label class="form-label" for="db-additional-code"><?= __('config_tab_db_additional_code') ?? 'Code' ?></label>
+                                  <input type="text" class="form-control" id="db-additional-code" name="f_code" placeholder="dbx_mysql_reporting">
                                 </div>
-                              </div>
-                              <div class="col-md-4">
-                                <div class="form-check form-switch db-additional-switch">
-                                  <input class="form-check-input" type="checkbox" id="db-additional-supports-prod" name="f_supports_prod" checked>
-                                  <label class="form-check-label" for="db-additional-supports-prod"><?= __('config_tab_db_additional_supports_prod') ?? 'Supports production' ?></label>
+                                <div class="col-md-4">
+                                  <label class="form-label" for="db-additional-name"><?= __('config_tab_db_additional_name') ?? 'Name' ?></label>
+                                  <input type="text" class="form-control" id="db-additional-name" name="f_name" placeholder="Reporting Database">
                                 </div>
-                              </div>
-                              <div class="col-md-4">
-                                <div class="form-check form-switch db-additional-switch">
-                                  <input class="form-check-input" type="checkbox" id="db-additional-supports-dev" name="f_supports_dev">
-                                  <label class="form-check-label" for="db-additional-supports-dev"><?= __('config_tab_db_additional_supports_dev') ?? 'Supports development' ?></label>
+                                <div class="col-md-4">
+                                  <label class="form-label" for="db-additional-purpose"><?= __('config_tab_db_additional_purpose') ?? 'Purpose' ?></label>
+                                  <input type="text" class="form-control" id="db-additional-purpose" name="f_purpose" placeholder="reporting">
+                                </div>
+                                <div class="col-md-4">
+                                  <label class="form-label" for="db-additional-family"><?= __('config_tab_db_additional_type') ?? 'Type' ?></label>
+                                  <select class="form-select" id="db-additional-family" name="f_family">
+                                    <option value="mysql">MySQL</option>
+                                    <option value="sybase">Sybase</option>
+                                    <option value="mssql">MSSQL</option>
+                                  </select>
+                                </div>
+                                <div class="col-md-4">
+                                  <label class="form-label" for="db-additional-driver-mode"><?= __('config_tab_db_additional_driver_mode') ?? 'Driver Mode' ?></label>
+                                  <select class="form-select" id="db-additional-driver-mode" name="f_driver_mode">
+                                    <option value="auto">Auto</option>
+                                    <option value="dsn">DSN</option>
+                                    <option value="dblib">DBLIB</option>
+                                    <option value="odbc">ODBC</option>
+                                    <option value="sqlsrv">SQLSRV</option>
+                                  </select>
+                                </div>
+                                <div class="col-md-4">
+                                  <label class="form-label" for="db-additional-notes"><?= __('config_tab_db_additional_notes') ?? 'Notes' ?></label>
+                                  <input type="text" class="form-control" id="db-additional-notes" name="f_notes" placeholder="<?= __('config_tab_db_additional_notes_placeholder') ?? 'Optional notes for admin reference' ?>">
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div class="db-additional-form-section db-additional-form-section-last">
-                          <div class="db-additional-form-section-title">
-                            <i class="ri-stack-line"></i>
-                            <span><?= __('config_tab_db_additional_env_configs') ?? 'Environment Configurations' ?></span>
-                          </div>
-                          <div class="db-additional-env-section">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                              <div>
-                                <small class="text-muted"><?= __('config_tab_db_additional_env_configs_sub') ?? 'Tambah satu atau lebih env row ikut driver dan OS yang diperlukan.' ?></small>
+                          <div class="tab-pane fade" id="tab-runtime-summary" role="tabpanel" aria-labelledby="tab-runtime-summary-tab">
+                            <div class="db-additional-form-section db-additional-form-section-last">
+                              <div class="db-additional-form-section-title">
+                                <i class="ri-list-check-2"></i>
+                                <span><?= __('config_tab_db_runtime_header') ?? 'Current Runtime Summary' ?></span>
                               </div>
-                              <button type="button" class="btn btn-primary btn-sm" id="btn-db-additional-env-add">
-                                <i class="ri-add-line me-1"></i> <?= __('config_tab_db_additional_add_env_row') ?? 'Add Env Row' ?>
-                              </button>
+                              <div class="db-additional-info-card">
+                                <div class="db-additional-info-item">
+                                  <div class="db-additional-info-icon"><i class="ri-flashlight-line"></i></div>
+                                  <div class="db-additional-info-content">
+                                    <div class="db-additional-info-label"><?= __('config_tab_db_additional_enabled_default') ?? 'Connection enabled' ?></div>
+                                    <div class="db-additional-info-value"><?= __('config_tab_db_additional_sub') ?? 'Setiap connection di sini optional dan hanya digunakan oleh feature tertentu yang memerlukannya.' ?></div>
+                                  </div>
+                                </div>
+                                <div class="row g-3 mb-0">
+                                  <div class="col-md-4">
+                                    <div class="form-check form-switch db-additional-switch">
+                                      <input class="form-check-input" type="checkbox" id="db-additional-enabled" name="f_is_enabled" checked>
+                                      <label class="form-check-label" for="db-additional-enabled"><?= __('config_tab_db_additional_enabled_default') ?? 'Connection enabled' ?></label>
+                                    </div>
+                                  </div>
+                                  <div class="col-md-4">
+                                    <div class="form-check form-switch db-additional-switch">
+                                      <input class="form-check-input" type="checkbox" id="db-additional-supports-prod" name="f_supports_prod" checked>
+                                      <label class="form-check-label" for="db-additional-supports-prod"><?= __('config_tab_db_additional_supports_prod') ?? 'Supports production' ?></label>
+                                    </div>
+                                  </div>
+                                  <div class="col-md-4">
+                                    <div class="form-check form-switch db-additional-switch">
+                                      <input class="form-check-input" type="checkbox" id="db-additional-supports-dev" name="f_supports_dev">
+                                      <label class="form-check-label" for="db-additional-supports-dev"><?= __('config_tab_db_additional_supports_dev') ?? 'Supports development' ?></label>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div id="db-additional-env-rows" class="db-additional-env-rows"></div>
+                          </div>
+
+                          <div class="tab-pane fade" id="tab-env-configs" role="tabpanel" aria-labelledby="tab-env-configs-tab">
+                            <div class="db-additional-form-section db-additional-form-section-last">
+                              <div class="db-additional-form-section-title">
+                                <i class="ri-stack-line"></i>
+                                <span><?= __('config_tab_db_additional_env_configs') ?? 'Environment Configurations' ?></span>
+                              </div>
+                              <div class="db-additional-env-section">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                  <div>
+                                    <small class="text-muted"><?= __('config_tab_db_additional_env_configs_sub') ?? 'Tambah satu atau lebih env row ikut driver dan OS yang diperlukan.' ?></small>
+                                  </div>
+                                  <button type="button" class="btn btn-primary btn-sm db-rounded-btn" id="btn-db-additional-env-add">
+                                    <i class="ri-add-line me-1"></i> <?= __('config_tab_db_additional_add_env_row') ?? 'Add Env Row' ?>
+                                  </button>
+                                </div>
+                                <div id="db-additional-env-rows" class="db-additional-env-rows"></div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </form>
                     </div>
                     <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= __('config_alert_no') ?? 'Close' ?></button>
-                      <button type="button" class="btn btn-success" id="btn-db-additional-save" onclick="return window.__tetapanSaveAdditionalConnection ? window.__tetapanSaveAdditionalConnection(this) : false;">
+                      <button type="button" class="btn btn-secondary db-rounded-btn" data-bs-dismiss="modal"><?= __('config_alert_no') ?? 'Close' ?></button>
+                      <button type="button" class="btn btn-success db-rounded-btn" id="btn-db-additional-save" onclick="return window.__tetapanSaveAdditionalConnection ? window.__tetapanSaveAdditionalConnection(this) : false;">
                         <i class="ri-save-3-line me-1"></i> <?= __('config_tab_db_additional_save') ?? 'Save Connection' ?>
                       </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal fade" id="db-additional-view-modal" tabindex="-1" aria-hidden="true" aria-labelledby="db-additional-view-modal-title">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                  <div class="modal-content">
+                    <div class="modal-header db-additional-view-header">
+                      <div class="db-additional-modal-heading">
+                        <div class="db-additional-modal-kicker" id="db-additional-view-modal-kicker">
+                          <i class="ri-database-2-line me-2"></i><?= __('config_tab_db_additional_header') ?? 'Additional Connections Registry' ?>
+                        </div>
+                        <h5 class="modal-title" id="db-additional-view-modal-title"><?= __('config_tab_db_additional_inspect_title') ?? 'Additional Connection Details' ?></h5>
+                        <div class="db-additional-modal-subtitle" id="db-additional-view-modal-subtitle"><?= __('config_tab_db_additional_modal_sub') ?? 'Changes here will not alter the main MySQL and Sybase runtime.' ?></div>
+                      </div>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div id="db-additional-view-modal-body"></div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary db-rounded-btn" data-bs-dismiss="modal"><?= __('config_alert_no') ?? 'Close' ?></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal fade" id="db-additional-child-view-modal" tabindex="-1" aria-hidden="true" aria-labelledby="db-additional-child-view-modal-title">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                  <div class="modal-content">
+                    <div class="modal-header db-additional-view-header">
+                      <div class="db-additional-modal-heading">
+                        <div class="db-additional-modal-kicker" id="db-additional-child-view-modal-kicker">
+                          <i class="ri-file-search-line me-2"></i><?= __('config_tab_db_additional_data_preview_title') ?? 'Data Preview' ?>
+                        </div>
+                        <h5 class="modal-title" id="db-additional-child-view-modal-title"><?= __('config_tab_db_additional_data_preview_title') ?? 'Data Preview' ?></h5>
+                        <div class="db-additional-modal-subtitle" id="db-additional-child-view-modal-subtitle"></div>
+                      </div>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div id="db-additional-child-view-modal-body"></div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary db-rounded-btn" data-bs-dismiss="modal"><?= __('config_alert_no') ?? 'Close' ?></button>
                     </div>
                   </div>
                 </div>

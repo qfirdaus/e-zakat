@@ -22,6 +22,7 @@ try {
     ensureAjaxGroupManagePermission($db);
 
     $scope = strtolower(trim((string)($_GET['scope'] ?? 'staff')));
+    $groupID = (int)($_GET['groupID'] ?? 0);
     $category = group_category_for_scope($scope);
     if ($category === 'PELAJAR' && function_exists('is_student_mode_enabled') && !is_student_mode_enabled()) {
         http_response_code(403);
@@ -32,7 +33,10 @@ try {
     // Jika ada lajur penanda aktif (contoh f_flag), boleh aktifkan WHERE di bawah:
     $where = '1=1';
     $params = [];
-    if ($category !== null) {
+    if ($groupID > 0) {
+        $where .= ' AND f_groupID = :groupID';
+        $params[':groupID'] = $groupID;
+    } elseif ($category !== null) {
         $where .= ' AND TRIM(COALESCE(f_categoryUser, \'\')) = :category';
         $params[':category'] = $category;
     }
@@ -43,7 +47,14 @@ try {
         f_groupID   AS id,
         f_groupKod  AS kod,
         f_groupName AS nama,
-        f_categoryUser AS categoryUser
+        f_categoryUser AS categoryUser,
+        COALESCE(f_modulAccess, '') AS modulAccess,
+        COALESCE(f_menuAccess, '') AS menuAccess,
+        COALESCE(f_color, '') AS color,
+        COALESCE(f_priority, 0) AS priority,
+        COALESCE(f_mod, 0) AS mod,
+        COALESCE(f_badge_class, '') AS badgeClass,
+        COALESCE(f_row_class, '') AS rowClass
       FROM tbl_m_group
       WHERE $where
       ORDER BY f_groupKod ASC, f_groupName ASC, f_groupID ASC
@@ -56,9 +67,17 @@ try {
     // (Opsyenal) pastikan id integer
     foreach ($rows as &$r) {
         if (isset($r['id'])) $r['id'] = (int)$r['id'];
+        $r['modulAccess'] = array_values(array_filter(array_map('trim', explode(',', (string)($r['modulAccess'] ?? ''))), static fn($v) => $v !== ''));
+        $r['menuAccess'] = array_values(array_filter(array_map('trim', explode(',', (string)($r['menuAccess'] ?? ''))), static fn($v) => $v !== ''));
+        $r['priority'] = (int)($r['priority'] ?? 0);
+        $r['mod'] = (int)($r['mod'] ?? 0);
     }
 
-    echo json_encode(['error' => false, 'groups' => $rows], JSON_UNESCAPED_UNICODE);
+    $payload = ['error' => false, 'groups' => $rows];
+    if ($groupID > 0) {
+        $payload['group'] = $rows[0] ?? null;
+    }
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(

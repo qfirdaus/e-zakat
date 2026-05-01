@@ -45,7 +45,8 @@ try {
             f_path    AS path,
             COALESCE(f_domain,'SHARED') AS domain,
             COALESCE(f_show_staff_only,1) AS show_staff_only,
-            CAST(f_flag AS UNSIGNED) AS flag
+            CAST(f_flag AS UNSIGNED) AS flag,
+            f_order AS menuOrder
           FROM tbl_m_menu";
   $conds = [];
   $params = [];
@@ -56,7 +57,8 @@ try {
 
   if ($conds) $sql .= " WHERE ".implode(' AND ', $conds);
   $sql .= " ORDER BY f_modulID ASC,
-                   COALESCE(NULLIF(f_menuName_ms,''), NULLIF(f_menuName_en,''), f_path) ASC";
+                   COALESCE(f_order, 99999) ASC,
+                   f_menuID ASC";
 
   $stmt = $pdo->prepare($sql);
   $stmt->execute($params);

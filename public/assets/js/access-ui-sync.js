@@ -138,6 +138,28 @@ const AccessUiSync = {
     }
   },
 
+  async syncNavigationSilently(options = {}) {
+    const settings = Object.assign({
+      redirectOnDenied: false,
+      fallbackMenuRefresh: true,
+    }, options || {});
+
+    if (window.AccessUiSync && typeof this.syncSidebarSilently === 'function') {
+      return this.syncSidebarSilently(settings);
+    }
+    if (window.SidebarSync && typeof window.SidebarSync.refreshCurrentSidebar === 'function') {
+      return window.SidebarSync.refreshCurrentSidebar();
+    }
+    if (
+      settings.fallbackMenuRefresh &&
+      window.MenuRefresh &&
+      typeof window.MenuRefresh.refreshMainMenu === 'function'
+    ) {
+      return window.MenuRefresh.refreshMainMenu();
+    }
+    return false;
+  },
+
   async syncSidebarForGroup(groupId, options = {}) {
     const activeGroupId = this.getActiveGroupId();
     const targetGroupId = parseInt(groupId || '0', 10) || 0;

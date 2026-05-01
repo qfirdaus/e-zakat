@@ -81,12 +81,12 @@
                                   <div class="d-flex align-items-center">
                                     <span class="me-2"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></span>
                                     <?php if ($isActive): ?>
-                                      <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                      <span class="badge bg-success-subtle text-success border border-success-subtle js-language-active-badge">
                                         <i class="ri-checkbox-circle-fill me-1"></i> <?= __('config_tab_bahasa_status_aktif') ?? 'Aktif' ?>
                                       </span>
                                     <?php endif; ?>
                                     <?php if ($bahasaDefault === $code): ?>
-                                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2">
+                                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2 js-language-default-badge">
                                         <i class="ri-star-fill me-1"></i> <?= __('config_tab_bahasa_default') ?? 'Bahasa Lalai' ?>
                                       </span>
                                     <?php endif; ?>
@@ -100,6 +100,20 @@
                     </div>
                   </div>
                   <div class="col-md-12">
+                    <div class="lang-runtime-summary row g-2 mb-2" id="lang-runtime-summary">
+                      <div class="col-md-6">
+                        <div class="lang-settings-note h-100 mb-0">
+                          <div class="text-muted small mb-1"><?= __('config_tab_bahasa_status_aktif') ?? 'Aktif' ?></div>
+                          <div class="fw-semibold text-body-emphasis" id="lang-runtime-active"><?= htmlspecialchars(implode(', ', array_map('strtoupper', $bahasaAktif)), ENT_QUOTES, 'UTF-8') ?></div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="lang-settings-note h-100 mb-0">
+                          <div class="text-muted small mb-1"><?= __('config_tab_bahasa_default') ?? 'Bahasa Lalai' ?></div>
+                          <div class="fw-semibold text-body-emphasis" id="lang-runtime-default"><?= htmlspecialchars(strtoupper((string)$bahasaDefault), ENT_QUOTES, 'UTF-8') ?></div>
+                        </div>
+                      </div>
+                    </div>
                     <div class="lang-settings-actions d-flex justify-content-between align-items-center flex-wrap gap-2">
                       <div class="text-muted small">
                         <i class="ri-translate-2 me-1"></i> <?= __('config_tab_bahasa_actions_note') ?? 'Pastikan sekurang-kurangnya satu bahasa kekal aktif dan satu bahasa lalai dipilih.' ?>

@@ -411,7 +411,15 @@ const GroupPermissions = {
           return;
         }
 
-        if (window.MenuAccess && typeof window.MenuAccess.upsertGroupTableRow === 'function') {
+        if (window.MenuAccess && typeof window.MenuAccess.refreshGroupTableRow === 'function') {
+          await window.MenuAccess.refreshGroupTableRow(currentGroupId, {
+            groupID: currentGroupId,
+            groupKod: this.currentGroupData?.kod || '',
+            groupName: this.currentGroupData?.nama || '',
+            modulAccess: GroupState.getModulIDs(),
+            menuAccess: GroupState.getMenuIDs()
+          });
+        } else if (window.MenuAccess && typeof window.MenuAccess.upsertGroupTableRow === 'function') {
           window.MenuAccess.upsertGroupTableRow({
             groupID: currentGroupId,
             groupKod: this.currentGroupData?.kod || '',

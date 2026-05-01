@@ -17,13 +17,6 @@ final class DatabaseRuntimeConfig
 
     public function getMainMysqlEnvironment(): string
     {
-        if (defined('MAIN_DB_ENVIRONMENT')) {
-            $constantValue = strtolower(trim((string)MAIN_DB_ENVIRONMENT));
-            if (in_array($constantValue, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)) {
-                return $constantValue;
-            }
-        }
-
         $sessionValue = strtolower(trim((string)($_SESSION['MAIN_DB_ENVIRONMENT'] ?? '')));
         if (in_array($sessionValue, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)) {
             return $sessionValue;
@@ -32,6 +25,13 @@ final class DatabaseRuntimeConfig
         $envValue = strtolower(trim((string)($_ENV['MAIN_DB_ENVIRONMENT'] ?? $_SERVER['MAIN_DB_ENVIRONMENT'] ?? getenv('MAIN_DB_ENVIRONMENT') ?? '')));
         if (in_array($envValue, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)) {
             return $envValue;
+        }
+
+        if (defined('MAIN_DB_ENVIRONMENT')) {
+            $constantValue = strtolower(trim((string)MAIN_DB_ENVIRONMENT));
+            if (in_array($constantValue, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)) {
+                return $constantValue;
+            }
         }
 
         $configValue = $this->configModel?->getMainDbEnvironment(SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT);

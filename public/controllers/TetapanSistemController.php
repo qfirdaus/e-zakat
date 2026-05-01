@@ -183,7 +183,18 @@ class TetapanSistemController {
       header('Pragma: no-cache');
     }
 
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+    if ($json === false) {
+      http_response_code(500);
+      $json = json_encode([
+        'success' => false,
+        'title' => $this->tr('config_general_system_error_title', 'Ralat Sistem'),
+        'message' => 'Respons JSON gagal dijana.',
+        'errors' => [json_last_error_msg()],
+      ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+
+    echo $json;
     exit;
   }
 
@@ -842,6 +853,66 @@ class TetapanSistemController {
     return $this->db_configs[$key] ?? ($this->db_configs['mysql'] ?? []);
   }
 
+  private function parseMysqlConfigSummary(array $config): array {
+    $dsn = trim((string)($config['dsn'] ?? ''));
+    $host = '-';
+    $database = '-';
+
+    if ($dsn !== '') {
+      if (preg_match('/host=([^;]+)/i', $dsn, $matches)) {
+        $host = trim((string)$matches[1]);
+      }
+      if (preg_match('/dbname=([^;]+)/i', $dsn, $matches)) {
+        $database = trim((string)$matches[1]);
+      }
+    }
+
+    return [
+      'driver' => trim((string)($config['driver'] ?? 'mysql')),
+      'dsn' => $dsn,
+      'host' => $host,
+      'database' => $database,
+      'user' => trim((string)($config['user'] ?? '-')),
+    ];
+  }
+
+  private function mysqlEnvGroupConfigured(string $prefix): bool {
+    $required = [
+      $prefix . '_HOST',
+      $prefix . '_NAME',
+      $prefix . '_USER',
+      $prefix . '_PASS',
+    ];
+
+    foreach ($required as $key) {
+      $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
+      if ($value === false || $value === null || trim((string)$value) === '') {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private function getMysqlRuntimeDiagnostics(string $mainMysqlEnvironment): array {
+    $prodConfig = $this->db_configs['mysql_prod'] ?? ($this->db_configs['mysql'] ?? []);
+    $devConfig = $this->db_configs['mysql_dev'] ?? ($this->db_configs['mysql_prod'] ?? ($this->db_configs['mysql'] ?? []));
+    $prod = $this->parseMysqlConfigSummary(is_array($prodConfig) ? $prodConfig : []);
+    $dev = $this->parseMysqlConfigSummary(is_array($devConfig) ? $devConfig : []);
+    $sameTarget = $prod['dsn'] !== ''
+      && $prod['dsn'] === $dev['dsn']
+      && $prod['user'] === $dev['user'];
+
+    return [
+      'activeResolvedKey' => $mainMysqlEnvironment === 'development' ? 'mysql_dev' : 'mysql_prod',
+      'prod' => $prod,
+      'dev' => $dev,
+      'prodDedicated' => $this->mysqlEnvGroupConfigured('DB_MYSQL_MAIN_PROD'),
+      'devDedicated' => $this->mysqlEnvGroupConfigured('DB_MYSQL_MAIN_DEV'),
+      'sameTarget' => $sameTarget,
+    ];
+  }
+
   private function getSelectedMainDbEnvironment(): string {
     $sessionEnvironment = strtolower(trim((string)($_SESSION['MAIN_DB_ENVIRONMENT'] ?? '')));
     if (in_array($sessionEnvironment, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)) {
@@ -884,6 +955,7 @@ class TetapanSistemController {
     $operationalMode = $this->getSelectedOperationalMode();
     $mainMysqlEnvironment = $this->getSelectedMainDbEnvironment();
     $mysqlInfo = $this->getMysqlInfo();
+    $mysqlDiagnostics = $this->getMysqlRuntimeDiagnostics($mainMysqlEnvironment);
 
     $mysqlDriver = trim((string)($mysqlInfo['driver'] ?? 'mysql'));
     $mysqlDsn = trim((string)($mysqlInfo['dsn'] ?? ''));
@@ -918,6 +990,12 @@ class TetapanSistemController {
       'mysqlUser' => $mysqlUser,
       'mysqlHost' => $mysqlHost,
       'mysqlDatabase' => $mysqlDatabase,
+      'mysqlActiveResolvedKey' => (string)($mysqlDiagnostics['activeResolvedKey'] ?? '-'),
+      'mysqlProdTarget' => $mysqlDiagnostics['prod'] ?? [],
+      'mysqlDevTarget' => $mysqlDiagnostics['dev'] ?? [],
+      'mysqlProdDedicated' => (bool)($mysqlDiagnostics['prodDedicated'] ?? false),
+      'mysqlDevDedicated' => (bool)($mysqlDiagnostics['devDedicated'] ?? false),
+      'mysqlSameTarget' => (bool)($mysqlDiagnostics['sameTarget'] ?? false),
     ];
   }
 
@@ -1085,6 +1163,8 @@ class TetapanSistemController {
       $_SESSION['SYBASE_OPERATIONAL_MODE'] = $selectedOperationalMode;
 
       Database::clearInstance('mysql');
+      Database::clearInstance('mysql_prod');
+      Database::clearInstance('mysql_dev');
 
       $legacyLogical = ($selectedEnvironment === 'development') ? 'ehrmdb_dev' : 'ehrmdb';
       $this->activateSybaseBase($legacyLogical);

@@ -1,4 +1,4 @@
-# e-Base a
+# e-Base aaaaa
 
 e-Base is a web-based internal platform used as a secure and reusable foundation for enterprise applications, administration portals, and operational systems. It provides a structured starting point for building organization-specific solutions with consistent authentication, access control, system configuration, auditability, multilingual support, and modular feature management.
 
@@ -6,7 +6,7 @@ The current version has evolved beyond a simple starter template. It now operate
 
 ## Versioning
 
-- Current version: `1.7.2`
+- Current version: `1.7.3`
 - Release history: [CHANGELOG.md](./CHANGELOG.md)
 - Version source of truth: [VERSION](./VERSION)
   Runtime note: Docker mounts this file into the container so the application version label reads from the same source.
@@ -132,7 +132,7 @@ At a high level, the platform combines:
   Allows administrators to manage runtime values such as system identity, branding-related text, support information, and selected operational settings from the UI.
 
 - **Database Runtime Configuration**  
-  Supports environment-based and operational-mode-based Sybase runtime selection for staff-only or staff-and-student access models.
+  Supports environment-based MySQL and Sybase runtime selection, operational-mode-based Sybase staff/student access models, runtime diagnostics, and AJAX-synced runtime summaries after settings are saved.
 
 - **Email Configuration**  
   Provides UI-based management for mail server settings, sender identity, and connection testing.
@@ -202,7 +202,7 @@ The current build already includes several working administrative and operationa
 ### System Configuration and Content Modules
 
 - **System Settings (`pages/tetapan-sistem.php`)**  
-  Provides centralized runtime configuration for general settings, authentication policy, email settings and test delivery, database runtime selection, theme configuration, and language configuration. The authentication policy workspace now also includes dedicated SSO auto-provision controls for Staff and Student identities, together with configurable default group code assignment.
+  Provides centralized runtime configuration for general settings, authentication policy, email settings and test delivery, database runtime selection, theme configuration, and language configuration. The database workspace now separates main MySQL production/development targets, shows resolved runtime diagnostics, supports additional database connection sample-code tabs for programmers, and updates MySQL/Sybase runtime summaries after AJAX saves without requiring a page refresh. The authentication policy workspace also includes dedicated SSO auto-provision controls for Staff and Student identities, together with configurable default group code assignment.
 
 - **Email Template Management (`pages/template-emel.php`)**  
   Provides a structured workspace for maintaining system email templates, including template listing, filters, status management, placeholder usage, seed templates, subject/body content editing, render-oriented template administration, AJAX-based create/update/duplicate/archive/delete actions without page refresh, developer-oriented placeholder guidance, generated integration snippet support, dynamic sample JSON preview data based on placeholders used by the current template, and manual-close SweetAlert feedback flows.

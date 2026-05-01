@@ -2946,6 +2946,10 @@ window.hasDT = function() {
       aksesModalEl?.addEventListener('hidden.bs.modal', () => {
         if (typeof GroupState !== 'undefined' && !GroupState.isMenuOrderDirty()) return;
         if (typeof GroupState !== 'undefined') GroupState.setMenuOrderDirty(false);
+        if (window.ModuleAccess && typeof window.ModuleAccess.syncSidebarAfterNavigationChange === 'function') {
+          window.ModuleAccess.syncSidebarAfterNavigationChange();
+          return;
+        }
         if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
           window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
           return;
@@ -3392,6 +3396,12 @@ document.addEventListener('DOMContentLoaded', function(){
   let restoreParentAccessModal = false;
 
   const syncSidebarAfterModuleChange = async () => {
+    if (window.ModuleAccess && typeof window.ModuleAccess.syncSidebarAfterNavigationChange === 'function') {
+      return window.ModuleAccess.syncSidebarAfterNavigationChange();
+    }
+    if (window.AccessUiSync && typeof window.AccessUiSync.syncNavigationSilently === 'function') {
+      return window.AccessUiSync.syncNavigationSilently({ redirectOnDenied: false }).catch(console.warn);
+    }
     if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
       return window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
     }
@@ -3467,6 +3477,12 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   if (saveBtn && form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (saveBtn.disabled) return;
+      saveBtn.click();
+    });
+
     saveBtn.addEventListener('click', async function(e){
       e.preventDefault();
       const isEditMode = (form.dataset.mode || 'create') === 'edit';
@@ -3505,7 +3521,10 @@ document.addEventListener('DOMContentLoaded', function(){
         if (window.ModuleAccess && typeof ModuleAccess.reloadCurrentAccess === 'function') {
           await ModuleAccess.reloadCurrentAccess();
         }
-        await syncSidebarAfterModuleChange();
+        if (window.MenuAccess && typeof MenuAccess.refreshVisibleGroupTableRows === 'function') {
+          await MenuAccess.refreshVisibleGroupTableRows();
+        }
+        syncSidebarAfterModuleChange();
         setModuleFormMode('create');
 
         if (window.Swal && typeof Swal.fire === 'function') {

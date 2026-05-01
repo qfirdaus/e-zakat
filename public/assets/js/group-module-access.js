@@ -31,11 +31,7 @@ const ModuleAccess = {
     this.modalEl?.addEventListener('hidden.bs.modal', () => {
       if (!GroupState.isMenuOrderDirty()) return;
       GroupState.setMenuOrderDirty(false);
-      if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
-        window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
-        return;
-      }
-      MenuRefresh.refreshMainMenu().catch(console.warn);
+      this.syncSidebarAfterNavigationChange();
     });
     
     // Search functionality
@@ -78,6 +74,19 @@ const ModuleAccess = {
     this.setupModuleDragDelegation();
     
     // View access button handler - delegated to main file
+  },
+
+  syncSidebarAfterNavigationChange() {
+    if (window.AccessUiSync && typeof window.AccessUiSync.syncNavigationSilently === 'function') {
+      return window.AccessUiSync.syncNavigationSilently({ redirectOnDenied: false }).catch(console.warn);
+    }
+    if (window.SidebarSync && typeof window.SidebarSync.refreshCurrentSidebar === 'function') {
+      return window.SidebarSync.refreshCurrentSidebar().catch(console.warn);
+    }
+    if (window.MenuRefresh && typeof window.MenuRefresh.refreshMainMenu === 'function') {
+      return window.MenuRefresh.refreshMainMenu().catch(console.warn);
+    }
+    return Promise.resolve(false);
   },
   
   showLoading() {
@@ -354,11 +363,7 @@ const ModuleAccess = {
         return;
       }
       GroupState.setMenuOrderDirty(false);
-      if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
-        await window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
-      } else {
-        await MenuRefresh.refreshMainMenu().catch(console.warn);
-      }
+      this.syncSidebarAfterNavigationChange();
     } catch (e) {
       this.restoreModuleOrder(oldOrder);
       this.showError(e.message || this.T.error_network);
@@ -411,11 +416,10 @@ const ModuleAccess = {
       }
 
       await this.reloadCurrentAccess();
-      if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
-        await window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
-      } else if (typeof MenuRefresh !== 'undefined' && MenuRefresh && typeof MenuRefresh.refreshMainMenu === 'function') {
-        await MenuRefresh.refreshMainMenu().catch(console.warn);
+      if (window.MenuAccess && typeof window.MenuAccess.refreshVisibleGroupTableRows === 'function') {
+        await window.MenuAccess.refreshVisibleGroupTableRows();
       }
+      this.syncSidebarAfterNavigationChange();
 
       if (window.Swal && typeof Swal.fire === 'function') {
         await (window.GroupSwal ? GroupSwal.fire({
@@ -492,11 +496,7 @@ const ModuleAccess = {
       }
       this.refreshReorderButtons(bodyEl);
       GroupState.setMenuOrderDirty(true);
-      if (window.AccessUiSync && typeof window.AccessUiSync.syncSidebarSilently === 'function') {
-        await window.AccessUiSync.syncSidebarSilently({ redirectOnDenied: false }).catch(console.warn);
-      } else {
-        await MenuRefresh.refreshMainMenu().catch(console.warn);
-      }
+      this.syncSidebarAfterNavigationChange();
       GroupState.setMenuOrderDirty(false);
     } catch (e) {
       if (typeof revert === 'function') revert();

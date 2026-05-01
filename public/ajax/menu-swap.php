@@ -143,6 +143,7 @@ try {
   require_once __DIR__ . '/_helpers.php';
   GroupDataCache::clear('menu_list_');
   GroupDataCache::clear('group_access_');
+  clearSidebarNavigationCaches();
   
   echo json_encode(['error'=>false, 'message'=>(string)__('userGroup_ok'), 'modulID'=>$modulID, 'swapped'=>['a'=>$aID,'b'=>$bID]], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e){

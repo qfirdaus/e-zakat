@@ -108,8 +108,34 @@
                         </div>
                         </div>
                       </div>
+                  </div>
+                </div>
+                <div class="email-runtime-summary row g-2 mt-2" id="email-runtime-summary">
+                  <div class="col-sm-6 col-xl-3">
+                    <div class="email-settings-note h-100 mb-0">
+                      <div class="text-muted small mb-1"><?= __('config_tab_emel_driver') ?? 'Mail Driver' ?></div>
+                      <div class="fw-semibold text-body-emphasis" id="email-runtime-driver"><?= htmlspecialchars((string)($emailSettings['mail_driver'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></div>
                     </div>
                   </div>
+                  <div class="col-sm-6 col-xl-3">
+                    <div class="email-settings-note h-100 mb-0">
+                      <div class="text-muted small mb-1"><?= __('config_tab_emel_host') ?? 'Mail Host' ?></div>
+                      <div class="fw-semibold text-body-emphasis text-break" id="email-runtime-host"><?= htmlspecialchars(trim((string)($emailSettings['mail_host'] ?? '')) !== '' ? trim((string)($emailSettings['mail_host'] ?? '')) . ':' . trim((string)($emailSettings['mail_port'] ?? '')) : '-', ENT_QUOTES, 'UTF-8') ?></div>
+                    </div>
+                  </div>
+                  <div class="col-sm-6 col-xl-3">
+                    <div class="email-settings-note h-100 mb-0">
+                      <div class="text-muted small mb-1"><?= __('config_tab_emel_from') ?? 'Email From' ?></div>
+                      <div class="fw-semibold text-body-emphasis text-break" id="email-runtime-sender"><?= htmlspecialchars((string)($emailSettings['mail_from_address'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></div>
+                    </div>
+                  </div>
+                  <div class="col-sm-6 col-xl-3">
+                    <div class="email-settings-note h-100 mb-0">
+                      <div class="text-muted small mb-1"><?= __('config_tab_emel_encryption') ?? 'Encryption' ?></div>
+                      <div class="fw-semibold text-body-emphasis" id="email-runtime-encryption"><?= htmlspecialchars(strtoupper((string)($emailSettings['mail_encryption'] ?? '')) ?: '-', ENT_QUOTES, 'UTF-8') ?></div>
+                    </div>
+                  </div>
+                </div>
                 <div class="email-settings-actions d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
                   <div class="text-muted small">
                     <i class="ri-mail-settings-line me-1"></i> <?= __('config_tab_emel_actions_note') ?? 'Simpan hanya selepas maklumat SMTP dan akaun emel disahkan betul.' ?>

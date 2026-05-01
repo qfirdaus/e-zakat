@@ -169,7 +169,7 @@ const MenuAccess = {
           menuAccess: payload.menuAccess
         });
 
-        this.upsertGroupTableRow(savedGroup);
+        await this.refreshGroupTableRow(savedGroup.groupID || savedGroup.id || payload.groupID, savedGroup);
         modal.hide();
         this.resetGroupCreateForm();
         await this.syncSidebarForGroup(savedGroup.groupID || savedGroup.id || 0);
@@ -382,6 +382,57 @@ const MenuAccess = {
     };
   },
 
+  extractGroupRecordFromRow(groupId) {
+    const table = this.getGroupTableApi();
+    const targetGroupId = parseInt(groupId || '0', 10) || 0;
+    if (!table || targetGroupId <= 0) return null;
+
+    const row = table.row('tr[data-group-id="' + targetGroupId + '"]');
+    if (!row.any()) return null;
+
+    const node = row.node();
+    const data = row.data();
+    const getText = (index) => {
+      if (Array.isArray(data) && data[index] !== undefined) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = String(data[index] ?? '');
+        return (tmp.textContent || '').trim();
+      }
+      const cell = node?.children?.[index];
+      return (cell?.textContent || '').trim();
+    };
+    const editBtn = node?.querySelector?.('.btn-edit-group-meta');
+    const groupPermBtn = node?.querySelector?.('.view-group-perms');
+    const colorBar = node?.querySelector?.('.group-color-bar');
+    const categoryChip = node?.querySelector?.('.group-table-category-chip');
+
+    return {
+      groupID: targetGroupId,
+      groupKod: editBtn?.getAttribute('data-group-kod') || groupPermBtn?.getAttribute('data-group-kod') || getText(1),
+      groupName: editBtn?.getAttribute('data-group-nama') || groupPermBtn?.getAttribute('data-group-nama') || getText(2),
+      categoryUser: editBtn?.getAttribute('data-group-category') || categoryChip?.getAttribute('data-category') || getText(3) || 'STAF',
+      color: editBtn?.getAttribute('data-group-color') || colorBar?.getAttribute('title') || '',
+      priority: editBtn?.getAttribute('data-group-priority') || '0',
+      mod: editBtn?.getAttribute('data-group-mod') || '0'
+    };
+  },
+
+  mergeGroupRecord(group = {}) {
+    const record = this.normalizeGroupRecord(group);
+    const existing = this.extractGroupRecordFromRow(record.id);
+    return Object.assign({}, existing || {}, group, {
+      groupID: record.id || group.groupID || group.id,
+      groupKod: group.groupKod ?? group.kod ?? existing?.groupKod,
+      groupName: group.groupName ?? group.nama ?? existing?.groupName,
+      categoryUser: group.categoryUser ?? group.f_categoryUser ?? existing?.categoryUser,
+      color: group.color ?? group.f_color ?? existing?.color,
+      priority: group.priority ?? group.f_priority ?? existing?.priority,
+      mod: group.mod ?? group.f_mod ?? existing?.mod,
+      modulAccess: group.modulAccess ?? group.f_modulAccess ?? record.modulAccess,
+      menuAccess: group.menuAccess ?? group.f_menuAccess ?? record.menuAccess
+    });
+  },
+
   buildGroupRowData(group = {}, index = 1) {
     const record = this.normalizeGroupRecord(group);
     const hasAccess = record.modulAccess.length > 0 || record.menuAccess.length > 0;
@@ -462,7 +513,7 @@ const MenuAccess = {
 
   upsertGroupTableRow(group = {}) {
     const table = this.getGroupTableApi();
-    const record = this.normalizeGroupRecord(group);
+    const record = this.normalizeGroupRecord(this.mergeGroupRecord(group));
     if (!table || record.id <= 0) return false;
 
     const selector = 'tr[data-group-id="' + record.id + '"]';
@@ -477,6 +528,48 @@ const MenuAccess = {
     }
     this.reindexGroupTable();
     return true;
+  },
+
+  async fetchGroupRecord(groupId) {
+    const targetGroupId = parseInt(groupId || '0', 10) || 0;
+    if (targetGroupId <= 0) return null;
+    const j = await GroupUtils.fetchJSONSafe(GroupUtils.apiUrl('group-list.php', {
+      groupID: targetGroupId,
+      scope: 'all'
+    }));
+    if (!j || j.error) {
+      throw new Error((j && j.message) || this.T.error_load || this.T.error_network || 'Gagal memuat kumpulan.');
+    }
+    return j.group || (Array.isArray(j.groups) ? j.groups[0] : null);
+  },
+
+  async refreshGroupTableRow(groupId, fallbackGroup = {}) {
+    const targetGroupId = parseInt(groupId || fallbackGroup.groupID || fallbackGroup.id || '0', 10) || 0;
+    if (targetGroupId <= 0) return false;
+    try {
+      const group = await this.fetchGroupRecord(targetGroupId);
+      if (group) {
+        return this.upsertGroupTableRow(group);
+      }
+    } catch (err) {
+      console.warn('Group row refresh failed, using local fallback:', err);
+    }
+    return this.upsertGroupTableRow(Object.assign({}, fallbackGroup, { groupID: targetGroupId }));
+  },
+
+  async refreshVisibleGroupTableRows() {
+    const table = this.getGroupTableApi();
+    if (!table) return false;
+
+    const ids = [];
+    table.rows().nodes().toArray().forEach((node) => {
+      const id = parseInt(node?.getAttribute?.('data-group-id') || '0', 10) || 0;
+      if (id > 0 && !ids.includes(id)) ids.push(id);
+    });
+    for (const id of ids) {
+      await this.refreshGroupTableRow(id);
+    }
+    return ids.length > 0;
   },
 
   removeGroupTableRow(groupId) {
@@ -516,6 +609,19 @@ const MenuAccess = {
     }
     if (window.SidebarSync && typeof window.SidebarSync.refreshCurrentSidebar === 'function') {
       return window.SidebarSync.refreshCurrentSidebar().catch(console.warn);
+    }
+    return Promise.resolve(false);
+  },
+
+  async syncSidebarAfterNavigationChange() {
+    if (window.AccessUiSync && typeof window.AccessUiSync.syncNavigationSilently === 'function') {
+      return window.AccessUiSync.syncNavigationSilently({ redirectOnDenied: false }).catch(console.warn);
+    }
+    if (window.SidebarSync && typeof window.SidebarSync.refreshCurrentSidebar === 'function') {
+      return window.SidebarSync.refreshCurrentSidebar().catch(console.warn);
+    }
+    if (window.MenuRefresh && typeof window.MenuRefresh.refreshMainMenu === 'function') {
+      return window.MenuRefresh.refreshMainMenu().catch(console.warn);
     }
     return Promise.resolve(false);
   },
@@ -690,7 +796,7 @@ const MenuAccess = {
       throw new Error((j && j.message) || this.T.error_save || 'Gagal menyimpan akses menu kumpulan.');
     }
 
-    this.upsertGroupTableRow({
+    await this.refreshGroupTableRow(groupID, {
       groupID,
       groupKod: GroupState.getLastMenuBtn()?.getAttribute('data-group-kod') || '',
       groupName: GroupState.getLastMenuBtn()?.getAttribute('data-group-nama') || '',
@@ -1192,14 +1298,14 @@ const MenuAccess = {
           confirmButtonText: this.T.btn_ok || 'OK'
         }));
       }
-      this.upsertGroupTableRow({
+      await this.refreshGroupTableRow(groupID, {
         groupID,
         groupKod: GroupState.getLastMenuBtn()?.getAttribute('data-group-kod') || '',
         groupName: GroupState.getLastMenuBtn()?.getAttribute('data-group-nama') || '',
         modulAccess: GroupState.getModulIDs(),
         menuAccess: GroupState.getMenuIDs(),
       });
-      await this.syncSidebarForGroup(groupID);
+      this.syncSidebarAfterNavigationChange();
       if (shouldRestoreParent) {
         const parentModal = GroupUtils.getModal(this.modalEl);
         if (parentModal) {
@@ -1335,14 +1441,15 @@ const MenuAccess = {
           confirmButtonText: MenuAccess.T.btn_ok || 'OK'
         }));
       }
-      this.upsertGroupTableRow({
+      await this.refreshGroupTableRow(GroupState.getMenuGroupID(), {
         groupID: GroupState.getMenuGroupID(),
         groupKod: GroupState.getLastMenuBtn()?.getAttribute('data-group-kod') || '',
         groupName: GroupState.getLastMenuBtn()?.getAttribute('data-group-nama') || '',
         modulAccess: GroupState.getModulIDs(),
         menuAccess: GroupState.getMenuIDs().filter((id) => parseInt(id, 10) !== parseInt(menuID, 10)),
       });
-      await this.syncSidebarForGroup(GroupState.getMenuGroupID());
+      await this.refreshVisibleGroupTableRows();
+      this.syncSidebarAfterNavigationChange();
     } catch (e) {
       if (window.Swal && Swal.fire) {
         (window.GroupSwal ? GroupSwal.fire({

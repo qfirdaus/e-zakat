@@ -9,6 +9,24 @@ This changelog follows a release-style summary based on major project milestones
 ### Added
 - Added PHP 8.4 readiness audit documentation in `docs/php84-readiness-audit-2026-04-23.md`.
 
+## [1.7.3] - 2026-05-01
+
+### Added
+- Added explicit `.env` sections for main MySQL production and development runtime targets while keeping legacy `DB_MYSQL_*` values as fallback compatibility configuration.
+- Added MySQL runtime diagnostics in `tetapan-sistem.php`, including resolved key, production/development targets, dedicated/fallback indicators, and same-target warning.
+- Added tabbed Additional Connections sample-code guidance for programmers, covering Service, Repository, Controller, Transaction, Read-only, Ajax Endpoint, DataTables, Dropdown, Insert Update, and Batch Sync patterns.
+
+### Changed
+- Changed main MySQL bootstrap handling so `MAIN_DB_ENVIRONMENT` can be resolved earlier and MySQL runtime caches are cleared when production/development settings change.
+- Changed database settings AJAX behavior so MySQL and Sybase runtime summaries update in place after save instead of requiring a full page refresh.
+- Changed Additional Connections sample-code modal layout to use compact tabs with per-example copy actions.
+- Changed legacy MySQL `.env` comments to clearly mark `DB_MYSQL_*` as temporary fallback values.
+
+### Fixed
+- Fixed stale MySQL runtime information in the Database settings UI after switching between production and development.
+- Fixed stale Sybase runtime summary values after changing Sybase environment or operational mode.
+- Fixed database settings UI sync paths so fallback AJAX handlers also refresh runtime summary values.
+
 ## [1.7.2] - 2026-04-23
 
 ### Added

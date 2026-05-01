@@ -63,6 +63,14 @@ $mysqlDsn = (string)($dbRuntime['mysqlDsn'] ?? '');
 $mysqlUser = (string)($dbRuntime['mysqlUser'] ?? '-');
 $mysqlHost = (string)($dbRuntime['mysqlHost'] ?? '-');
 $mysqlDatabase = (string)($dbRuntime['mysqlDatabase'] ?? '-');
+$mysqlActiveResolvedKey = (string)($dbRuntime['mysqlActiveResolvedKey'] ?? '-');
+$mysqlProdTarget = is_array($dbRuntime['mysqlProdTarget'] ?? null) ? $dbRuntime['mysqlProdTarget'] : [];
+$mysqlDevTarget = is_array($dbRuntime['mysqlDevTarget'] ?? null) ? $dbRuntime['mysqlDevTarget'] : [];
+$mysqlProdTargetText = trim((string)($mysqlProdTarget['host'] ?? '-')) . ' / ' . trim((string)($mysqlProdTarget['database'] ?? '-')) . ' / ' . trim((string)($mysqlProdTarget['user'] ?? '-'));
+$mysqlDevTargetText = trim((string)($mysqlDevTarget['host'] ?? '-')) . ' / ' . trim((string)($mysqlDevTarget['database'] ?? '-')) . ' / ' . trim((string)($mysqlDevTarget['user'] ?? '-'));
+$mysqlSameTarget = (bool)($dbRuntime['mysqlSameTarget'] ?? false);
+$mysqlProdDedicated = (bool)($dbRuntime['mysqlProdDedicated'] ?? false);
+$mysqlDevDedicated = (bool)($dbRuntime['mysqlDevDedicated'] ?? false);
 $topbar = (string)($themeSettings['topbarColor'] ?? SystemConfigConstants::DEFAULT_THEME_TOPBAR);
 $sidebar = (string)($themeSettings['sidebarColor'] ?? SystemConfigConstants::DEFAULT_THEME_SIDEBAR);
 $layout = (string)($themeSettings['layoutMode'] ?? SystemConfigConstants::DEFAULT_THEME_LAYOUT);
@@ -160,6 +168,41 @@ if (is_file($langFileForJs)) {
   }
 }
 
+$translationBundlesJs = [];
+$translationLangCodes = array_values(array_unique(array_filter(array_merge(
+  [$lang, (string)$bahasaDefault],
+  array_map('strval', $senaraiBahasa),
+  array_map('strval', $bahasaAktif),
+  ['ms', 'en']
+), static function ($code): bool {
+  return preg_match('/^[a-z]{2}(?:-[A-Z]{2})?$/', (string)$code) === 1;
+})));
+
+$normaliseTranslationMapForJs = static function (array $map): array {
+  $normalised = [];
+  foreach ($map as $key => $value) {
+    if (is_scalar($value) || $value === null) {
+      $normalised[(string)$key] = (string)$value;
+    }
+  }
+  return $normalised;
+};
+
+foreach ($translationLangCodes as $translationLangCode) {
+  $bundleFile = __DIR__ . "/../lang/{$translationLangCode}.php";
+  if (!is_file($bundleFile)) {
+    continue;
+  }
+  $bundleMap = require $bundleFile;
+  if (is_array($bundleMap)) {
+    $translationBundlesJs[$translationLangCode] = $normaliseTranslationMapForJs($bundleMap);
+  }
+}
+
+if (isset($translationBundlesJs[$lang])) {
+  $translations_js = $translationBundlesJs[$lang];
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>" data-bs-theme="<?= htmlspecialchars($_SESSION['theme.layout'] ?? 'light', ENT_QUOTES, 'UTF-8') ?>">
@@ -180,7 +223,21 @@ if (is_file($langFileForJs)) {
 
   <!-- Translation map (senyap) -->
   <script>
-    window.__translations = <?= json_encode($translations_js ?? [], JSON_UNESCAPED_UNICODE) ?>;
+    window.__currentLang = <?= json_encode($lang, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    window.__translationBundles = <?= json_encode($translationBundlesJs, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    window.__translations = (window.__translationBundles && window.__translationBundles[window.__currentLang])
+      ? window.__translationBundles[window.__currentLang]
+      : <?= json_encode($translations_js ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    window.__setRuntimeLanguage = function (lang) {
+      var nextLang = String(lang || '').trim();
+      if (!nextLang || !window.__translationBundles || !window.__translationBundles[nextLang]) {
+        return false;
+      }
+      window.__currentLang = nextLang;
+      window.__translations = window.__translationBundles[nextLang] || {};
+      document.documentElement.setAttribute('lang', nextLang);
+      return true;
+    };
     window.__ = function (key) {
       var dict = window.__translations || {};
       if (Object.prototype.hasOwnProperty.call(dict, key)) {
@@ -289,7 +346,7 @@ if (is_file($langFileForJs)) {
     // Flags JS vendor - hanya yang perlu
     $NEED_JQUERY     = true;
     $NEED_SWEETALERT = true;
-    $NEED_DT_JS      = false;
+    $NEED_DT_JS      = true;
     $NEED_SELECT2_JS = false;
     include __DIR__ . '/../includes/script.php';
   ?>
@@ -562,6 +619,48 @@ if (is_file($langFileForJs)) {
       window.__tetapanSyncAuthPolicyUi();
     }
 
+    window.__tetapanForceRuntimeSummaryFromDbForm = window.__tetapanForceRuntimeSummaryFromDbForm || function (form) {
+      var targetForm = typeof form === 'string' ? document.getElementById(form) : form;
+      if (!targetForm) return;
+
+      var checkedValue = function (name) {
+        var input = targetForm.querySelector('input[name="' + name + '"]:checked');
+        return input ? String(input.value || '') : '';
+      };
+      var setText = function (id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = String(value || '-');
+      };
+
+      var sybaseEnvironment = checkedValue('sybase_environment');
+      var sybaseMode = checkedValue('sybase_operational_mode');
+      var mysqlEnvironment = checkedValue('main_db_environment');
+      var sybaseIsDev = sybaseEnvironment === 'development';
+      var mysqlIsDev = mysqlEnvironment === 'development';
+      var staffBase = sybaseIsDev ? 'sybase_staff_dev' : 'sybase_staff_prod';
+      var studentBase = sybaseIsDev ? 'sybase_student_dev' : 'sybase_student_prod';
+      var envLabel = sybaseIsDev ? 'Development' : 'Production';
+      var mysqlEnvLabel = mysqlIsDev ? 'Development' : 'Production';
+      var modeLabel = sybaseMode === 'staff_student' ? 'Staff + Student' : 'Staff Only';
+
+      setText('db-runtime-staff', staffBase);
+      setText('db-runtime-environment', envLabel);
+      setText('db-runtime-mode', modeLabel);
+      setText('db-runtime-mysql-environment', mysqlEnvLabel);
+      setText('db-runtime-mysql-resolved-key', mysqlIsDev ? 'mysql_dev' : 'mysql_prod');
+
+      var studentCell = document.getElementById('db-runtime-student-cell');
+      if (studentCell) {
+        if (sybaseMode === 'staff_student') {
+          studentCell.innerHTML = '<code class="text-primary" id="db-runtime-student"></code>';
+          setText('db-runtime-student', studentBase);
+        } else {
+          studentCell.innerHTML = '<span class="badge bg-secondary-subtle text-secondary" id="db-runtime-student"></span>';
+          setText('db-runtime-student', 'Disabled');
+        }
+      }
+    };
+
     window.__tetapanAjaxSubmit = function (event, form, buttonId, guardName) {
       function showInlineError(message) {
         if (window.Swal && typeof window.Swal.fire === 'function') {
@@ -674,6 +773,15 @@ if (is_file($langFileForJs)) {
             if (!payload || payload.success !== true) {
               showInlineError((payload && payload.message) || (((window.__ && window.__('config_js_save_failed')) || 'Gagal menyimpan tetapan.')));
               return;
+            }
+
+            if (typeof window.__tetapanApplyPayloadUiSync === 'function') {
+              window.__tetapanApplyPayloadUiSync(payload, targetForm);
+            } else if (payload.tab === 'db' && typeof window.__tetapanSyncDatabaseRuntimeUi === 'function') {
+              window.__tetapanSyncDatabaseRuntimeUi();
+            }
+            if (payload.tab === 'db' && typeof window.__tetapanForceRuntimeSummaryFromDbForm === 'function') {
+              window.__tetapanForceRuntimeSummaryFromDbForm(targetForm);
             }
 
             if (window.Swal && typeof window.Swal.fire === 'function') {
@@ -878,6 +986,7 @@ if (is_file($langFileForJs)) {
         sybase_environment: <?= json_encode($dbRenderEnvironment, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>,
         sybase_operational_mode: <?= json_encode($dbRenderOperationalMode, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
       },
+      dbRuntime: <?= json_encode($dbRuntime, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE) ?>,
       additionalConnections: <?= json_encode($additionalConnections, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
     };
   </script>
@@ -1095,12 +1204,13 @@ if (is_file($langFileForJs)) {
                 ? '<span class="badge bg-success-subtle text-success">Enabled</span>'
                 : '<span class="badge bg-secondary-subtle text-secondary">Disabled</span>') + '</td>'
             + '<td><div class="db-additional-test-result">' + escapeHtml(lastTestSummary(item.env_rows || [])) + '</div></td>'
-            + '<td class="text-end"><div class="db-additional-actions">'
+            + '<td class="text-start"><div class="db-additional-actions">'
             + '<button type="button" class="btn btn-sm btn-outline-secondary icon-btn" title="Schema Preview" aria-label="Schema Preview" onclick="return window.__tetapanSchemaPreviewAdditionalConnection(\'' + escapeHtml(code) + '\', this)"><i class="ri-table-line"></i></button>'
             + '<button type="button" class="btn btn-sm btn-outline-info icon-btn" title="Butiran Sambungan Tambahan" aria-label="Butiran Sambungan Tambahan" onclick="return window.__tetapanInspectAdditionalConnection(\'' + escapeHtml(code) + '\', this)"><i class="ri-eye-line"></i></button>'
+            + '<button type="button" class="btn btn-sm btn-outline-dark icon-btn" title="Sample Code" aria-label="Sample Code" onclick="return window.__tetapanSampleCodeAdditionalConnection(\'' + escapeHtml(code) + '\')"><i class="ri-code-s-slash-line"></i></button>'
             + '<button type="button" class="btn btn-sm btn-outline-primary icon-btn" title="Edit" aria-label="Edit" onclick="return window.__tetapanOpenAdditionalConnectionModal(\'' + escapeHtml(code) + '\')"><i class="ri-edit-line"></i></button>'
             + '<button type="button" class="btn btn-sm btn-outline-success icon-btn" title="Test Connection" aria-label="Test Connection" onclick="return window.__tetapanTestAdditionalConnection(\'' + escapeHtml(code) + '\', this)"><i class="ri-plug-line"></i></button>'
-            + '<button type="button" class="btn btn-sm ' + (enabled ? 'btn-outline-warning' : 'btn-outline-secondary') + ' icon-btn" title="' + (enabled ? 'Disable' : 'Enable') + '" aria-label="' + (enabled ? 'Disable' : 'Enable') + '" onclick="return window.__tetapanToggleAdditionalConnection(\'' + escapeHtml(code) + '\', ' + (enabled ? 'false' : 'true') + ', this)"><i class="ri-power-line"></i></button>'
+            + '<button type="button" class="btn btn-sm ' + (enabled ? 'btn-outline-danger' : 'btn-outline-success') + ' icon-btn" title="' + (enabled ? 'Disable' : 'Enable') + '" aria-label="' + (enabled ? 'Disable' : 'Enable') + '" data-db-additional-action="toggle" data-enabled="' + (enabled ? '1' : '0') + '" onclick="return window.__tetapanToggleAdditionalConnection(\'' + escapeHtml(code) + '\', ' + (enabled ? 'false' : 'true') + ', this)"><i class="ri-power-line"></i></button>'
             + '</div></td>'
             + '</tr>';
         }).join('');
@@ -1179,6 +1289,26 @@ if (is_file($langFileForJs)) {
         appendEnvRow();
       }
 
+      function activateAdditionalModalFirstTab() {
+        var firstTab = getEl('tab-additional-connection-tab');
+        if (!firstTab) {
+          return;
+        }
+        if (window.bootstrap && window.bootstrap.Tab) {
+          window.bootstrap.Tab.getOrCreateInstance(firstTab).show();
+          return;
+        }
+        document.querySelectorAll('#db-additional-modal-tabs .nav-link').forEach(function (tab) {
+          tab.classList.toggle('active', tab === firstTab);
+          tab.setAttribute('aria-selected', tab === firstTab ? 'true' : 'false');
+        });
+        document.querySelectorAll('#db-additional-modal-tabs-content .tab-pane').forEach(function (pane) {
+          var isFirst = pane.id === 'tab-additional-connection';
+          pane.classList.toggle('show', isFirst);
+          pane.classList.toggle('active', isFirst);
+        });
+      }
+
       function serializeEnvRows() {
         var host = getEl('db-additional-env-rows');
         if (!host) {
@@ -1222,7 +1352,17 @@ if (is_file($langFileForJs)) {
             'X-No-Loader': '1'
           }
         }).then(function (res) {
-          return res.json();
+          return res.text().then(function (text) {
+            var trimmed = String(text || '').trim();
+            if (!trimmed) {
+              throw new Error('Respons pelayan kosong. Sila semak log server untuk data preview.');
+            }
+            try {
+              return JSON.parse(trimmed);
+            } catch (error) {
+              throw new Error('Respons pelayan tidak sah.');
+            }
+          });
         }).finally(function () {
           if (buttonEl) {
             buttonEl.disabled = false;
@@ -1232,6 +1372,7 @@ if (is_file($langFileForJs)) {
 
       window.__tetapanOpenAdditionalConnectionModal = function (code) {
         resetForm();
+        activateAdditionalModalFirstTab();
         if (code) {
           var found = store.find(function (item) { return String(item.f_code || '') === String(code); }) || null;
           if (found) {
@@ -1364,6 +1505,634 @@ if (is_file($langFileForJs)) {
         return false;
       };
 
+      function buildAdditionalViewMetaItem(label, content) {
+        return '<div class="db-additional-view-meta-item"><div class="db-additional-view-meta-label">' + escapeHtml(label) + '</div><div class="db-additional-view-meta-value">' + content + '</div></div>';
+      }
+
+      function initAdditionalViewDataTable(selector, options) {
+        if (!(window.jQuery && jQuery.fn && jQuery.fn.DataTable) || !selector) {
+          return;
+        }
+        var table = document.querySelector(selector);
+        if (!table) {
+          return;
+        }
+        if (jQuery.fn.dataTable.isDataTable(table)) {
+          jQuery(table).DataTable().destroy();
+        }
+        var searchPlaceholder = options && options.searchPlaceholder ? options.searchPlaceholder : 'Search';
+        var extraOptions = Object.assign({}, options || {});
+        delete extraOptions.searchPlaceholder;
+        var baseOptions = {
+          pageLength: 5,
+          lengthChange: false,
+          lengthMenu: [5, 10, 25, 50, 100, 200],
+          autoWidth: false,
+          responsive: false,
+          ordering: false,
+          order: [],
+          language: {
+            search: '',
+            searchPlaceholder: searchPlaceholder
+          },
+          dom: '<"row mb-2"<"col-sm-12 col-md-6 dt-top-left"l><"col-sm-12 col-md-6 d-flex justify-content-md-end dt-top-right"f>>'
+            + 't'
+            + '<"dt-bottom-row mt-2 d-flex justify-content-between align-items-center"<"dt-info-left"i><"dt-paging-right d-flex justify-content-end"p>>',
+          drawCallback: function () {
+            jQuery('.dataTables_paginate > .pagination').addClass('pagination-rounded');
+          }
+        };
+        var dtOptions = Object.assign(baseOptions, extraOptions);
+        if (window.DataTableStandard && typeof window.DataTableStandard.options === 'function') {
+          dtOptions = window.DataTableStandard.options(dtOptions);
+        }
+        var dt = jQuery(table).DataTable(dtOptions);
+        if (window.DataTableStandard && typeof window.DataTableStandard.decorate === 'function') {
+          window.DataTableStandard.decorate(selector, {
+            controlsClass: 'mb-2',
+            searchPlaceholder: searchPlaceholder
+          });
+        }
+        var wrapperSelector = selector + '_wrapper';
+        jQuery(wrapperSelector + ' .dataTables_length select').addClass('form-select w-auto');
+        jQuery(wrapperSelector + ' .dataTables_length label').addClass('mb-0');
+        jQuery(wrapperSelector + ' .dataTables_filter input').attr('placeholder', searchPlaceholder);
+        jQuery(wrapperSelector + ' .dt-top-left').addClass('d-flex align-items-center gap-2 flex-nowrap');
+        jQuery(wrapperSelector + ' .dt-top-right').addClass('align-items-center gap-2 flex-nowrap');
+        setTimeout(function () {
+          dt.columns.adjust().draw(false);
+        }, 80);
+      }
+
+      function cleanupAdditionalModalBackdrops() {
+        var hasShownModal = document.querySelector('.modal.show');
+        if (!hasShownModal) {
+          document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+            backdrop.remove();
+          });
+          document.body.classList.remove('modal-open');
+        }
+      }
+
+      function normalizeAdditionalModalStack() {
+        var parentModalEl = getEl('db-additional-view-modal');
+        var childModalEl = getEl('db-additional-child-view-modal');
+        var parentShown = parentModalEl && parentModalEl.classList.contains('show');
+        var childShown = childModalEl && childModalEl.classList.contains('show');
+        var backdrops = Array.prototype.slice.call(document.querySelectorAll('.modal-backdrop.show'));
+
+        backdrops.forEach(function (backdrop) {
+          backdrop.classList.remove('db-additional-view-backdrop', 'db-additional-child-view-backdrop');
+        });
+
+        if (parentShown && !childShown && backdrops.length > 1) {
+          backdrops.slice(0, -1).forEach(function (backdrop) {
+            backdrop.remove();
+          });
+          backdrops = Array.prototype.slice.call(document.querySelectorAll('.modal-backdrop.show'));
+        }
+
+        if (parentShown && backdrops.length) {
+          backdrops[0].classList.add('db-additional-view-backdrop');
+        }
+        if (childShown && backdrops.length) {
+          backdrops[backdrops.length - 1].classList.add('db-additional-child-view-backdrop');
+        }
+      }
+
+      function suspendAdditionalParentModal() {
+        var parentModalEl = getEl('db-additional-view-modal');
+        if (!parentModalEl || !parentModalEl.classList.contains('show')) {
+          return;
+        }
+        parentModalEl.classList.add('db-additional-parent-suspended');
+        parentModalEl.setAttribute('aria-hidden', 'true');
+      }
+
+      function resumeAdditionalParentModal() {
+        var parentModalEl = getEl('db-additional-view-modal');
+        if (!parentModalEl) {
+          return;
+        }
+        parentModalEl.classList.remove('db-additional-parent-suspended');
+        if (parentModalEl.classList.contains('show')) {
+          parentModalEl.removeAttribute('aria-hidden');
+          document.body.classList.add('modal-open');
+        }
+      }
+
+      function openAdditionalViewModal(config) {
+        var modalEl = getEl('db-additional-view-modal');
+        var titleEl = getEl('db-additional-view-modal-title');
+        var subtitleEl = getEl('db-additional-view-modal-subtitle');
+        var kickerEl = getEl('db-additional-view-modal-kicker');
+        var bodyEl = getEl('db-additional-view-modal-body');
+        if (!modalEl || !bodyEl) {
+          return false;
+        }
+        if (modalEl.parentElement !== document.body) {
+          document.body.appendChild(modalEl);
+        }
+        cleanupAdditionalModalBackdrops();
+        modalEl.classList.toggle('db-additional-view-modal-pink', config.variant === 'pink');
+        modalEl.classList.toggle('db-additional-view-modal-code', config.variant === 'code');
+        if (window.jQuery && jQuery.fn && jQuery.fn.DataTable) {
+          jQuery(modalEl).find('table').each(function () {
+            if (jQuery.fn.dataTable.isDataTable(this)) {
+              jQuery(this).DataTable().destroy();
+            }
+          });
+        }
+        if (titleEl) titleEl.textContent = config.title || 'Additional Connection';
+        if (subtitleEl) subtitleEl.textContent = config.subtitle || '';
+        if (kickerEl) {
+          kickerEl.innerHTML = '<i class="' + escapeHtml(config.icon || 'ri-database-2-line') + ' me-2"></i>Additional Connections Registry';
+        }
+        bodyEl.innerHTML = config.html || '';
+        var initTable = function () {
+          modalEl.removeEventListener('shown.bs.modal', initTable);
+          initAdditionalViewDataTable(config.datatableSelector, config.datatableOptions || {});
+        };
+        modalEl.addEventListener('shown.bs.modal', initTable);
+        modalEl.addEventListener('shown.bs.modal', normalizeAdditionalModalStack, { once: true });
+        modalEl.addEventListener('hidden.bs.modal', cleanupAdditionalModalBackdrops, { once: true });
+        if (window.bootstrap && window.bootstrap.Modal) {
+          window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+          setTimeout(normalizeAdditionalModalStack, 80);
+        } else {
+          modalEl.style.display = 'block';
+          modalEl.classList.add('show');
+          initAdditionalViewDataTable(config.datatableSelector, config.datatableOptions || {});
+          normalizeAdditionalModalStack();
+        }
+        return false;
+      }
+
+      function openAdditionalChildViewModal(config) {
+        var modalEl = getEl('db-additional-child-view-modal');
+        var parentModalEl = getEl('db-additional-view-modal');
+        var titleEl = getEl('db-additional-child-view-modal-title');
+        var subtitleEl = getEl('db-additional-child-view-modal-subtitle');
+        var kickerEl = getEl('db-additional-child-view-modal-kicker');
+        var bodyEl = getEl('db-additional-child-view-modal-body');
+        if (!modalEl || !bodyEl) {
+          return openAdditionalViewModal(config);
+        }
+        if (modalEl.parentElement !== document.body) {
+          document.body.appendChild(modalEl);
+        }
+        suspendAdditionalParentModal();
+        if (window.jQuery && jQuery.fn && jQuery.fn.DataTable) {
+          jQuery(modalEl).find('table').each(function () {
+            if (jQuery.fn.dataTable.isDataTable(this)) {
+              jQuery(this).DataTable().destroy();
+            }
+          });
+        }
+        if (titleEl) titleEl.textContent = config.title || 'Data Preview';
+        if (subtitleEl) subtitleEl.textContent = config.subtitle || '';
+        if (kickerEl) {
+          kickerEl.innerHTML = '<i class="' + escapeHtml(config.icon || 'ri-file-search-line') + ' me-2"></i>' + escapeHtml(config.title || 'Data Preview');
+        }
+        bodyEl.innerHTML = config.html || '';
+        var initTable = function () {
+          modalEl.removeEventListener('shown.bs.modal', initTable);
+          initAdditionalViewDataTable(config.datatableSelector, config.datatableOptions || {});
+        };
+        var keepParentOpen = function () {
+          modalEl.removeEventListener('hidden.bs.modal', keepParentOpen);
+          resumeAdditionalParentModal();
+          normalizeAdditionalModalStack();
+        };
+        modalEl.addEventListener('shown.bs.modal', initTable);
+        modalEl.addEventListener('shown.bs.modal', normalizeAdditionalModalStack, { once: true });
+        modalEl.addEventListener('hidden.bs.modal', keepParentOpen);
+        if (window.bootstrap && window.bootstrap.Modal) {
+          window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+          setTimeout(normalizeAdditionalModalStack, 80);
+        } else {
+          modalEl.style.display = 'block';
+          modalEl.classList.add('show');
+          initAdditionalViewDataTable(config.datatableSelector, config.datatableOptions || {});
+          normalizeAdditionalModalStack();
+        }
+        return false;
+      }
+
+      window.__tetapanTogglePreviewRow = function (buttonEl) {
+        var row = buttonEl && buttonEl.closest ? buttonEl.closest('tr') : null;
+        if (!row) return false;
+        var expanded = row.classList.toggle('is-expanded');
+        buttonEl.textContent = expanded ? 'Sembunyi' : 'Papar';
+        if (window.jQuery && jQuery.fn && jQuery.fn.DataTable) {
+          var table = jQuery(row).closest('table');
+          if (table.length && jQuery.fn.dataTable.isDataTable(table[0])) {
+            table.DataTable().columns.adjust().draw(false);
+          }
+        }
+        return false;
+      };
+
+      function getPreferredAdditionalEnvRow(connection) {
+        var rows = connection && Array.isArray(connection.env_rows) ? connection.env_rows : [];
+        if (!rows.length) {
+          return null;
+        }
+        return rows.find(function (row) { return !!Number(row.f_is_active || 0); }) || rows[0];
+      }
+
+      function buildAdditionalSampleCodeBlock(title, code) {
+        var encoded = encodeURIComponent(code);
+        return ''
+          + '<div class="db-sample-code-card">'
+          + '<div class="db-sample-code-card-header">'
+          + '<h6><i class="ri-code-box-line"></i>' + escapeHtml(title) + '</h6>'
+          + '<button type="button" class="btn btn-sm btn-outline-secondary db-rounded-btn" onclick="return window.__tetapanCopyCodeBlock(\'' + encoded + '\', this)">'
+          + '<i class="ri-file-copy-line me-1"></i> Copy'
+          + '</button>'
+          + '</div>'
+          + '<pre class="db-sample-code-pre"><code>' + escapeHtml(code) + '</code></pre>'
+          + '</div>';
+      }
+
+      function buildAdditionalSampleCodeTabs(samples) {
+        var safeSamples = Array.isArray(samples) ? samples.filter(function (sample) {
+          return sample && sample.id && sample.title && sample.code;
+        }) : [];
+        if (!safeSamples.length) return '';
+
+        var nav = safeSamples.map(function (sample, index) {
+          return ''
+            + '<button type="button" class="db-sample-code-tab' + (index === 0 ? ' is-active' : '') + '" data-sample-tab="' + escapeHtml(sample.id) + '" aria-selected="' + (index === 0 ? 'true' : 'false') + '">'
+            + '<i class="' + escapeHtml(sample.icon || 'ri-code-box-line') + '"></i>'
+            + '<span>' + escapeHtml(sample.title) + '</span>'
+            + '</button>';
+        }).join('');
+
+        var panes = safeSamples.map(function (sample, index) {
+          var encoded = encodeURIComponent(sample.code);
+          return ''
+            + '<div class="db-sample-code-pane' + (index === 0 ? ' is-active' : '') + '" data-sample-pane="' + escapeHtml(sample.id) + '">'
+            + '<div class="db-sample-code-card">'
+            + '<div class="db-sample-code-card-header">'
+            + '<div>'
+            + '<h6><i class="' + escapeHtml(sample.icon || 'ri-code-box-line') + '"></i>' + escapeHtml(sample.title) + '</h6>'
+            + (sample.description ? '<p>' + escapeHtml(sample.description) + '</p>' : '')
+            + '</div>'
+            + '<button type="button" class="btn btn-sm btn-outline-secondary db-rounded-btn" onclick="return window.__tetapanCopyCodeBlock(\'' + encoded + '\', this)">'
+            + '<i class="ri-file-copy-line me-1"></i> Copy'
+            + '</button>'
+            + '</div>'
+            + '<pre class="db-sample-code-pre"><code>' + escapeHtml(sample.code) + '</code></pre>'
+            + '</div>'
+            + '</div>';
+        }).join('');
+
+        return ''
+          + '<div class="db-sample-code-tabs">'
+          + '<div class="db-sample-code-tablist" role="tablist">' + nav + '</div>'
+          + '<div class="db-sample-code-panes">' + panes + '</div>'
+          + '</div>';
+      }
+
+      window.__tetapanCopyCodeBlock = function (encodedCode, buttonEl) {
+        var code = decodeURIComponent(String(encodedCode || ''));
+        var done = function () {
+          if (!buttonEl) return;
+          var original = buttonEl.innerHTML;
+          buttonEl.innerHTML = '<i class="ri-check-line me-1"></i> Copied';
+          setTimeout(function () {
+            buttonEl.innerHTML = original;
+          }, 1200);
+        };
+
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(code).then(done).catch(function () {});
+        } else {
+          var textarea = document.createElement('textarea');
+          textarea.value = code;
+          textarea.setAttribute('readonly', 'readonly');
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          try { document.execCommand('copy'); done(); } catch (error) {}
+          textarea.remove();
+        }
+        return false;
+      };
+
+      document.addEventListener('click', function (event) {
+        var tab = event.target && event.target.closest ? event.target.closest('.db-sample-code-tab[data-sample-tab]') : null;
+        if (!tab) return;
+
+        var shell = tab.closest('.db-sample-code-tabs');
+        if (!shell) return;
+
+        var target = tab.getAttribute('data-sample-tab');
+        shell.querySelectorAll('.db-sample-code-tab').forEach(function (button) {
+          var active = button === tab;
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        shell.querySelectorAll('.db-sample-code-pane').forEach(function (pane) {
+          pane.classList.toggle('is-active', pane.getAttribute('data-sample-pane') === target);
+        });
+      });
+
+      window.__tetapanSampleCodeAdditionalConnection = function (code) {
+        var connection = store.find(function (item) { return String(item.f_code || '') === String(code); }) || null;
+        if (!connection) {
+          alertError('Sambungan tambahan tidak ditemui.');
+          return false;
+        }
+
+        var envRow = getPreferredAdditionalEnvRow(connection);
+        var environment = envRow ? String(envRow.f_environment || 'production') : 'production';
+        var family = String(connection.f_family || '-');
+        var purpose = String(connection.f_purpose || '-');
+        var databaseName = envRow ? String(envRow.f_database_name || '-') : '-';
+        var previewQuery = ['sybase', 'mssql'].indexOf(family.toLowerCase()) !== -1
+          ? 'SELECT TOP 10 * FROM nama_table'
+          : 'SELECT * FROM nama_table LIMIT 10';
+        var dataTablesPageSql = ['sybase', 'mssql'].indexOf(family.toLowerCase()) !== -1
+          ? "SELECT id, kod, nama, status FROM nama_table ' . $where . ' ORDER BY nama OFFSET :start ROWS FETCH NEXT :length ROWS ONLY"
+          : "SELECT id, kod, nama, status FROM nama_table ' . $where . ' ORDER BY nama LIMIT :length OFFSET :start";
+        var serviceSample = "<" + "?php\n"
+          + "require_once __DIR__ . '/../classes/Database.php';\n\n"
+          + "final class AdditionalDbService\n"
+          + "{\n"
+          + "    private PDO $pdo;\n\n"
+          + "    public function __construct(?PDO $pdo = null)\n"
+          + "    {\n"
+          + "        $this->pdo = $pdo ?: Database::pdoAdditional('" + code + "', '" + environment + "');\n"
+          + "    }\n\n"
+          + "    public function healthCheck(): array\n"
+          + "    {\n"
+          + "        $stmt = $this->pdo->query('SELECT 1 AS ok');\n"
+          + "        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];\n"
+          + "    }\n"
+          + "}\n";
+        var repositorySample = "<" + "?php\n"
+          + "require_once __DIR__ . '/../classes/Database.php';\n\n"
+          + "final class AdditionalLookupRepository\n"
+          + "{\n"
+          + "    public function __construct(private readonly PDO $pdo)\n"
+          + "    {\n"
+          + "    }\n\n"
+          + "    public static function make(): self\n"
+          + "    {\n"
+          + "        return new self(Database::pdoAdditional('" + code + "', '" + environment + "'));\n"
+          + "    }\n\n"
+          + "    public function findById(int $id): ?array\n"
+          + "    {\n"
+          + "        $stmt = $this->pdo->prepare('SELECT * FROM nama_table WHERE id = :id');\n"
+          + "        $stmt->execute([':id' => $id]);\n"
+          + "        $row = $stmt->fetch(PDO::FETCH_ASSOC);\n\n"
+          + "        return is_array($row) ? $row : null;\n"
+          + "    }\n"
+          + "}\n";
+        var controllerSample = "<" + "?php\n"
+          + "require_once __DIR__ . '/../repositories/AdditionalLookupRepository.php';\n\n"
+          + "final class LaporanController\n"
+          + "{\n"
+          + "    public function detail(int $id): array\n"
+          + "    {\n"
+          + "        try {\n"
+          + "            $record = AdditionalLookupRepository::make()->findById($id);\n"
+          + "            return ['success' => true, 'data' => $record];\n"
+          + "        } catch (Throwable $e) {\n"
+          + "            error_log('[additional-db:" + code + "] ' . $e->getMessage());\n"
+          + "            return ['success' => false, 'message' => 'Sumber data tambahan tidak tersedia.'];\n"
+          + "        }\n"
+          + "    }\n"
+          + "}\n";
+        var transactionSample = "<" + "?php\n"
+          + "require_once __DIR__ . '/../classes/Database.php';\n\n"
+          + "$pdo = Database::pdoAdditional('" + code + "', '" + environment + "');\n\n"
+          + "$pdo->beginTransaction();\n"
+          + "try {\n"
+          + "    $stmt = $pdo->prepare('UPDATE nama_table SET status = :status WHERE id = :id');\n"
+          + "    $stmt->execute([':status' => 'aktif', ':id' => $id]);\n"
+          + "    $pdo->commit();\n"
+          + "} catch (Throwable $e) {\n"
+          + "    $pdo->rollBack();\n"
+          + "    throw $e;\n"
+          + "}\n";
+        var readOnlySample = "<" + "?php\n"
+          + "require_once __DIR__ . '/../classes/Database.php';\n\n"
+          + "try {\n"
+          + "    $pdo = Database::pdoAdditional('" + code + "', '" + environment + "');\n"
+          + "    $stmt = $pdo->prepare('" + previewQuery + "');\n"
+          + "    $stmt->execute();\n"
+          + "    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);\n"
+          + "} catch (Throwable $e) {\n"
+          + "    error_log('[additional-db:" + code + "] ' . $e->getMessage());\n"
+          + "    throw $e;\n"
+          + "}\n";
+        var ajaxEndpointSample = "<" + "?php\n"
+          + "require_once __DIR__ . '/../../classes/Database.php';\n"
+          + "header('Content-Type: application/json');\n\n"
+          + "try {\n"
+          + "    $pdo = Database::pdoAdditional('" + code + "', '" + environment + "');\n"
+          + "    $stmt = $pdo->prepare('SELECT * FROM nama_table WHERE status = :status');\n"
+          + "    $stmt->execute([':status' => $_POST['status'] ?? 'aktif']);\n\n"
+          + "    echo json_encode([\n"
+          + "        'success' => true,\n"
+          + "        'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),\n"
+          + "    ]);\n"
+          + "} catch (Throwable $e) {\n"
+          + "    error_log('[additional-db:" + code + "] ' . $e->getMessage());\n"
+          + "    http_response_code(500);\n"
+          + "    echo json_encode(['success' => false, 'message' => 'Gagal memuatkan data.']);\n"
+          + "}\n";
+        var dataTablesSample = "<" + "?php\n"
+          + "require_once __DIR__ . '/../../classes/Database.php';\n"
+          + "header('Content-Type: application/json');\n\n"
+          + "$pdo = Database::pdoAdditional('" + code + "', '" + environment + "');\n"
+          + "$draw = (int)($_POST['draw'] ?? 1);\n"
+          + "$start = max(0, (int)($_POST['start'] ?? 0));\n"
+          + "$length = min(100, max(10, (int)($_POST['length'] ?? 10)));\n"
+          + "$search = trim((string)($_POST['search']['value'] ?? ''));\n\n"
+          + "$where = '';\n"
+          + "$params = [];\n"
+          + "if ($search !== '') {\n"
+          + "    $where = 'WHERE nama LIKE :search OR kod LIKE :search';\n"
+          + "    $params[':search'] = '%' . $search . '%';\n"
+          + "}\n\n"
+          + "$total = (int)$pdo->query('SELECT COUNT(*) FROM nama_table')->fetchColumn();\n"
+          + "$countStmt = $pdo->prepare('SELECT COUNT(*) FROM nama_table ' . $where);\n"
+          + "$countStmt->execute($params);\n"
+          + "$filtered = (int)$countStmt->fetchColumn();\n\n"
+          + "$sql = '" + dataTablesPageSql + "';\n"
+          + "$stmt = $pdo->prepare($sql);\n"
+          + "foreach ($params as $key => $value) {\n"
+          + "    $stmt->bindValue($key, $value);\n"
+          + "}\n"
+          + "$stmt->bindValue(':start', $start, PDO::PARAM_INT);\n"
+          + "$stmt->bindValue(':length', $length, PDO::PARAM_INT);\n"
+          + "$stmt->execute();\n\n"
+          + "echo json_encode([\n"
+          + "    'draw' => $draw,\n"
+          + "    'recordsTotal' => $total,\n"
+          + "    'recordsFiltered' => $filtered,\n"
+          + "    'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),\n"
+          + "]);\n";
+        var dropdownSample = "<" + "?php\n"
+          + "require_once __DIR__ . '/../classes/Database.php';\n\n"
+          + "function additionalStatusOptions(): array\n"
+          + "{\n"
+          + "    $pdo = Database::pdoAdditional('" + code + "', '" + environment + "');\n"
+          + "    $stmt = $pdo->prepare('SELECT kod, nama FROM ref_status WHERE aktif = :aktif ORDER BY nama');\n"
+          + "    $stmt->execute([':aktif' => 1]);\n\n"
+          + "    return array_map(static fn (array $row): array => [\n"
+          + "        'value' => $row['kod'],\n"
+          + "        'label' => $row['nama'],\n"
+          + "    ], $stmt->fetchAll(PDO::FETCH_ASSOC));\n"
+          + "}\n";
+        var insertUpdateSample = "<" + "?php\n"
+          + "require_once __DIR__ . '/../classes/Database.php';\n\n"
+          + "$pdo = Database::pdoAdditional('" + code + "', '" + environment + "');\n"
+          + "$payload = [\n"
+          + "    ':id' => (int)$id,\n"
+          + "    ':nama' => trim((string)$nama),\n"
+          + "    ':status' => $status,\n"
+          + "];\n\n"
+          + "$stmt = $pdo->prepare('\n"
+          + "    UPDATE nama_table\n"
+          + "    SET nama = :nama, status = :status, updated_at = CURRENT_TIMESTAMP\n"
+          + "    WHERE id = :id\n"
+          + "');\n"
+          + "$stmt->execute($payload);\n\n"
+          + "if ($stmt->rowCount() === 0) {\n"
+          + "    $insert = $pdo->prepare('\n"
+          + "        INSERT INTO nama_table (id, nama, status, created_at)\n"
+          + "        VALUES (:id, :nama, :status, CURRENT_TIMESTAMP)\n"
+          + "    ');\n"
+          + "    $insert->execute($payload);\n"
+          + "}\n";
+        var batchSyncSample = "<" + "?php\n"
+          + "require_once __DIR__ . '/../classes/Database.php';\n\n"
+          + "$external = Database::pdoAdditional('" + code + "', '" + environment + "');\n"
+          + "$local = Database::pdo();\n\n"
+          + "$rows = $external->query('SELECT kod, nama, updated_at FROM nama_table')->fetchAll(PDO::FETCH_ASSOC);\n"
+          + "$upsert = $local->prepare('\n"
+          + "    INSERT INTO local_lookup (kod, nama, source_updated_at)\n"
+          + "    VALUES (:kod, :nama, :updated_at)\n"
+          + "    ON DUPLICATE KEY UPDATE nama = VALUES(nama), source_updated_at = VALUES(source_updated_at)\n"
+          + "');\n\n"
+          + "$local->beginTransaction();\n"
+          + "try {\n"
+          + "    foreach ($rows as $row) {\n"
+          + "        $upsert->execute([\n"
+          + "            ':kod' => $row['kod'],\n"
+          + "            ':nama' => $row['nama'],\n"
+          + "            ':updated_at' => $row['updated_at'],\n"
+          + "        ]);\n"
+          + "    }\n"
+          + "    $local->commit();\n"
+          + "} catch (Throwable $e) {\n"
+          + "    $local->rollBack();\n"
+          + "    throw $e;\n"
+          + "}\n";
+        var samples = [
+          {
+            id: 'service',
+            title: 'Service',
+            icon: 'ri-service-line',
+            description: 'Wrapper kecil untuk connection supaya controller tidak pegang detail database.',
+            code: serviceSample
+          },
+          {
+            id: 'repository',
+            title: 'Repository',
+            icon: 'ri-database-2-line',
+            description: 'Pattern yang disyorkan untuk query prepared statement.',
+            code: repositorySample
+          },
+          {
+            id: 'controller',
+            title: 'Controller',
+            icon: 'ri-layout-2-line',
+            description: 'Controller panggil repository dan handle error pada boundary feature.',
+            code: controllerSample
+          },
+          {
+            id: 'transaction',
+            title: 'Transaction',
+            icon: 'ri-loop-left-line',
+            description: 'Gunakan untuk operasi tulis yang perlu commit atau rollback.',
+            code: transactionSample
+          },
+          {
+            id: 'readonly',
+            title: 'Read-only',
+            icon: 'ri-search-line',
+            description: 'Contoh query laporan/lookup dengan error logging.',
+            code: readOnlySample
+          },
+          {
+            id: 'ajax',
+            title: 'Ajax Endpoint',
+            icon: 'ri-exchange-box-line',
+            description: 'Endpoint JSON standard untuk page yang fetch data tanpa reload.',
+            code: ajaxEndpointSample
+          },
+          {
+            id: 'datatables',
+            title: 'DataTables',
+            icon: 'ri-table-2',
+            description: 'Server-side response shape untuk listing DataTables.',
+            code: dataTablesSample
+          },
+          {
+            id: 'dropdown',
+            title: 'Dropdown',
+            icon: 'ri-list-check',
+            description: 'Lookup option untuk select/filter daripada database tambahan.',
+            code: dropdownSample
+          },
+          {
+            id: 'insert-update',
+            title: 'Insert Update',
+            icon: 'ri-edit-box-line',
+            description: 'Pattern upsert ringkas dengan prepared statement dan rowCount.',
+            code: insertUpdateSample
+          },
+          {
+            id: 'batch-sync',
+            title: 'Batch Sync',
+            icon: 'ri-loop-right-line',
+            description: 'Sync data daripada DB tambahan ke local DB dalam transaction.',
+            code: batchSyncSample
+          }
+        ];
+
+        var html = ''
+          + '<div class="db-additional-view-shell db-sample-code-shell">'
+          + '<div class="db-additional-view-meta">'
+          + buildAdditionalViewMetaItem('Code', '<code>' + escapeHtml(code) + '</code>')
+          + buildAdditionalViewMetaItem('Environment', escapeHtml(environment))
+          + buildAdditionalViewMetaItem('Family', escapeHtml(family))
+          + buildAdditionalViewMetaItem('Database', escapeHtml(databaseName))
+          + '</div>'
+          + '<div class="db-additional-view-card">'
+          + '<div class="db-additional-view-card-header"><h6 class="db-additional-view-card-title"><i class="ri-braces-line"></i> Sample Code Untuk Programmer</h6></div>'
+          + '<div class="db-additional-view-card-body">'
+          + '<div class="db-sample-code-note">Gunakan helper ini supaya credential, environment, driver fallback, dan cache PDO dikawal oleh registry sistem. Jangan hardcode DSN, host, username, atau password dalam module.</div>'
+          + buildAdditionalSampleCodeTabs(samples)
+          + '</div></div></div>';
+
+        openAdditionalViewModal({
+          title: 'Sample Code',
+          subtitle: code + ' / ' + environment + ' / ' + purpose,
+          icon: 'ri-code-s-slash-line',
+          variant: 'code',
+          html: html
+        });
+        return false;
+      };
+
       window.__tetapanInspectAdditionalConnection = function (code, buttonEl) {
         var found = store.find(function (item) { return String(item.f_code || '') === String(code); }) || null;
         var inspectEnv = found && Array.isArray(found.env_rows) && found.env_rows.length
@@ -1385,35 +2154,48 @@ if (is_file($langFileForJs)) {
               return escapeHtml(probe && probe[key] != null && probe[key] !== '' ? probe[key] : '-');
             };
             var html = ''
-              + '<div class="text-start"><table class="table table-sm align-middle mb-0"><tbody>'
-              + '<tr><th style="width:180px">Code</th><td><code>' + value('connection_code') + '</code></td></tr>'
-              + '<tr><th>Name</th><td>' + value('connection_name') + '</td></tr>'
+              + '<div class="db-additional-view-shell">'
+              + '<div class="db-additional-view-meta">'
+              + buildAdditionalViewMetaItem('Code', '<code>' + value('connection_code') + '</code>')
+              + buildAdditionalViewMetaItem('Name', value('connection_name'))
+              + buildAdditionalViewMetaItem('Environment', value('environment'))
+              + buildAdditionalViewMetaItem('Database', value('database_name'))
+              + '</div>'
+              + '<div class="db-additional-view-card">'
+              + '<div class="db-additional-view-card-header"><h6 class="db-additional-view-card-title"><i class="ri-list-check-2"></i> Runtime Probe</h6></div>'
+              + '<div class="db-additional-view-card-body"><div class="db-additional-view-table-wrap">'
+              + '<table id="db-additional-probe-dt" class="table table-sm table-hover align-middle db-additional-view-table">'
+              + '<thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>'
               + '<tr><th>Family</th><td>' + value('family') + '</td></tr>'
               + '<tr><th>Purpose</th><td>' + value('purpose') + '</td></tr>'
-              + '<tr><th>Environment</th><td>' + value('environment') + '</td></tr>'
               + '<tr><th>OS Family</th><td>' + value('os_family') + '</td></tr>'
               + '<tr><th>Configured Driver</th><td>' + value('configured_driver') + '</td></tr>'
               + '<tr><th>Active Driver</th><td>' + value('active_driver') + '</td></tr>'
               + '<tr><th>Host</th><td>' + value('host') + '</td></tr>'
               + '<tr><th>Port</th><td>' + value('port') + '</td></tr>'
-              + '<tr><th>Configured DB</th><td>' + value('database_name') + '</td></tr>'
               + '<tr><th>Current DB</th><td>' + value('current_database') + '</td></tr>'
               + '<tr><th>Current User</th><td>' + value('current_user') + '</td></tr>'
               + '<tr><th>Server Time</th><td>' + value('server_time') + '</td></tr>'
               + '<tr><th>Server Version</th><td>' + value('server_version') + '</td></tr>'
               + '<tr><th>Ping</th><td>' + value('ping') + '</td></tr>'
-              + '</tbody></table></div>';
+              + '</tbody></table></div>'
+              + '</div></div>'
+              + '</div>';
 
-            if (window.Swal && typeof window.Swal.fire === 'function') {
-              window.Swal.fire({
-                icon: 'info',
-                title: 'Butiran Sambungan Tambahan',
-                html: html,
-                width: 760,
-                confirmButtonText: 'OK'
-              });
-              return;
-            }
+            openAdditionalViewModal({
+              title: 'Butiran Sambungan Tambahan',
+              subtitle: value('connection_code') + ' / ' + value('environment') + ' / ' + value('active_driver'),
+              icon: 'ri-eye-line',
+              html: html,
+              datatableSelector: '#db-additional-probe-dt',
+              datatableOptions: {
+                pageLength: 5,
+                searchPlaceholder: 'Search',
+                order: [],
+                columnDefs: [{ targets: 0, width: '180px' }]
+              }
+            });
+            return;
 
             alertSuccess(response.message || 'Maklumat sambungan tambahan berjaya dimuatkan.');
           })
@@ -1448,32 +2230,41 @@ if (is_file($langFileForJs)) {
                   var environment = encodeURIComponent(String(preview.environment || 'production'));
                   var osFamily = encodeURIComponent(String(preview.os_family || 'any'));
                   var driver = encodeURIComponent(String(preview.driver || ''));
-                  return '<tr><td>' + escapeHtml(item.object_name || '-') + '</td><td>' + escapeHtml(item.object_type || '-') + '</td><td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary" onclick="return window.__tetapanDataPreviewAdditionalConnection(\'' + code + '\', \'' + objectName + '\', \'' + environment + '\', \'' + osFamily + '\', \'' + driver + '\', this)"><i class="ri-file-search-line"></i></button></td></tr>';
+                  return '<tr><td>' + escapeHtml(item.object_name || '-') + '</td><td>' + escapeHtml(item.object_type || '-') + '</td><td class="text-start"><button type="button" class="btn btn-sm btn-outline-primary" onclick="return window.__tetapanDataPreviewAdditionalConnection(\'' + code + '\', \'' + objectName + '\', \'' + environment + '\', \'' + osFamily + '\', \'' + driver + '\', this)"><i class="ri-file-search-line"></i></button></td></tr>';
                 }).join('')
               : '<tr><td colspan="3" class="text-muted text-center py-3">Tiada objek ditemui.</td></tr>';
 
             var html = ''
-              + '<div class="text-start mb-3">'
-              + '<div><strong>Code:</strong> <code>' + escapeHtml(preview.connection_code || '-') + '</code></div>'
-              + '<div><strong>Family:</strong> ' + escapeHtml(preview.family || '-') + '</div>'
-              + '<div><strong>Environment:</strong> ' + escapeHtml(preview.environment || '-') + '</div>'
-              + '<div><strong>Database:</strong> ' + escapeHtml(preview.database_name || '-') + '</div>'
+              + '<div class="db-additional-view-shell">'
+              + '<div class="db-additional-view-meta">'
+              + buildAdditionalViewMetaItem('Code', '<code>' + escapeHtml(preview.connection_code || '-') + '</code>')
+              + buildAdditionalViewMetaItem('Family', escapeHtml(preview.family || '-'))
+              + buildAdditionalViewMetaItem('Environment', escapeHtml(preview.environment || '-'))
+              + buildAdditionalViewMetaItem('Database', escapeHtml(preview.database_name || '-'))
               + '</div>'
-              + '<div class="table-responsive"><table class="table table-sm align-middle mb-0">'
-              + '<thead><tr><th>Object Name</th><th style="width:140px">Type</th><th class="text-end" style="width:96px">Preview</th></tr></thead>'
+              + '<div class="db-additional-view-card">'
+              + '<div class="db-additional-view-card-header"><h6 class="db-additional-view-card-title"><i class="ri-table-line"></i> Schema Preview</h6></div>'
+              + '<div class="db-additional-view-card-body"><div class="db-additional-view-table-wrap">'
+              + '<table id="db-additional-schema-dt" class="table table-sm table-hover align-middle db-additional-view-table">'
+              + '<thead><tr><th>Object Name</th><th style="width:140px">Type</th><th class="text-start" style="width:96px">Preview</th></tr></thead>'
               + '<tbody>' + rowsHtml + '</tbody>'
-              + '</table></div>';
+              + '</table></div>'
+              + '</div></div>'
+              + '</div>';
 
-            if (window.Swal && typeof window.Swal.fire === 'function') {
-              window.Swal.fire({
-                icon: 'info',
-                title: 'Schema Preview',
-                html: html,
-                width: 820,
-                confirmButtonText: 'OK'
-              });
-              return;
-            }
+            openAdditionalViewModal({
+              title: 'Schema Preview',
+              subtitle: String(preview.connection_code || '-') + ' / ' + String(preview.environment || '-') + ' / ' + String(preview.database_name || '-'),
+              icon: 'ri-table-line',
+              html: html,
+              datatableSelector: '#db-additional-schema-dt',
+              datatableOptions: {
+                pageLength: 5,
+                searchPlaceholder: 'Search',
+                columnDefs: [{ targets: 2, orderable: false, searchable: false }]
+              }
+            });
+            return;
 
             alertSuccess(response.message || 'Schema preview berjaya dimuatkan.');
           })
@@ -1507,38 +2298,48 @@ if (is_file($langFileForJs)) {
             var rows = Array.isArray(preview.rows) ? preview.rows : [];
             var headerHtml = columns.map(function (column) {
               return '<th>' + escapeHtml(column) + '</th>';
-            }).join('');
+            }).join('') + '<th class="text-start db-preview-toggle-cell">Paparan</th>';
             var bodyHtml = rows.length
               ? rows.map(function (row) {
-                  return '<tr>' + columns.map(function (column) {
+                return '<tr>' + columns.map(function (column) {
                     var value = row && row[column] != null ? String(row[column]) : '';
-                    return '<td>' + escapeHtml(value) + '</td>';
-                  }).join('') + '</tr>';
+                    return '<td class="db-preview-cell">' + escapeHtml(value) + '</td>';
+                  }).join('') + '<td class="db-preview-toggle-cell"><button type="button" class="db-preview-toggle" onclick="return window.__tetapanTogglePreviewRow(this)">Papar</button></td></tr>';
                 }).join('')
-              : '<tr><td colspan="' + Math.max(columns.length, 1) + '" class="text-muted text-center py-3">Tiada rekod ditemui.</td></tr>';
+              : '<tr><td colspan="' + Math.max(columns.length + 1, 1) + '" class="text-muted text-center py-3">Tiada rekod ditemui.</td></tr>';
 
             var html = ''
-              + '<div class="text-start mb-3">'
-              + '<div><strong>Code:</strong> <code>' + escapeHtml(preview.connection_code || '-') + '</code></div>'
-              + '<div><strong>Object:</strong> ' + escapeHtml(preview.object_name || '-') + '</div>'
-              + '<div><strong>Environment:</strong> ' + escapeHtml(preview.environment || '-') + '</div>'
-              + '<div><strong>Database:</strong> ' + escapeHtml(preview.database_name || '-') + '</div>'
+              + '<div class="db-additional-view-shell">'
+              + '<div class="db-additional-view-meta">'
+              + buildAdditionalViewMetaItem('Code', '<code>' + escapeHtml(preview.connection_code || '-') + '</code>')
+              + buildAdditionalViewMetaItem('Object', escapeHtml(preview.object_name || '-'))
+              + buildAdditionalViewMetaItem('Environment', escapeHtml(preview.environment || '-'))
+              + buildAdditionalViewMetaItem('Database', escapeHtml(preview.database_name || '-'))
               + '</div>'
-              + '<div class="table-responsive"><table class="table table-sm align-middle mb-0">'
+              + '<div class="db-additional-view-card">'
+              + '<div class="db-additional-view-card-header"><h6 class="db-additional-view-card-title"><i class="ri-file-search-line"></i> Data Preview</h6></div>'
+              + '<div class="db-additional-view-card-body"><div class="db-additional-view-table-wrap">'
+              + '<table id="db-additional-object-preview-dt" class="table table-sm table-hover align-middle db-additional-view-table">'
               + '<thead><tr>' + headerHtml + '</tr></thead>'
               + '<tbody>' + bodyHtml + '</tbody>'
-              + '</table></div>';
+              + '</table></div></div></div>'
+              + '</div>';
 
-            if (window.Swal && typeof window.Swal.fire === 'function') {
-              window.Swal.fire({
-                icon: 'info',
-                title: 'Data Preview',
-                html: html,
-                width: 960,
-                confirmButtonText: 'OK'
-              });
-              return;
-            }
+            openAdditionalChildViewModal({
+              title: 'Data Preview',
+              subtitle: String(preview.object_name || '-') + ' / ' + String(preview.environment || '-') + ' / ' + String(preview.database_name || '-'),
+              icon: 'ri-file-search-line',
+              variant: 'pink',
+              html: html,
+              datatableSelector: '#db-additional-object-preview-dt',
+              datatableOptions: {
+                pageLength: 5,
+                scrollX: true,
+                searchPlaceholder: 'Search',
+                columnDefs: [{ targets: columns.length, orderable: false, searchable: false, width: '10%' }]
+              }
+            });
+            return;
 
             alertSuccess(response.message || 'Data preview berjaya dimuatkan.');
           })
@@ -1577,6 +2378,7 @@ if (is_file($langFileForJs)) {
     })();
   </script>
   <script src="<?= asset_url('js/helpers/page-ui-helper.js') ?>?v=<?= urlencode($version) ?>"></script>
+  <script src="<?= asset_url('js/helpers/datatables-standard.js') ?>?v=<?= urlencode($version) ?>"></script>
   <script src="<?= asset_url('js/pages/tetapan-sistem.js') ?>?v=<?= urlencode($version) ?>"></script>
   <script>
     (function () {

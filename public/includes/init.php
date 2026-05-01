@@ -180,6 +180,22 @@ if (!function_exists('render_bootstrap_db_failure_response')) {
 }
 
 // 5) MySQL + User
+// Resolve explicit runtime selection before the first MySQL singleton is built.
+// If no explicit session/env value exists, config DB is read below and the
+// initial bootstrap connection is refreshed when it points to a different env.
+$__mainDbEnvironmentPreselected = false;
+if (!defined('MAIN_DB_ENVIRONMENT')) {
+    $candidateMainDbEnvironment = strtolower(trim((string)($_SESSION['MAIN_DB_ENVIRONMENT'] ?? '')));
+    if ($candidateMainDbEnvironment === '') {
+        $candidateMainDbEnvironment = strtolower(trim((string)($_ENV['MAIN_DB_ENVIRONMENT'] ?? $_SERVER['MAIN_DB_ENVIRONMENT'] ?? getenv('MAIN_DB_ENVIRONMENT') ?? '')));
+    }
+
+    if ($candidateMainDbEnvironment !== '' && in_array($candidateMainDbEnvironment, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)) {
+        define('MAIN_DB_ENVIRONMENT', $candidateMainDbEnvironment);
+        $__mainDbEnvironmentPreselected = true;
+    }
+}
+
 try {
     $pdo_mysql = Database::getInstance('mysql')->getConnection();
     $user      = new User($pdo_mysql);
@@ -187,6 +203,37 @@ try {
 } catch (Throwable $e) {
     error_log('[init] bootstrap database failure: ' . $e->getMessage());
     render_bootstrap_db_failure_response();
+}
+
+if (!defined('MAIN_DB_ENVIRONMENT')) {
+    $mainDbEnvironment = SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT;
+    try {
+        $cfgMainDbEnvironment = strtolower(trim((string)$config->getMainDbEnvironment(SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT)));
+        if ($cfgMainDbEnvironment !== '' && in_array($cfgMainDbEnvironment, SystemConfigConstants::ALLOWED_MAIN_DB_ENVIRONMENTS, true)) {
+            $mainDbEnvironment = $cfgMainDbEnvironment;
+        }
+    } catch (Throwable $e) {
+        // ignore, fallback below
+    }
+    define('MAIN_DB_ENVIRONMENT', $mainDbEnvironment);
+}
+
+if (
+    !$__mainDbEnvironmentPreselected
+    && defined('MAIN_DB_ENVIRONMENT')
+    && MAIN_DB_ENVIRONMENT !== SystemConfigConstants::DEFAULT_MAIN_DB_ENVIRONMENT
+) {
+    Database::clearInstance('mysql');
+    Database::clearInstance('mysql_prod');
+    Database::clearInstance('mysql_dev');
+    try {
+        $pdo_mysql = Database::getInstance('mysql')->getConnection();
+        $user      = new User($pdo_mysql);
+        $config    = new Config($pdo_mysql);
+    } catch (Throwable $e) {
+        error_log('[init] runtime MySQL environment reconnect failure: ' . $e->getMessage());
+        render_bootstrap_db_failure_response();
+    }
 }
 
 if (!function_exists('tetapan_sistem_ajax_debug_log')) {
