@@ -1,6 +1,6 @@
-# e-Base aaaaa
+# IQS-Framework
 
-e-Base is a web-based internal platform used as a secure and reusable foundation for enterprise applications, administration portals, and operational systems. It provides a structured starting point for building organization-specific solutions with consistent authentication, access control, system configuration, auditability, multilingual support, and modular feature management.
+IQS-Framework is a web-based internal platform used as a secure and reusable foundation for enterprise applications, administration portals, and operational systems. It provides a structured starting point for building organization-specific solutions with consistent authentication, access control, system configuration, auditability, multilingual support, and modular feature management.
 
 The current version has evolved beyond a simple starter template. It now operates as a practical administration platform with production-ready modules for user governance, group and access management, system configuration, reference content, documentation, and controlled access to external data domains.
 
@@ -47,7 +47,7 @@ Manual command format for release support:
 
 ## System Overview
 
-e-Base is designed to support internal institutional workflows where:
+IQS-Framework is designed to support internal institutional workflows where:
 
 - user access must be controlled centrally
 - modules and menus are assigned by group
@@ -326,7 +326,7 @@ The system follows a practical layered PHP application structure.
 
 ## Authentication Overview
 
-Authentication in e-Base follows a hybrid approach.
+Authentication in IQS-Framework follows a hybrid approach.
 
 ### Internal Login Logic
 
@@ -551,7 +551,7 @@ Standard SweetAlert modal alerts require a user click to close. Toast alerts rem
 ## Simplified Folder Structure
 
 ```text
-e-base/
+iqs-framework/
 ├─ public/
 │  ├─ actions/          # action handlers and task-specific workflows
 │  ├─ ajax/             # asynchronous endpoints
@@ -595,7 +595,7 @@ For Docker setup:
 
 ```bash
 git clone <your-repository-url>
-cd e-base
+cd iqs-framework
 ```
 
 ### 2. Prepare Environment Variables
