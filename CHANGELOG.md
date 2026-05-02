@@ -6,8 +6,25 @@ This changelog follows a release-style summary based on major project milestones
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [1.7.4] - 2026-05-02
+
 ### Added
-- Added PHP 8.4 readiness audit documentation in `docs/php84-readiness-audit-2026-04-23.md`.
+- Added core/custom language folder structure under `public/lang/core/` and `public/lang/custom/`.
+- Added compatibility wrappers for `public/lang/ms.php` and `public/lang/en.php` so direct legacy includes still return merged translations.
+- Added `tools/language-split-tool.php` for validating language parity, duplicate keys, custom overrides, and legacy language migration.
+- Added language core/custom split audit documentation in `docs/language-core-custom-split-audit-2026-05-02.md`.
+
+### Changed
+- Changed the global language helper to load core translations first and project custom translations second.
+- Changed bootstrap and System Settings JavaScript translation loading to use merged core/custom language data.
+- Changed generated page language entries so project-specific keys are written to `public/lang/custom/`.
+- Changed update and sync scripts to protect `public/lang/custom/*` while still distributing core language files, release metadata, and language tooling.
+- Changed project release metadata to lock the application version at `1.7.4`.
+
+### Fixed
+- Fixed duplicate core translation keys reported by the language validation tool.
 
 ## [1.7.3] - 2026-05-01
 

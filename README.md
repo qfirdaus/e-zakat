@@ -6,7 +6,7 @@ README ini hanya mendokumenkan ciri yang wujud dalam kod semasa projek ini.
 
 ## Version
 
-- Current version: `1.7.3`
+- Current version: `1.7.4`
 - Release history: [CHANGELOG.md](./CHANGELOG.md)
 - Version file: [VERSION](./VERSION)
 - Runtime fallback: [public/configuration/settings.php](./public/configuration/settings.php)
@@ -79,6 +79,15 @@ README ini hanya mendokumenkan ciri yang wujud dalam kod semasa projek ini.
   - Theme
   - Language
 - Settings are handled by `TetapanSistemController.php`, `Config.php`, `SystemConfigConstants.php`, and page-specific JavaScript/CSS assets.
+
+### Language Architecture
+
+- Core framework translations are stored in `public/lang/core/`.
+- Project-specific translations are stored in `public/lang/custom/`.
+- Root language files in `public/lang/ms.php` and `public/lang/en.php` are compatibility wrappers that return merged core and custom translations.
+- Project custom translations override core translations without requiring changes to existing `__()` calls.
+- JavaScript translation bundles and generated page language entries use the same merged language source.
+- Generated project language keys are written to `public/lang/custom/` so core language updates do not overwrite project-specific translations.
 
 ### Database Runtime Configuration
 
@@ -204,6 +213,7 @@ iqs-framework/
 |   |-- setting/           # Helpers, constants, language/config support
 |-- docker/                # Apache, SSL, and PHP runtime config
 |-- docs/                  # Project documentation assets
+|-- tools/                 # CLI maintenance tools
 |-- updates/               # Update/deployment support files
 |-- .env.example           # Example runtime environment
 |-- docker-compose.yml     # Docker runtime service
@@ -248,6 +258,7 @@ iqs-framework/
 - Do not hardcode database DSN, username, or password in pages/controllers.
 - Keep access checks aligned with group, module, and menu governance.
 - Record sensitive administrative changes through the audit helper/logger pattern already used in the system.
+- Use `php tools/language-split-tool.php validate` after language or core sync changes to verify core/custom translation health.
 
 ## Security Notes
 
