@@ -1,39 +1,61 @@
 <?php
 
 /**
+ * Load translations for a language.
+ *
+ * Load order:
+ * 1. public/lang/core/{lang}.php
+ * 2. public/lang/custom/{lang}.php
+ *
+ * Custom keys override core keys. The legacy public/lang/{lang}.php wrapper is
+ * kept for direct includes elsewhere until every caller uses this helper.
+ */
+function lang_lines(string $lang): array {
+    static $cache = [];
+
+    $lang = trim($lang) !== '' ? trim($lang) : 'ms';
+    if (isset($cache[$lang])) {
+        return $cache[$lang];
+    }
+
+    $baseDir = __DIR__ . '/../../lang';
+    $coreFile = $baseDir . '/core/' . $lang . '.php';
+    $customFile = $baseDir . '/custom/' . $lang . '.php';
+
+    $core = is_file($coreFile) ? require $coreFile : [];
+    $custom = is_file($customFile) ? require $customFile : [];
+
+    $cache[$lang] = array_replace(
+        is_array($core) ? $core : [],
+        is_array($custom) ? $custom : []
+    );
+
+    return $cache[$lang];
+}
+
+/**
  * ✅ Ambil terjemahan berdasarkan key
  * Contoh: __('login.title')
  */
 function __($key): string {
-    $lang = get_current_lang();
-    static $lines = [];
-
-    if (!isset($lines[$lang])) {
-        $file = __DIR__ . '/../../lang/' . $lang . '.php';
-
-        if (file_exists($file)) {
-            $loaded = include $file;
-            $lines[$lang] = is_array($loaded) ? $loaded : [];
-        } else {
-            $lines[$lang] = [];
-        }
-    }
-
-    $text = $lines[$lang][$key] ?? $key;
+    $lines = lang_lines(get_current_lang());
+    $text = $lines[$key] ?? $key;
 
     // Normalize encoding and fix common mojibake sequences
     if (!function_exists('fix_mojibake')) {
         function fix_mojibake(string $s): string {
             if ($s === '') return $s;
 
-            // If not valid UTF-8, assume it's CP1252/ISO-8859-1 bytes and convert
-            if (!mb_check_encoding($s, 'UTF-8')) {
-                $s = mb_convert_encoding($s, 'UTF-8', 'CP1252');
-            } else {
-                // Try a CP1252 round-trip if it produces a different (likely corrected) string
-                $try = mb_convert_encoding($s, 'UTF-8', 'CP1252');
-                if ($try !== $s) {
-                    $s = $try;
+            if (function_exists('mb_check_encoding') && function_exists('mb_convert_encoding')) {
+                // If not valid UTF-8, assume it's CP1252/ISO-8859-1 bytes and convert
+                if (!mb_check_encoding($s, 'UTF-8')) {
+                    $s = mb_convert_encoding($s, 'UTF-8', 'CP1252');
+                } else {
+                    // Try a CP1252 round-trip if it produces a different (likely corrected) string
+                    $try = mb_convert_encoding($s, 'UTF-8', 'CP1252');
+                    if ($try !== $s) {
+                        $s = $try;
+                    }
                 }
             }
 
@@ -70,21 +92,7 @@ function __($key): string {
  * Contoh: lang_exists('login.title')
  */
 function lang_exists(string $key): bool {
-    $lang = get_current_lang();
-    static $lines = [];
-
-    if (!isset($lines[$lang])) {
-        $file = __DIR__ . '/../../lang/' . $lang . '.php';
-
-        if (file_exists($file)) {
-            $loaded = include $file;
-            $lines[$lang] = is_array($loaded) ? $loaded : [];
-        } else {
-            $lines[$lang] = [];
-        }
-    }
-
-    return array_key_exists($key, $lines[$lang]);
+    return array_key_exists($key, lang_lines(get_current_lang()));
 }
 
 /**
@@ -98,15 +106,7 @@ function get_current_lang(): string {
  * ✅ Dapatkan semua terjemahan bahasa sekarang
  */
 function get_all_lang_lines(): array {
-    $lang = get_current_lang();
-    $file = __DIR__ . '/../../lang/' . $lang . '.php';
-
-    if (file_exists($file)) {
-        $loaded = include $file;
-        return is_array($loaded) ? $loaded : [];
-    }
-
-    return [];
+    return lang_lines(get_current_lang());
 }
 
 /**

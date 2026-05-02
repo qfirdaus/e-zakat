@@ -157,15 +157,12 @@ $tetapanSistemJsKeys = [
   'config_js_valid_port_range',
 ];
 
-$langFileForJs = __DIR__ . "/../lang/{$lang}.php";
-if (is_file($langFileForJs)) {
-  $langMapForJs = require $langFileForJs;
-  if (is_array($langMapForJs)) {
-    $translations_js = array_merge(
-      $translations_js ?? [],
-      array_intersect_key($langMapForJs, array_flip($tetapanSistemJsKeys))
-    );
-  }
+$langMapForJs = function_exists('lang_lines') ? lang_lines((string)$lang) : [];
+if (is_array($langMapForJs)) {
+  $translations_js = array_merge(
+    $translations_js ?? [],
+    array_intersect_key($langMapForJs, array_flip($tetapanSistemJsKeys))
+  );
 }
 
 $translationBundlesJs = [];
@@ -189,12 +186,8 @@ $normaliseTranslationMapForJs = static function (array $map): array {
 };
 
 foreach ($translationLangCodes as $translationLangCode) {
-  $bundleFile = __DIR__ . "/../lang/{$translationLangCode}.php";
-  if (!is_file($bundleFile)) {
-    continue;
-  }
-  $bundleMap = require $bundleFile;
-  if (is_array($bundleMap)) {
+  $bundleMap = function_exists('lang_lines') ? lang_lines((string)$translationLangCode) : [];
+  if (is_array($bundleMap) && $bundleMap !== []) {
     $translationBundlesJs[$translationLangCode] = $normaliseTranslationMapForJs($bundleMap);
   }
 }

@@ -44,13 +44,33 @@ declare -A P_UPDATED
 declare -A P_NEW
 declare -A P_CONFLICT
 
+should_skip_update_file() {
+    local path="$1"
+    case "$path" in
+        public/lang/custom/*|updates/public/lang/custom/*)
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+is_collectable_update_file() {
+    local path="$1"
+    case "$path" in
+        public/*|tools/|tools/language-split-tool.php|VERSION|README.md|CHANGELOG.md)
+            return 0
+            ;;
+    esac
+    return 1
+}
+
 # =========================
 # COLLECT FROM MASTER (GIT BASED)
 # =========================
 collect_updates() {
 
     MASTER="$BASE_PATH/$MASTER_PROJECT"
-    DEST="updates/public"
+    DEST="updates"
 
     echo "🔍 Detecting git changes..."
 
@@ -58,14 +78,37 @@ collect_updates() {
 
     git status --porcelain | while read status file; do
 
-        # focus hanya public/
-        if [[ "$file" != public/* ]]; then
+        if ! is_collectable_update_file "$file"; then
             continue
         fi
 
-        REL="${file#public/}"
+        if should_skip_update_file "$file"; then
+            echo -e "${YELLOW}SKIPPED  → $file${NC}"
+            continue
+        fi
+
+        REL="$file"
         SOURCE="$MASTER/$file"
         TARGET="$DEST/$REL"
+
+        if [ -d "$SOURCE" ]; then
+            find "$SOURCE" -type f | while read source_file; do
+                REL_FILE="${source_file#$MASTER/}"
+                if ! is_collectable_update_file "$REL_FILE"; then
+                    continue
+                fi
+                if should_skip_update_file "$REL_FILE"; then
+                    echo -e "${YELLOW}SKIPPED  → $REL_FILE${NC}"
+                    continue
+                fi
+
+                TARGET_FILE="$DEST/$REL_FILE"
+                mkdir -p "$(dirname "$TARGET_FILE")"
+                cp "$source_file" "$TARGET_FILE"
+                echo -e "${GREEN}NEW      → $REL_FILE${NC}"
+            done
+            continue
+        fi
 
         mkdir -p "$(dirname "$TARGET")"
         cp "$SOURCE" "$TARGET"
@@ -200,7 +243,7 @@ if [ "$DRY_RUN" = false ]; then
     [ "$confirm" != "y" ] && rm -f "$LOCK_FILE" && exit 0
 fi
 
-mapfile -t FILES < <(find updates -type f)
+mapfile -t FILES < <(find updates -type f ! -path "updates/public/lang/custom/*")
 
 for project in "${PROJECTS[@]}"; do
 
@@ -218,6 +261,11 @@ for project in "${PROJECTS[@]}"; do
     for file in "${FILES[@]}"; do
 
         REL_PATH="${file#updates/}"
+        if should_skip_update_file "$REL_PATH"; then
+            print_row "$project" "SKIP" "$REL_PATH" "$YELLOW"
+            continue
+        fi
+
         SOURCE="$file"
         TARGET_FILE="$TARGET/$REL_PATH"
 

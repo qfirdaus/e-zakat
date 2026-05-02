@@ -12,6 +12,7 @@ find public -type f -newer "$MARKER" \
 ! -path "public/cache/*" \
 ! -path "public/log/*" \
 ! -path "public/uploads/*" \
+! -path "public/lang/custom/*" \
 | while read file; do
 
     target="updates/$file"
@@ -20,6 +21,16 @@ find public -type f -newer "$MARKER" \
 
     echo "✔ Copied: $file"
 
+done
+
+for file in VERSION README.md CHANGELOG.md tools/language-split-tool.php; do
+    if [ -f "$file" ] && [ "$file" -newer "$MARKER" ]; then
+        target="updates/$file"
+        mkdir -p "$(dirname "$target")"
+        cp "$file" "$target"
+
+        echo "✔ Copied: $file"
+    fi
 done
 
 touch "$MARKER"

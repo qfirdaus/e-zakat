@@ -168,7 +168,7 @@ final class FileGenerationService
             return;
         }
 
-        foreach ($this->getLanguageFilePaths() as $langPath) {
+        foreach ($this->getWritableLanguageFilePaths() as $langPath) {
             $this->removeLanguageBlock($langPath, $pageKeyPrefix);
         }
     }
@@ -304,18 +304,11 @@ final class FileGenerationService
      */
     private function assertLanguageKeysDoNotExist(array $entriesByLang): void
     {
-        foreach ($this->getLanguageFilePaths() as $langCode => $langPath) {
-            if (!is_file($langPath)) {
-                throw new RuntimeException("Language file not found: {$langPath}");
-            }
-
-            $content = (string)file_get_contents($langPath);
-            if ($content === '') {
-                throw new RuntimeException("Language file is empty: {$langPath}");
-            }
+        foreach (array_keys($this->getWritableLanguageFilePaths()) as $langCode) {
+            $lines = $this->loadMergedLanguageLines($langCode);
 
             foreach (array_keys($entriesByLang[$langCode] ?? []) as $key) {
-                if (preg_match("/'" . preg_quote((string)$key, '/') . "'\\s*=>/m", $content) === 1) {
+                if (array_key_exists((string)$key, $lines)) {
                     throw new RuntimeException("Language key already exists in {$langCode}: {$key}");
                 }
             }
@@ -330,7 +323,7 @@ final class FileGenerationService
     private function appendLanguageEntries(array $entriesByLang, array $normalized): array
     {
         $updatedFiles = [];
-        foreach ($this->getLanguageFilePaths() as $langCode => $langPath) {
+        foreach ($this->getWritableLanguageFilePaths() as $langCode => $langPath) {
             $entries = $entriesByLang[$langCode] ?? [];
             $this->appendPhpArrayEntries($langPath, $entries, $normalized, $langCode);
             $updatedFiles[] = $langPath;
@@ -342,12 +335,29 @@ final class FileGenerationService
     /**
      * @return array<string,string>
      */
-    private function getLanguageFilePaths(): array
+    private function getWritableLanguageFilePaths(): array
     {
         return [
-            'ms' => $this->projectRoot . '/lang/ms.php',
-            'en' => $this->projectRoot . '/lang/en.php',
+            'ms' => $this->projectRoot . '/lang/custom/ms.php',
+            'en' => $this->projectRoot . '/lang/custom/en.php',
         ];
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    private function loadMergedLanguageLines(string $langCode): array
+    {
+        $corePath = $this->projectRoot . '/lang/core/' . $langCode . '.php';
+        $customPath = $this->projectRoot . '/lang/custom/' . $langCode . '.php';
+
+        $core = is_file($corePath) ? require $corePath : [];
+        $custom = is_file($customPath) ? require $customPath : [];
+
+        return array_replace(
+            is_array($core) ? $core : [],
+            is_array($custom) ? $custom : []
+        );
     }
 
     /**
@@ -356,6 +366,16 @@ final class FileGenerationService
      */
     private function appendPhpArrayEntries(string $path, array $entries, array $normalized, string $langCode): void
     {
+        if (!is_file($path)) {
+            $dir = dirname($path);
+            if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+                throw new RuntimeException("Failed to create language directory: {$dir}");
+            }
+            if (file_put_contents($path, "<?php\n\nreturn [\n];\n") === false) {
+                throw new RuntimeException("Failed to create language file: {$path}");
+            }
+        }
+
         $content = (string)file_get_contents($path);
         if ($content === '') {
             throw new RuntimeException("Language file is empty: {$path}");

@@ -520,8 +520,7 @@ $lang = $_SESSION['lang'];
 
 // 7) translations_js (optional untuk front-end) – hanya jika belum diset oleh page
 if (!isset($translations_js)) {
-    $langFile = __DIR__ . "/../lang/{$lang}.php";
-    $all = file_exists($langFile) ? (require $langFile) : [];
+    $all = function_exists('lang_lines') ? lang_lines((string)$lang) : [];
     $whitelistFile = __DIR__ . '/../includes/js_keys_whitelist.php';
     if (file_exists($whitelistFile)) {
         $allow = require $whitelistFile; // array of keys
