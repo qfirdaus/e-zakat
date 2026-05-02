@@ -2964,6 +2964,26 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
     STUDENT_MODE_ENABLED: <?= $studentModeEnabled ? 'true' : 'false' ?>,
     GROUP_UI_BY_ID: <?= json_encode($groupUiById, JSON_UNESCAPED_UNICODE) ?>,
     GROUP_UI_BY_CODE: <?= json_encode($groupUiByCode, JSON_UNESCAPED_UNICODE) ?>,
+    GROUPS_BY_SCOPE: {
+      staff: <?= json_encode(array_map(static fn($g) => [
+        'id' => (int)($g['f_groupID'] ?? 0),
+        'kod' => (string)($g['f_groupKod'] ?? ''),
+        'nama' => (string)($g['f_groupName'] ?? ''),
+        'categoryUser' => (string)($g['f_categoryUser'] ?? ''),
+      ], $senaraiGroupStaf), JSON_UNESCAPED_UNICODE) ?>,
+      student: <?= json_encode(array_map(static fn($g) => [
+        'id' => (int)($g['f_groupID'] ?? 0),
+        'kod' => (string)($g['f_groupKod'] ?? ''),
+        'nama' => (string)($g['f_groupName'] ?? ''),
+        'categoryUser' => (string)($g['f_categoryUser'] ?? ''),
+      ], $senaraiGroupPelajar), JSON_UNESCAPED_UNICODE) ?>,
+      public: <?= json_encode(array_map(static fn($g) => [
+        'id' => (int)($g['f_groupID'] ?? 0),
+        'kod' => (string)($g['f_groupKod'] ?? ''),
+        'nama' => (string)($g['f_groupName'] ?? ''),
+        'categoryUser' => (string)($g['f_categoryUser'] ?? ''),
+      ], $senaraiGroupUmum), JSON_UNESCAPED_UNICODE) ?>
+    },
     COLORS: {
       GROUP_ADM_SA: '#ffe8e8',
       GROUP_ADM_HR: '#fffef0',
@@ -4177,6 +4197,41 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
     sel.style.width = w + 'px';
   }
 
+  function normalizeScope(scope) {
+    const safeScope = String(scope || 'staff').trim().toLowerCase();
+    if (safeScope === 'pelajar') return 'student';
+    if (safeScope === 'umum') return 'public';
+    if (safeScope === 'student' || safeScope === 'public') return safeScope;
+    return 'staff';
+  }
+
+  function normalizeGroupOption(group) {
+    const id = group && (group.id || group.f_groupID || '');
+    const kod = group && (group.kod || group.f_groupKod || '');
+    const name = group && (group.nama || group.f_groupName || kod || '');
+    return { id, kod, name };
+  }
+
+  function getEmbeddedGroupsForScope(scope) {
+    const safeScope = normalizeScope(scope);
+    const groupsByScope = CONFIG.GROUPS_BY_SCOPE || {};
+    return Array.isArray(groupsByScope[safeScope]) ? groupsByScope[safeScope] : [];
+  }
+
+  async function fetchGroupsForScope(scope) {
+    const safeScope = normalizeScope(scope);
+    try {
+      const res = await fetch(`<?= base_url('ajax/group-list.php') ?>?scope=${encodeURIComponent(safeScope)}`, { headers: { 'Accept':'application/json' } });
+      if (res.ok) {
+        const j = await res.json();
+        if (j && Array.isArray(j.groups)) {
+          return j.groups;
+        }
+      }
+    } catch (e) { /* use embedded fallback */ }
+    return getEmbeddedGroupsForScope(safeScope);
+  }
+
   function getScopeMeta(scope) {
     const normalized = String(scope || 'staff').trim().toLowerCase();
     if (normalized === 'student' || normalized === 'pelajar') {
@@ -4231,15 +4286,12 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
   async function populateSelectGroupsForScope(selectEl, scope, selectedId = '') {
     if (!selectEl) return;
     try {
-      const safeScope = String(scope || 'staff').trim().toLowerCase() || 'staff';
-      const r = await fetch(`<?= base_url('ajax/group-list.php') ?>?scope=${encodeURIComponent(safeScope)}`, { headers:{'Accept':'application/json'} });
-      const j = await r.json();
+      const safeScope = normalizeScope(scope);
+      const groups = await fetchGroupsForScope(safeScope);
       selectEl.innerHTML = '';
       let optionCount = 0;
-      (j.groups || []).forEach(g => {
-        const id = g.id || g.f_groupID || '';
-        const kod = g.kod || g.f_groupKod || '';
-        const name = g.nama || g.f_groupName || kod;
+      groups.forEach(g => {
+        const { id, name } = normalizeGroupOption(g);
         const opt = document.createElement('option');
         opt.value = id;
         opt.textContent = name;
@@ -4327,12 +4379,10 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
 
     (async () => {
       try {
-        const res = await fetch(`<?= base_url('ajax/group-list.php') ?>?scope=${encodeURIComponent(meta.scope)}`, { headers: { 'Accept':'application/json' } });
-        const j = await res.json();
+        const groups = await fetchGroupsForScope(meta.scope);
         let optionCount = 0;
-        (j.groups || []).forEach(g => {
-          const id = g.id || g.f_groupID || '';
-          const name = g.nama || g.f_groupName || g.kod || g.f_groupKod || '';
+        groups.forEach(g => {
+          const { id, name } = normalizeGroupOption(g);
           if (!id || !name) return;
           $grp.append(new Option(name, String(id)));
           optionCount++;
@@ -4554,11 +4604,9 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
     // Ambil senarai kumpulan & populate option (guna ID untuk penapisan tepat)
     (async () => {
       try {
-        const res = await fetch('<?= base_url('ajax/group-list.php?scope=staff') ?>', { headers: { 'Accept':'application/json' } });
-        const j = await res.json();
-        (j.groups || []).forEach(g => {
-          const id = g.id || g.f_groupID || '';
-          const name = g.nama || g.f_groupName || g.kod || g.f_groupKod || '';
+        const groups = await fetchGroupsForScope('staff');
+        groups.forEach(g => {
+          const { id, name } = normalizeGroupOption(g);
           if (!id || !name) return;
           $grp.append(new Option(name, String(id)));
         });
@@ -4790,15 +4838,11 @@ $PAGE_TITLE = (string)__('userList_page_heading_main');
 
     async function populateGroups(selectedId, scope = 'staff'){
       try{
-        const safeScope = String(scope || 'staff').trim().toLowerCase() || 'staff';
-        const r = await fetch(`<?= base_url('ajax/group-list.php') ?>?scope=${encodeURIComponent(safeScope)}`, { headers:{'Accept':'application/json'} });
-        const j = await r.json();
+        const groups = await fetchGroupsForScope(scope);
         const sel = document.getElementById('ug_groupKod'); if (!sel) return;
         sel.innerHTML = '';
-        (j.groups || []).forEach(g=>{
-          const id   = g.id || g.f_groupID || '';
-          const kod  = g.kod || g.f_groupKod || '';
-          const name = g.nama || g.f_groupName || kod;
+        groups.forEach(g=>{
+          const { id, name } = normalizeGroupOption(g);
           const opt = document.createElement('option');
           opt.value = id; opt.textContent = name;
           if (selectedId && String(selectedId) === String(id)) opt.selected = true;

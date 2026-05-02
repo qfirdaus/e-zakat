@@ -16,6 +16,42 @@ function group_category_for_scope(string $scope): ?string {
     };
 }
 
+function group_table_column_exists(PDO $pdo, string $column): bool {
+    static $cache = [];
+    $cacheKey = strtolower($column);
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    try {
+        $databaseName = (string)$pdo->query('SELECT DATABASE()')->fetchColumn();
+        if ($databaseName === '') {
+            return $cache[$cacheKey] = false;
+        }
+
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = :database
+               AND TABLE_NAME = :table
+               AND COLUMN_NAME = :column'
+        );
+        $stmt->execute([
+            ':database' => $databaseName,
+            ':table' => 'tbl_m_group',
+            ':column' => $column,
+        ]);
+        return $cache[$cacheKey] = ((int)$stmt->fetchColumn()) > 0;
+    } catch (Throwable $e) {
+        return $cache[$cacheKey] = false;
+    }
+}
+
+function group_optional_select(PDO $pdo, string $column, string $alias, string $defaultSql): string {
+    return group_table_column_exists($pdo, $column)
+        ? "COALESCE($column, $defaultSql) AS $alias"
+        : "$defaultSql AS $alias";
+}
+
 try {
     // Konsisten dengan modul-list.php
     $db = Database::getInstance('mysql')->getConnection();
@@ -42,19 +78,23 @@ try {
     }
     // $where = 'COALESCE(f_flag,1)=1'; // uncomment jika jadual ada f_flag
 
+    $select = [
+        'f_groupID   AS id',
+        'f_groupKod  AS kod',
+        'f_groupName AS nama',
+        'f_categoryUser AS categoryUser',
+        group_optional_select($db, 'f_modulAccess', 'modulAccess', "''"),
+        group_optional_select($db, 'f_menuAccess', 'menuAccess', "''"),
+        group_optional_select($db, 'f_color', 'color', "''"),
+        group_optional_select($db, 'f_priority', 'priority', '0'),
+        group_optional_select($db, 'f_mod', 'mod', '0'),
+        group_optional_select($db, 'f_badge_class', 'badgeClass', "''"),
+        group_optional_select($db, 'f_row_class', 'rowClass', "''"),
+    ];
+
     $sql = "
       SELECT
-        f_groupID   AS id,
-        f_groupKod  AS kod,
-        f_groupName AS nama,
-        f_categoryUser AS categoryUser,
-        COALESCE(f_modulAccess, '') AS modulAccess,
-        COALESCE(f_menuAccess, '') AS menuAccess,
-        COALESCE(f_color, '') AS color,
-        COALESCE(f_priority, 0) AS priority,
-        COALESCE(f_mod, 0) AS mod,
-        COALESCE(f_badge_class, '') AS badgeClass,
-        COALESCE(f_row_class, '') AS rowClass
+        " . implode(",\n        ", $select) . "
       FROM tbl_m_group
       WHERE $where
       ORDER BY f_groupKod ASC, f_groupName ASC, f_groupID ASC
