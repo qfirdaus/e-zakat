@@ -12,6 +12,8 @@ PROJECTS=(
     "e-facility"
     "e-hepa"
     "e-pr"
+    "sap-uat"
+    "survey-uat"
 )
 
 LOG_FILE="sync.log"

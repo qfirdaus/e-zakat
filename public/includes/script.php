@@ -73,6 +73,7 @@ $baseUrl = rtrim(base_url(''), '/');
 </script>
 <script src="<?= base_url('assets/js/group-sidebar-sync.js') ?>?v=<?= $version ?>"></script>
 <script src="<?= base_url('assets/js/access-ui-sync.js') ?>?v=<?= $version ?>"></script>
+<script src="<?= base_url('assets/js/topbar-notifications.js') ?>?v=<?= $version ?>"></script>
 <script>
 (function () {
   'use strict';
@@ -570,4 +571,3 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('pageshow', stopAll);
 })();
 </script>
-

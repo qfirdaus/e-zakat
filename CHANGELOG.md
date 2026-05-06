@@ -6,7 +6,14 @@ This changelog follows a release-style summary based on major project milestones
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+- Added Phase 1 in-app notification topbar, notification page, AJAX read/list endpoints, and core language keys.
+- Added Phase 2 notification publisher and audience resolver for universal event-based notifications.
+- Added Phase 3 workflow notification support with task publishing helper, action status endpoint, overdue filter metadata, and source completion/expiry helpers.
+- Added notification developer examples for announcements, direct events, workflow tasks, dedupe behavior, and source completion helpers.
+- Added `tools/notification-seed-test.php` to seed Phase 1-3 notification test records.
+- Added Phase 4 notification admin composer page and AJAX publish endpoint for admin-managed in-app notifications.
+- Added notification template management page, CRUD endpoint, and DB-backed `publishFromTemplate()` rendering.
 
 ## [1.7.4] - 2026-05-02
 

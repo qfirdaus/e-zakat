@@ -191,13 +191,34 @@
     })();
   </script>
 
+  <!-- Prefill theme ke <html> dan sync __CONFIG__ sebelum config.js (elak global->personal flicker) -->
+  <script>
+    (function () {
+      const serverTheme = {
+        layout: <?= json_encode($_SESSION['theme.layout'] ?? 'light', JSON_UNESCAPED_UNICODE) ?>,
+        menu: <?= json_encode($_SESSION['theme.menu'] ?? 'light', JSON_UNESCAPED_UNICODE) ?>,
+        topbar: <?= json_encode($_SESSION['theme.topbar'] ?? 'light', JSON_UNESCAPED_UNICODE) ?>
+      };
+
+      document.documentElement.setAttribute('data-bs-theme', serverTheme.layout);
+      document.documentElement.setAttribute('data-menu-color', serverTheme.menu);
+      document.documentElement.setAttribute('data-topbar-color', serverTheme.topbar);
+      document.documentElement.setAttribute('data-sidenav-user', 'true');
+
+      try {
+        const raw = window.sessionStorage.getItem('__CONFIG__');
+        const cfg = raw ? JSON.parse(raw) : {};
+        cfg.theme = serverTheme.layout;
+        cfg.topbar = Object.assign({}, cfg.topbar || {}, { color: serverTheme.topbar });
+        cfg.menu = Object.assign({}, cfg.menu || {}, { color: serverTheme.menu });
+        cfg.sidenav = Object.assign({}, cfg.sidenav || {}, { user: true });
+        window.sessionStorage.setItem('__CONFIG__', JSON.stringify(cfg));
+      } catch (e) {
+        try { window.sessionStorage.removeItem('__CONFIG__'); } catch (_) {}
+      }
+    })();
+  </script>
+
   <!-- Config Script -->
   <script src="<?= base_url('assets/js/config.js') ?>" defer></script>
-
-  <!-- Prefill theme ke <html> (elak FOUC) -->
-  <script>
-    document.documentElement.setAttribute('data-bs-theme',  '<?= $_SESSION['theme.layout'] ?>');
-    document.documentElement.setAttribute('data-menu-color', '<?= $_SESSION['theme.menu'] ?>');
-    document.documentElement.setAttribute('data-topbar-color','<?= $_SESSION['theme.topbar'] ?>');
-  </script>
 </head>

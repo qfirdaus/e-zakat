@@ -146,6 +146,10 @@ function sanitize_sidebar_user_image(?string $path): string {
         return $default;
     }
 
+    $path = str_replace('\\', '/', $path);
+    $path = ltrim($path, '/');
+    $path = preg_replace('#^public/#i', '', $path);
+
     if (!preg_match('#^assets/images/small/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp|gif)$#i', $path)) {
         return $default;
     }

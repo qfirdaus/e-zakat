@@ -262,31 +262,38 @@ if ($roleSwitchFlash !== null) {
         </li>
       <?php endif; ?>
 
-      <!-- Notification (dummy) -->
-      <li class="dropdown notification-list">
-        <a class="nav-link dropdown-toggle arrow-none" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
-          <i class="ri-notification-3-fill fs-22"></i><span class="noti-icon-badge"></span>
+      <!-- Notification -->
+      <li class="dropdown notification-list" id="topbarNotificationRoot"
+          data-list-url="<?= h(base_url('ajax/notification-list.php')) ?>"
+          data-read-url="<?= h(base_url('ajax/notification-read.php')) ?>"
+          data-read-all-url="<?= h(base_url('ajax/notification-read-all.php')) ?>"
+          data-base-url="<?= h(base_url('')) ?>"
+          data-view-all-url="<?= h(base_url('pages/notifications.php')) ?>"
+          data-loading-text="<?= h(__('topbar_notification_loading') ?: 'Loading...') ?>"
+          data-empty-text="<?= h(__('topbar_notification_empty') ?: 'No notifications.') ?>"
+          data-failed-text="<?= h(__('topbar_notification_load_failed') ?: 'Unable to load notifications.') ?>"
+          data-action-text="<?= h(__('notification_action_required') ?: 'Action') ?>"
+          data-overdue-text="<?= h(__('notification_action_overdue') ?: 'Overdue') ?>">
+        <a class="nav-link dropdown-toggle arrow-none topbar-notification-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" id="topbarNotificationToggle" aria-label="<?= h(__('topbar_notification_title') ?: 'Notification') ?>">
+          <i class="ri-notification-3-fill"></i>
+          <span class="noti-icon-badge d-none" id="topbarNotificationBadge"></span>
         </a>
-        <div class="dropdown-menu dropdown-menu-end dropdown-menu-animated dropdown-lg py-0" data-bs-auto-close="outside">
-          <div class="p-2 border-dashed border-top-0 d-flex justify-content-between align-items-center">
-            <h6 class="fs-16 fw-medium m-0">Notification</h6>
-            <a href="#" class="text-dark text-decoration-underline"><small>Clear All</small></a>
-          </div>
-          <div style="max-height: 300px;" data-simplebar>
-            <h5 class="text-muted fs-12 fw-bold p-2 text-uppercase mb-0">Today</h5>
-            <a href="#" class="dropdown-item p-0 notify-item unread-noti card m-0 shadow-none">
-              <div class="card-body d-flex align-items-center">
-                <div class="notify-icon bg-primary me-2"><i class="ri-message-3-line fs-18"></i></div>
-                <div class="flex-grow-1 text-truncate">
-                  <h5 class="noti-item-title fw-medium fs-14">Contoh Notifikasi
-                    <small class="float-end text-muted ms-1">1 min ago</small>
-                  </h5>
-                  <small class="text-muted">Notifikasi sistem e-Prestasi</small>
-                </div>
-              </div>
+        <div class="dropdown-menu dropdown-menu-end dropdown-menu-animated dropdown-lg py-0 topbar-notification-menu" data-bs-auto-close="outside">
+          <div class="topbar-notification-header">
+            <div>
+              <h6><?= h(__('topbar_notification_title') ?: 'Notification') ?></h6>
+              <span><?= h(__('topbar_notification_latest') ?: 'Latest updates') ?></span>
+            </div>
+            <a href="#" class="topbar-notification-read-all d-none" id="topbarNotificationReadAll">
+              <?= h(__('topbar_notification_mark_all_read') ?: 'Mark All Read') ?>
             </a>
           </div>
-          <a href="#" class="dropdown-item text-center text-primary fw-bold border-top py-2">View All</a>
+          <div class="topbar-notification-list" data-simplebar id="topbarNotificationList">
+            <div class="p-3 text-center text-muted small"><?= h(__('topbar_notification_loading') ?: 'Loading...') ?></div>
+          </div>
+          <a href="<?= h(base_url('pages/notifications.php')) ?>" class="topbar-notification-view-all">
+            <?= h(__('topbar_notification_view_all') ?: 'View All') ?>
+          </a>
         </div>
       </li>
 
@@ -440,6 +447,160 @@ if ($roleSwitchFlash !== null) {
     height: auto;
       background: rgba(241, 245, 249, 0.96);
     }
+
+  .topbar-notification-toggle {
+    position: relative;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0 !important;
+  }
+  .topbar-notification-toggle > i {
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+  .topbar-notification-toggle .noti-icon-badge {
+    position: absolute;
+    top: 5px;
+    right: 3px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    border: 2px solid var(--ct-secondary-bg);
+    font-size: 0.62rem;
+    font-weight: 800;
+    line-height: 14px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(239, 68, 68, 0.25);
+  }
+  .topbar-notification-menu {
+    width: 380px;
+    max-width: calc(100vw - 1rem);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14);
+  }
+  .topbar-notification-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.98));
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  }
+  .topbar-notification-header h6 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.15;
+  }
+  .topbar-notification-header span {
+    display: block;
+    margin-top: 0.12rem;
+    color: #64748b;
+    font-size: 0.68rem;
+    font-weight: 500;
+  }
+  .topbar-notification-read-all {
+    flex: 0 0 auto;
+    color: #2563eb;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .topbar-notification-read-all:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+  }
+  .topbar-notification-list {
+    max-height: 345px;
+    background: #fff;
+  }
+  .topbar-notification-item {
+    padding: 0.62rem 0.95rem !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    white-space: normal;
+  }
+  .topbar-notification-item:last-child {
+    border-bottom: 0;
+  }
+  .topbar-notification-item:hover {
+    background: rgba(37, 99, 235, 0.04);
+  }
+  .topbar-notification-item.is-unread {
+    background: rgba(37, 99, 235, 0.055);
+  }
+  .topbar-notification-icon {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    font-size: 0.95rem;
+  }
+  .topbar-notification-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    color: #111827;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .topbar-notification-title-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .topbar-notification-body {
+    display: -webkit-box;
+    margin-top: 0.14rem;
+    max-width: 288px;
+    overflow: hidden;
+    color: #64748b;
+    font-size: 0.7rem;
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .topbar-notification-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.32rem;
+    margin-top: 0.22rem;
+    color: #94a3b8;
+    font-size: 0.66rem;
+    line-height: 1.2;
+  }
+  .topbar-notification-status {
+    flex: 0 0 auto;
+    font-size: 0.58rem;
+    line-height: 1.1;
+    padding: 0.18rem 0.32rem;
+  }
+  .topbar-notification-view-all {
+    display: block;
+    padding: 0.7rem 1rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
+    background: #fff;
+    color: #2563eb;
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-align: center;
+    text-decoration: none;
+  }
+  .topbar-notification-view-all:hover {
+    background: rgba(37, 99, 235, 0.04);
+    color: #1d4ed8;
+  }
 
   /* Role Switcher Modal - align with themed modals in kumpulan-pengguna */
   #switchRoleModal {

@@ -27,14 +27,27 @@ let themeSaveRequestId = 0;
 // ✅ Apply Theme to UI
 // ============================================
 function applyThemeSetting() {
-  const topbarColor = safeStorage.get('topbar-color')
-    || document.body.getAttribute('data-topbar-color')
+  const serverTopbarColor = document.body.getAttribute('data-topbar-color')
+    || document.documentElement.getAttribute('data-topbar-color')
+    || '';
+  const serverSidebarColor = document.body.getAttribute('data-menu-color')
+    || document.documentElement.getAttribute('data-menu-color')
+    || '';
+  const serverLayoutMode = document.documentElement.getAttribute('data-bs-theme')
+    || document.body.getAttribute('data-bs-theme')
+    || '';
+
+  const topbarColor = serverTopbarColor
+    || safeStorage.get('topbar-color')
+    || safeStorage.get('theme.topbar')
     || 'light';
-  const sidebarColor = safeStorage.get('sidebar-color')
-    || document.body.getAttribute('data-menu-color')
+  const sidebarColor = serverSidebarColor
+    || safeStorage.get('sidebar-color')
+    || safeStorage.get('theme.menu')
     || 'light';
-  const layoutMode = safeStorage.get('layout-mode')
-    || document.documentElement.getAttribute('data-bs-theme')
+  const layoutMode = serverLayoutMode
+    || safeStorage.get('layout-mode')
+    || safeStorage.get('theme.layout')
     || 'light';
 
   // ✅ Apply to DOM immediately
@@ -66,6 +79,15 @@ function applyThemeSetting() {
   if (typeof updateThemeIcon === 'function') {
     updateThemeIcon(layoutMode === 'dark');
   }
+
+  // ✅ Keep legacy/new localStorage aliases aligned to the server-rendered theme.
+  // This prevents old global preview values from repainting the sidebar after reload.
+  safeStorage.set('topbar-color', topbarColor);
+  safeStorage.set('sidebar-color', sidebarColor);
+  safeStorage.set('layout-mode', layoutMode);
+  safeStorage.set('theme.topbar', topbarColor);
+  safeStorage.set('theme.menu', sidebarColor);
+  safeStorage.set('theme.layout', layoutMode);
 
   // ✅ Sync radio buttons in offcanvas if open
   const config = {
@@ -109,9 +131,9 @@ function getCSRFToken() {
 function saveThemeSettingToServer(callback = null) {
   const requestId = ++themeSaveRequestId;
   const setting = {
-    sidebarColor: safeStorage.get('sidebar-color') || 'dark',
-    topbarColor: safeStorage.get('topbar-color') || 'light',
-    layoutMode: safeStorage.get('layout-mode') || 'light'
+    sidebarColor: document.body.getAttribute('data-menu-color') || safeStorage.get('sidebar-color') || 'dark',
+    topbarColor: document.body.getAttribute('data-topbar-color') || safeStorage.get('topbar-color') || 'light',
+    layoutMode: document.documentElement.getAttribute('data-bs-theme') || safeStorage.get('layout-mode') || 'light'
   };
 
   // ✅ Add CSRF token to request
@@ -212,6 +234,21 @@ function saveThemeSettingToServer(callback = null) {
 // ============================================
 function updateThemeSetting(key, value) {
   safeStorage.set(key, value);
+  if (key === 'sidebar-color') {
+    safeStorage.set('theme.menu', value);
+    document.documentElement.setAttribute('data-menu-color', value);
+    document.body.setAttribute('data-menu-color', value);
+  }
+  if (key === 'topbar-color') {
+    safeStorage.set('theme.topbar', value);
+    document.documentElement.setAttribute('data-topbar-color', value);
+    document.body.setAttribute('data-topbar-color', value);
+  }
+  if (key === 'layout-mode') {
+    safeStorage.set('theme.layout', value);
+    document.documentElement.setAttribute('data-bs-theme', value);
+    document.body.setAttribute('data-bs-theme', value);
+  }
   // ✅ Apply theme immediately for instant visual feedback
   applyThemeSetting();
   // ✅ Then save to server
@@ -223,14 +260,17 @@ function updateThemeSetting(key, value) {
 // ============================================
 function syncThemeSettingUI() {
   const config = {
-    'data-bs-theme': safeStorage.get('layout-mode')
-      || document.documentElement.getAttribute('data-bs-theme')
+    'data-bs-theme': document.documentElement.getAttribute('data-bs-theme')
+      || safeStorage.get('layout-mode')
+      || safeStorage.get('theme.layout')
       || 'light',
-    'data-topbar-color': safeStorage.get('topbar-color')
-      || document.body.getAttribute('data-topbar-color')
+    'data-topbar-color': document.body.getAttribute('data-topbar-color')
+      || safeStorage.get('topbar-color')
+      || safeStorage.get('theme.topbar')
       || 'light',
-    'data-menu-color': safeStorage.get('sidebar-color')
-      || document.body.getAttribute('data-menu-color')
+    'data-menu-color': document.body.getAttribute('data-menu-color')
+      || safeStorage.get('sidebar-color')
+      || safeStorage.get('theme.menu')
       || 'light'
   };
 
