@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     freetds-bin \
     freetds-common \
     unixodbc \
+    unixodbc-dev \
     libsybdb5 \
     libpq-dev \
     libzip-dev \
@@ -18,9 +19,11 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
+ && docker-php-ext-configure pdo_odbc --with-pdo-odbc=unixODBC,/usr \
  && docker-php-ext-install \
     pdo \
     pdo_mysql \
+    pdo_odbc \
     mysqli \
     pdo_dblib \
     gd \
