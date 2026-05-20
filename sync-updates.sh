@@ -11,6 +11,7 @@ PROJECTS=(
     "e-dqms"
     "e-facility"
     "e-hepa"
+    "e-prestasi"
     "e-pr"
     "sap-uat"
     "survey-uat"
@@ -19,6 +20,7 @@ PROJECTS=(
 LOG_FILE="sync.log"
 CONFLICT_LOG="conflict.log"
 LOCK_FILE=".sync.lock"
+SYNC_EXCLUDE_FILE=".sync-update-ignore"
 
 DRY_RUN=false
 FORCE=false
@@ -46,6 +48,43 @@ declare -A P_UPDATED
 declare -A P_NEW
 declare -A P_CONFLICT
 
+SYNC_EXCLUDES=()
+
+load_sync_excludes() {
+    local file_path="$1"
+    SYNC_EXCLUDES=()
+
+    if [ ! -f "$file_path" ]; then
+        return
+    fi
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line%%#*}"
+        line="${line%$'\r'}"
+        line="${line#${line%%[![:space:]]*}}"
+        line="${line%${line##*[![:space:]]}}"
+
+        if [ -z "$line" ]; then
+            continue
+        fi
+
+        SYNC_EXCLUDES+=("$line")
+    done < "$file_path"
+}
+
+matches_sync_exclude() {
+    local path="$1"
+    local pattern
+
+    for pattern in "${SYNC_EXCLUDES[@]}"; do
+        if [[ "$path" == $pattern ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 should_skip_update_file() {
     local path="$1"
     case "$path" in
@@ -53,6 +92,15 @@ should_skip_update_file() {
             return 0
             ;;
     esac
+
+    if matches_sync_exclude "$path"; then
+        return 0
+    fi
+
+    if matches_sync_exclude "updates/$path"; then
+        return 0
+    fi
+
     return 1
 }
 
@@ -212,6 +260,8 @@ for arg in "$@"; do
         --only=*) ONLY="${arg#*=}" ;;
     esac
 done
+
+load_sync_excludes "$SYNC_EXCLUDE_FILE"
 
 # =========================
 # MENU TRIGGER
