@@ -15,6 +15,7 @@ PROJECTS=(
     "e-pr"
     "sap-uat"
     "survey-uat"
+    "upnm30"
 )
 
 LOG_FILE="sync.log"
@@ -107,7 +108,7 @@ should_skip_update_file() {
 is_collectable_update_file() {
     local path="$1"
     case "$path" in
-        public/*|tools/|tools/language-split-tool.php|VERSION|README.md|CHANGELOG.md)
+        public/*|tools/|tools/language-split-tool.php|tools/core-file-protection-audit.php|docs/core-file-protection-*|docs/core-protected-files.md|VERSION|README.md|CHANGELOG.md)
             return 0
             ;;
     esac

@@ -1,5 +1,13 @@
 # Glob patterns to skip during update collection and project sync.
 # One pattern per line. Empty lines and comments are ignored.
+#
+# Downstream project customizations should be placed in generated/custom files
+# or documented extension points. Files marked "IQS FRAMEWORK CORE FILE" are
+# framework-managed and should not be added here as local project overrides
+# unless an approved exception has been documented.
+#
+# public/lang/custom/* is skipped by the update scripts automatically.
+#
 # Examples:
 # public/assets/js/pages/tetapan-sistem.js
 # public/assets/css/pages/tetapan-sistem.css

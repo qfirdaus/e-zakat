@@ -74,7 +74,7 @@ find public -type f -newer "$MARKER" \
 
 done
 
-for file in VERSION README.md CHANGELOG.md tools/language-split-tool.php; do
+for file in VERSION README.md CHANGELOG.md tools/language-split-tool.php tools/core-file-protection-audit.php docs/core-file-protection-standard-2026-06-04.md docs/core-protected-files.md; do
     if [ -f "$file" ] && [ "$file" -newer "$MARKER" ]; then
         if should_skip_update_file "$file"; then
             echo "⏭ Skipped: $file"
