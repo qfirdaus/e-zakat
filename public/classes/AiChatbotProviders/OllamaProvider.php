@@ -27,8 +27,10 @@ final class OllamaProvider implements AiChatbotProviderInterface
     public function send(array $messages, array $options = []): array
     {
         $started = microtime(true);
-        $baseUrl = rtrim((string)($this->config['base_url'] ?? 'http://127.0.0.1:11434'), '/');
-        $model = trim((string)($this->config['model'] ?? 'llama3.1'));
+        $baseUrlValue = trim((string)($this->config['base_url'] ?? ''));
+        $modelValue = trim((string)($this->config['model'] ?? ''));
+        $baseUrl = rtrim($baseUrlValue !== '' ? $baseUrlValue : 'http://127.0.0.1:11434', '/');
+        $model = $modelValue !== '' ? $modelValue : 'llama3.2:3b';
         $timeout = max(1, (int)($this->config['timeout_seconds'] ?? 30));
         $maxTokens = max(64, (int)($this->config['max_output_tokens'] ?? 800));
 
