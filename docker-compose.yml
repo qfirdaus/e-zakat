@@ -28,3 +28,4 @@ services:
 
     extra_hosts:
       - "oneid-dev.upnm.edu.my:172.16.0.14"
+      - "host.docker.internal:host-gateway"
