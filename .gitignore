@@ -13,3 +13,7 @@ public_backup_*
 # staging deploy
 updates/
 _updates_archive/
+
+# local workspace files
+iqs-framework.code-workspace
+iqs-framework.code-workspcae
