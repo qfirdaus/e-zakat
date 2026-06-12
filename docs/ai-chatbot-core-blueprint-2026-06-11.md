@@ -230,6 +230,22 @@ The chatbot must not:
 - Bypass existing role and group access.
 - Use impersonation context without explicit review.
 
+### Role-Aware Answer Boundary
+
+The chatbot must answer only within the current user's allowed system boundary.
+
+This is a mandatory requirement because the chatbot is visible only after login, and users will naturally expect answers to match what they are allowed to do in the running system.
+
+Role-aware answer rules:
+
+- The assistant must not provide detailed steps for features, routes, settings, or workflows that the current user is not allowed to access.
+- If a normal user asks about an administrator-only feature, the assistant should answer generally without exposing hidden menu names, internal routes, permission structure, API keys, provider settings, or setup steps.
+- The safe response for restricted topics should be similar to: "Tetapan tersebut hanya tersedia kepada pengguna yang diberi akses. Sila hubungi pentadbir sistem jika perubahan diperlukan."
+- The assistant must not reveal the existence of hidden modules unless that module is already available in the allowed context sent by the system.
+- The assistant must not explain how to bypass access control, elevate role, change permission, or reach restricted pages.
+- Super Admin or explicitly allowed admin users may receive administrator guidance only when the system context confirms the current user is allowed to access that area.
+- Any future knowledge-base or retrieval layer must filter content by the current user's allowed groups, role, and menu access before sending context to an AI provider.
+
 ## Data Governance
 
 The system must define what data can be sent to external AI providers.
@@ -302,13 +318,62 @@ Recommended core instruction:
 
 - Answer in the user's current language where possible.
 - Be concise and operational.
+- Focus on help for the current system only.
+- Apply the role-aware answer boundary.
 - Do not claim to perform actions unless the system has actually performed them.
 - Do not expose secrets, tokens, or internal configuration.
+- Do not reveal restricted administrator workflows to users whose current context does not show permission for those workflows.
 - If unsure, ask the user to contact the system administrator or refer to official manual content.
 
 Project-specific context should be injected from approved sources only, such as FAQ entries, manuals, or curated help text.
 
 Do not let downstream projects edit core provider logic just to change chatbot personality or help content.
+
+### System-Focused Improvement Roadmap
+
+The chatbot should mature from a general assistant inside the system into a controlled system assistant.
+
+Recommended improvement phases after the current provider/settings work:
+
+1. Scope Guard and Role Guard
+   - Restrict answers to system usage, navigation, workflow, access help, and troubleshooting.
+   - Refuse off-topic questions or redirect them back to system usage.
+   - Do not provide restricted steps unless the current user's context permits it.
+
+2. Safe Runtime Context
+   - Send only safe context such as language, current role label, current page, app title, and allowed access scope.
+   - Do not send role matrices, hidden menus, tokens, secrets, or full configuration.
+   - Current implementation sends sanitized page path, page title, app title, chatbot access mode, language, active role label, and active group code/ID only.
+   - The browser must not send full URL, query string, hash, cookies, tokens, login ID, staff ID, or raw profile data.
+   - This phase does not add menu lookup, knowledge-base retrieval, or free database querying.
+
+3. Read-Only System Context Helper
+   - Add controlled helpers that return only allowed menus, visible modules, page labels, and non-sensitive descriptions.
+   - The AI must not write SQL or query the database directly.
+   - Current implementation uses a server-side helper to read the active group's configured module/menu access and sends a capped visible-menu summary to the prompt.
+   - The helper does not accept SQL from the model and does not expose raw group access CSV, user identity, hidden menus, or unrestricted database records.
+   - The prompt must answer navigation questions only from the provided visible module/menu context.
+
+4. Knowledge Base With Visibility
+   - Store curated help content, FAQ, SOP, and module manuals.
+   - Each knowledge item must have visibility metadata such as all authenticated users, selected groups, or super admin only.
+   - Current implementation supports an optional `tbl_ai_chat_knowledge` table documented in `docs/ai-chatbot-knowledge-tables-2026-06-12.sql`.
+   - Knowledge retrieval is read-only, keyword-based, capped to five items, and filtered by language plus visibility before content is sent to the AI provider.
+   - If the table does not exist or no visible item matches, the chatbot continues without knowledge context and must not invent missing knowledge.
+
+5. Retrieval With Permission Filter
+   - Search only knowledge and system context the current user is allowed to see.
+   - Send filtered context to the AI provider and instruct the model to answer only from that context.
+   - Current implementation adds a `permission_filtered` retrieval policy to every provider request.
+   - System-specific questions about pages, menus, settings, roles, access, users, providers, models, configuration, or workflows must be grounded in approved runtime, visible system, or curated knowledge context.
+   - If approved context is insufficient, the chatbot must say it does not have enough approved system context instead of inventing system behavior.
+
+6. Governance and Review Loop
+   - Classify questions as system help, navigation help, access help, troubleshooting, off-topic, sensitive blocked, or unknown.
+   - Review failed or unknown questions to improve the knowledge base.
+   - Current implementation classifies each request into review-safe metadata such as `system_help`, `navigation_help`, `access_help`, `troubleshooting`, `sensitive_blocked`, or `unknown`.
+   - The classification is stored in usage request metadata without storing the raw user question.
+   - Sensitive or unknown questions are marked for review so administrators can improve curated knowledge without exposing restricted details.
 
 ## UI Customization
 
