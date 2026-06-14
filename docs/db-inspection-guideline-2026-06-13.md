@@ -124,3 +124,39 @@ PHP
 - The Windows host `php` command may not have the same extensions as the Docker PHP runtime.
 - Use Docker PHP for application-accurate database checks.
 - If a schema change is needed, stop and ask the user for explicit approval before running any migration or DDL.
+
+## AI Chatbot Project Provider Checks
+
+AI Chatbot project-aware providers must be checked using the same read-only rule.
+
+For the core `iqs-framework` project, Codex may inspect only the current IQS Framework database unless the user explicitly grants a project-specific exception.
+
+For downstream project databases such as e-PMS, access must be approved separately each time unless the user gives a new explicit read-only scope. The previous e-PMS schema inspection was limited to schema metadata and must not be treated as ongoing permission.
+
+Allowed project provider inspection examples:
+
+```sql
+SELECT COUNT(*)
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME IN (...)
+```
+
+```sql
+SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME = ?
+ORDER BY ORDINAL_POSITION
+```
+
+Avoid reading live business rows unless the user explicitly approves that specific read-only data check.
+
+Project-aware chatbot code may use provider-owned read-only prepared queries at application runtime, but Codex shell inspection remains limited by the approval scope above.
+
+Do not run AI Chatbot provider verification against a downstream project database without confirming:
+
+- project path or container name,
+- database target,
+- read-only scope,
+- whether row-level checks are permitted or schema-only checks are permitted.
