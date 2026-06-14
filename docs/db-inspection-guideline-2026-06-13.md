@@ -160,3 +160,36 @@ Do not run AI Chatbot provider verification against a downstream project databas
 - database target,
 - read-only scope,
 - whether row-level checks are permitted or schema-only checks are permitted.
+
+## Phase 12/13 — e-PMS Verification Notes (2026-06-14)
+
+- Approved test runtime: use the `upnm30` project/runtime when verifying e-PMS provider queries. Do not query other downstream project databases unless explicitly authorized.
+
+- CLI PHP extension note: the Windows host `php` binary may lack `pdo_mysql`. For quick one-off CLI tests you can enable it with:
+
+```powershell
+php -d extension=php_pdo_mysql.dll your_test_script.php
+```
+
+Use the Docker PHP runtime where possible to avoid extension mismatches.
+
+- Example e-PMS table presence and row counts observed during verification (informational snapshot):
+
+  - `tbl_monitoring_project`: 61
+  - `tbl_monitoring_teras`: 6
+  - `tbl_monitoring_project_owner`: 88
+  - `tbl_monitoring_project_pic`: 93
+  - `tbl_monitoring_aktiviti`: 363
+  - `tbl_monitoring_laporan`: 2563
+  - `tbl_announcements`: 4
+  - `tbl_monitoring_project_feedback`: 0
+
+  These numbers are an operational snapshot from `upnm30` and should not be treated as authoritative or permanently stored in docs.
+
+- Safety and runtime behavior changes implemented in Phase 13:
+
+  - The question classifier may mark prompts as sensitive with `blocked_detail` (examples: requests for SQL/table structure, requests for other users' private records, raw feedback comments).
+  - Runtime fix: when `blocked_detail` is true, the chatbot runtime now skips building or attaching project-aware context — this prevents exposing provider rows for sensitive queries.
+  - The runtime exposes audit-only metadata via `ai_chatbot_project_context_meta()` which contains safe fields only (no raw rows): `status`, `provider`, `provider_label`, `match_score`, `intent`, `scope`, `provider_context_status`, `row_count`, `has_records`, and `denied_reason`.
+
+Follow the Read-Only Rule and the Safety constraints above when performing further verification or troubleshooting.

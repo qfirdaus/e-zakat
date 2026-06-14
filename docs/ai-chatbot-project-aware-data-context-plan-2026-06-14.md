@@ -2,6 +2,51 @@
 
 Date: 2026-06-14
 
+Purpose: record Phase 12/13 outcomes and define immediate Phase 14 observability/admin steps for the AI Chatbot project-aware context work.
+
+Summary of Phase 12/13:
+
+- Implemented `AiChatbotEPmsContextProvider` providing safe, prepared, read-only queries for e-PMS intents: `epms_my_projects`, `epms_my_activities`, `epms_project_progress`, `epms_latest_announcements`, `epms_feedback_summary`.
+- Classifier identifies sensitive prompts and sets `blocked_detail` for queries that should not receive project context (e.g. SQL/table structure requests, cross-user private data, raw feedback requests).
+- Runtime safety fix: the chatbot now skips building/attaching project context when `blocked_detail` is present.
+- Added audit-only metadata via `ai_chatbot_project_context_meta()` and emitted `AI_CHATBOT_PROJECT_CONTEXT` audit events (no raw records are logged).
+
+Phase 14 — Immediate Observability & Admin Tooling (next actions):
+
+1. Expose diagnostic fields in admin settings (read-only):
+   - `provider` (code), `provider_label`
+   - `match_score`
+   - `intent`
+   - `scope`
+   - `provider_context_status`
+   - `row_count`
+   - `has_records`
+   - `denied_reason`
+
+2. Emit project-context audit events for each request that attempted to attach project context. Include only metadata (see `ai_chatbot_project_context_meta()`).
+
+3. Add an admin endpoint/page to review recent `tbl_ai_chat_usage` rows with appended `project_context_meta` fields for diagnostic review by approved admins. The endpoint must redact or omit raw records and comments.
+
+4. Update runbook and onboarding docs with the CLI `pdo_mysql` tip and `upnm30` test target guidance.
+
+Safety constraints (must be enforced):
+
+- Never attach raw feedback comments or other free-text user-submitted data to provider prompts.
+- Do not log raw project rows or private identifiers in logs or usage tables.
+- Maintain the `blocked_detail` gating: if the classifier sets `blocked_detail`, do not attach project context.
+
+Checklist (short-term implementation):
+
+- [x] Add project-context audit logging in runtime (no raw rows).
+- [ ] Add admin diagnostic UI fields in `public/pages/partials/tetapan-sistem/tab-ai-chatbot.php`.
+- [ ] Add admin review endpoint for recent AI usage with `project_context_meta`.
+- [ ] Update operator runbook (done in `ai-chatbot-production-runbook-2026-06-11.md`).
+
+Contact: AI Chatbot maintainers (see `CONTRIBUTING.md`) for approvals and rollout.
+# AI Chatbot Project-Aware Data Context Plan
+
+Date: 2026-06-14
+
 Scope: IQS Framework core AI Chatbot module with project-aware data context.
 
 Initial project provider target: Sistem Pemantauan Projek (e-PMS).
@@ -1004,3 +1049,69 @@ Start with:
 5. Safe read-only e-PMS intents with strict staff/project ownership filtering.
 
 This gives the AI Chatbot project-aware behavior while keeping the core module controlled, auditable, and safe for reuse across deployed systems.
+
+## Phases 11–15: Continued Implementation Roadmap
+
+### Phase 11: Project provider activation and production validation
+
+- Activate the matched e-PMS provider in the runtime chatbot flow.
+- Validate `system.name` matching with the deployed e-PMS identity.
+- Confirm that the provider list and alias normalization behave correctly for the actual runtime environment.
+- Run end-to-end tests for provider status: `Matched`, `Core only`, `No project provider`, and `Ambiguous`.
+
+### Phase 12: Full e-PMS intent data implementation
+
+- Complete the safe read-only query implementations for all initial intents:
+  - `epms_my_projects`
+  - `epms_my_activities`
+  - `epms_project_progress`
+  - `epms_latest_announcements`
+  - `epms_feedback_summary`
+- Ensure each query:
+  - uses prepared statements only,
+  - enforces owner/PIC/teras scope,
+  - caps result rows,
+  - excludes sensitive raw feedback comments,
+  - does not expose document file paths.
+- Add fallback behavior for unavailable e-PMS tables in non-e-PMS deployments.
+
+### Phase 13: Live security and policy testing
+
+- Perform abuse and permission tests against the actual deployed system.
+- Confirm the chatbot blocks or safely handles requests such as:
+  - project data for other users,
+  - raw SQL/table/schema requests,
+  - raw feedback comments,
+  - raw document/report paths.
+- Validate that active e-PMS summaries and announcements only show authorized information.
+- Review results and tighten the provider intent classifier if needed.
+
+### Phase 14: Runtime observability and admin tooling
+
+- Finalize the AI Chatbot settings diagnostic panel with real runtime data.
+- Expose the following fields to administrators:
+  - current `system.name`,
+  - normalized identity,
+  - matched provider label/code,
+  - match score,
+  - provider status,
+  - available provider candidates and scores.
+- Add runtime logging for project-context metadata, including:
+  - provider code,
+  - match status,
+  - intent,
+  - scope,
+  - row count,
+  - denied reason.
+- Ensure logs avoid sensitive record values.
+
+### Phase 15: Deployment, monitoring, and iteration
+
+- Deploy the project-aware AI Chatbot to the target environment.
+- Monitor for:
+  - provider mismatches,
+  - ambiguous matches,
+  - unexpected denied reasons,
+  - permission/abuse failures.
+- Collect feedback from real users and adapt the provider scope rules and intent coverage.
+- Update the runbook with any deployment-specific system name, group, or visibility rules discovered in production.

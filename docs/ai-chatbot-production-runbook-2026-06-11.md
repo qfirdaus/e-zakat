@@ -204,6 +204,13 @@ Current helper behavior:
 
 The AI must use this context only for navigation and general system-help answers. It must not invent menus or routes outside the provided context.
 
+## Phase 12/13 Findings (short summary)
+
+- CLI `pdo_mysql` caveat: when running test scripts on the Windows host, the `php` binary may not have `pdo_mysql` enabled. Use the Docker PHP runtime or enable the extension temporarily with `php -d extension=php_pdo_mysql.dll` for CLI tests.
+- Approved verification target: `upnm30` was used as the authorized test environment for e-PMS provider verification. Do not run downstream project queries elsewhere without explicit approval.
+- Classifier + runtime safety: the question classifier can mark prompts as sensitive (flag `blocked_detail`). The runtime was updated to skip building project-aware context when `blocked_detail` is set, preventing context leakage for blocked queries.
+- Observability: project-context audit metadata is now emitted (no raw rows) via an `AI_CHATBOT_PROJECT_CONTEXT` audit event and available in logs for diagnostics; fields include provider, provider_label, match_score, intent, scope, row_count, has_records, and denied_reason.
+
 ## Curated Knowledge Base
 
 Run this script manually only when the AI Chatbot should use curated FAQ, SOP, or manual text:
