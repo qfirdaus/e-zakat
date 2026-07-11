@@ -3,7 +3,7 @@
 Tarikh: 2026-04-25
 
 Dokumen ini ialah pecahan task implementasi sebenar untuk Fasa 3 daripada roadmap:
-- [auth-audit-remediation-roadmap-2026-04-25.md](D:/WWW/iqs-framework/docs/auth-audit-remediation-roadmap-2026-04-25.md)
+- [auth-audit-remediation-roadmap-2026-04-25.md](/var/www/app/iqs-framework/docs/auth-audit-remediation-roadmap-2026-04-25.md)
 
 Skop Fasa 3:
 - parity guardrail untuk `MANUAL` dan `SSO`

@@ -20,7 +20,7 @@ Fail yang diwujudkan dahulu mesti menyokong 3 perkara:
 
 Semua stub generator patut bermula di lokasi ini:
 
-- `D:\WWW\e-base\templates\generator\page-generator\`
+- `/var/www/app\e-base\templates\generator\page-generator\`
 
 Output generated file kekal di lokasi runtime biasa:
 
@@ -34,84 +34,84 @@ Output generated file kekal di lokasi runtime biasa:
 
 ## A. Registry & Template Metadata
 
-1. `D:\WWW\e-base\templates\generator\page-generator\registry\templates.json`
+1. `/var/www/app\e-base\templates\generator\page-generator\registry\templates.json`
 - daftar template yang tersedia
 - minimum: `blank`, `datatable`
 
-2. `D:\WWW\e-base\templates\generator\page-generator\registry\features.json`
+2. `/var/www/app\e-base\templates\generator\page-generator\registry\features.json`
 - untuk Phase 1 boleh sangat ringkas
 - cukup untuk reserve struktur feature masa depan
 
 ## B. Blank Template Stubs
 
-3. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\blank\page.stub.php`
+3. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\blank\page.stub.php`
 
-4. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\blank\controller.stub.php`
+4. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\blank\controller.stub.php`
 
-5. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\blank\js.stub.js`
+5. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\blank\js.stub.js`
 
-6. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\blank\css.stub.css`
+6. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\blank\css.stub.css`
 
-7. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\blank\lang.ms.stub.php`
+7. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\blank\lang.ms.stub.php`
 
-8. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\blank\lang.en.stub.php`
+8. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\blank\lang.en.stub.php`
 
-9. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\blank\meta.json`
+9. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\blank\meta.json`
 
 ## C. DataTable Template Stubs
 
-10. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\datatable\page.stub.php`
+10. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\datatable\page.stub.php`
 
-11. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\datatable\controller.stub.php`
+11. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\datatable\controller.stub.php`
 
-12. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\datatable\js.stub.js`
+12. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\datatable\js.stub.js`
 
-13. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\datatable\css.stub.css`
+13. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\datatable\css.stub.css`
 
-14. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\datatable\lang.ms.stub.php`
+14. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\datatable\lang.ms.stub.php`
 
-15. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\datatable\lang.en.stub.php`
+15. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\datatable\lang.en.stub.php`
 
-16. `D:\WWW\e-base\templates\generator\page-generator\stubs\page\datatable\meta.json`
+16. `/var/www/app\e-base\templates\generator\page-generator\stubs\page\datatable\meta.json`
 
 ## D. Shared Partial Stubs
 
-17. `D:\WWW\e-base\templates\generator\page-generator\stubs\partials\page\layout.stub.php`
+17. `/var/www/app\e-base\templates\generator\page-generator\stubs\partials\page\layout.stub.php`
 - include standard page shell
 
-18. `D:\WWW\e-base\templates\generator\page-generator\stubs\partials\page\datatable.stub.php`
+18. `/var/www/app\e-base\templates\generator\page-generator\stubs\partials\page\datatable.stub.php`
 - table block standard
 
-19. `D:\WWW\e-base\templates\generator\page-generator\stubs\partials\controller\base-controller.stub.php`
+19. `/var/www/app\e-base\templates\generator\page-generator\stubs\partials\controller\base-controller.stub.php`
 - controller base pattern
 
-20. `D:\WWW\e-base\templates\generator\page-generator\stubs\partials\lang\page-common.ms.stub.php`
+20. `/var/www/app\e-base\templates\generator\page-generator\stubs\partials\lang\page-common.ms.stub.php`
 
-21. `D:\WWW\e-base\templates\generator\page-generator\stubs\partials\lang\page-common.en.stub.php`
+21. `/var/www/app\e-base\templates\generator\page-generator\stubs\partials\lang\page-common.en.stub.php`
 
 ## E. Generator Backend
 
-22. `D:\WWW\e-base\public\classes\TemplateRegistryService.php`
+22. `/var/www/app\e-base\public\classes\TemplateRegistryService.php`
 - baca registry template
 
-23. `D:\WWW\e-base\public\classes\TemplateResolverService.php`
+23. `/var/www/app\e-base\public\classes\TemplateResolverService.php`
 - resolve template path dan metadata
 
-24. `D:\WWW\e-base\public\classes\FileGenerationService.php`
+24. `/var/www/app\e-base\public\classes\FileGenerationService.php`
 - render stub dan tulis fail
 
-25. `D:\WWW\e-base\public\classes\GenerationAuditService.php`
+25. `/var/www/app\e-base\public\classes\GenerationAuditService.php`
 - rekod event generation
 
 ## F. Generator Controller & Page
 
-26. `D:\WWW\e-base\public\controllers\TemplateGeneratorController.php`
+26. `/var/www/app\e-base\public\controllers\TemplateGeneratorController.php`
 
-27. `D:\WWW\e-base\public\pages\template-generator.php`
+27. `/var/www/app\e-base\public\pages\template-generator.php`
 
-28. `D:\WWW\e-base\public\assets\js\pages\template-generator.js`
+28. `/var/www/app\e-base\public\assets\js\pages\template-generator.js`
 
-29. `D:\WWW\e-base\public\assets\css\pages\template-generator.css`
+29. `/var/www/app\e-base\public\assets\css\pages\template-generator.css`
 
 ## Fail Paling Kritikal untuk Start Pantas
 

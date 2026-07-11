@@ -274,7 +274,7 @@ Suggested aliases:
 
 Inspection method:
 
-- Source project: `D:\WWW\upnm30`
+- Source project: `/var/www/app\upnm30`
 - Runtime container: `upnm30-web`
 - Database observed through application runtime: `upnm30db`
 - Scope: read-only `INFORMATION_SCHEMA` inspection only.

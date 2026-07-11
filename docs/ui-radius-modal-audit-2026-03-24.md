@@ -1,7 +1,7 @@
 # UI Radius And Modal Audit
 
 Date: 2026-03-24
-Scope: `D:\WWW\e-base\public`
+Scope: `/var/www/app\e-base\public`
 Goal: verify whether the curve/radius standard has been implemented consistently across pages, tables, controls, and modals before `e-base` is used as a publish-ready base system.
 
 ## Executive Summary

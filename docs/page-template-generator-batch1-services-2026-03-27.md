@@ -206,7 +206,7 @@ Resolve metadata template kepada fail stub sebenar.
 
 - gunakan `TemplateRegistryService`
 - build path penuh dari root:
-  - `D:\WWW\e-base\templates\generator\page-generator\`
+  - `/var/www/app\e-base\templates\generator\page-generator\`
 - semak semua stub wajib wujud
 - return payload resolved
 

@@ -1,7 +1,7 @@
 # Notification Developer Standard
 
 Date: 2026-05-04
-Workspace: `D:\WWW\iqs-framework`
+Workspace: `/var/www/app\iqs-framework`
 
 Purpose:
 - Standard rujukan untuk programmer yang mahu tambah notification dalam mana-mana module.

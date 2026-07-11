@@ -4,7 +4,7 @@ Date: 2026-04-23
 
 Scope:
 - Repository audit for upgrade readiness from PHP 8.3.30 to PHP 8.4
-- Workspace only: `D:\WWW\iqs-framework`
+- Workspace only: `/var/www/app\iqs-framework`
 - Focused on app-owned code under `public/` and current runtime alignment
 - Vendor bundles were not treated as app code for remediation, but they are noted where relevant
 

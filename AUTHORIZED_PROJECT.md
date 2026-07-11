@@ -2,7 +2,7 @@ AUTHORIZED PROJECT
 
 Authorized location:
 
-PS D:\WWW\iqs-framework> 
+PS /var/www/app\iqs-framework> 
 
 Scope:
 

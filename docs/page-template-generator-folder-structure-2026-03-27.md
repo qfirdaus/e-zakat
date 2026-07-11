@@ -59,7 +59,7 @@ Sebab:
 ## Struktur Folder Yang Dicadangkan
 
 ```text
-D:\WWW\e-base\
+/var/www/app\e-base\
   docs\
   public\
     ajax\
@@ -256,11 +256,11 @@ Ini akan bantu audit kemudian.
 Untuk folder structure ini, service yang dicadangkan nanti boleh resolve path seperti berikut:
 
 - registry path:
-  - `D:\WWW\e-base\templates\generator\page-generator\registry\templates.json`
+  - `/var/www/app\e-base\templates\generator\page-generator\registry\templates.json`
 - template root:
-  - `D:\WWW\e-base\templates\generator\page-generator\stubs\page\`
+  - `/var/www/app\e-base\templates\generator\page-generator\stubs\page\`
 - partial root:
-  - `D:\WWW\e-base\templates\generator\page-generator\stubs\partials\`
+  - `/var/www/app\e-base\templates\generator\page-generator\stubs\partials\`
 
 Ini lebih kemas berbanding hardcode banyak path dalam controller.
 

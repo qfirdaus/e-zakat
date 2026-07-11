@@ -1,7 +1,7 @@
 param()
 
 # Expected authorized absolute path
-$expected = 'D:\WWW\iqs-framework'
+$expected = '/var/www/app/iqs-framework'
 
 # Try to get the git repository root if available
 $gitRoot = $null
@@ -14,7 +14,7 @@ try {
 if ($gitRoot) { $pathToCheck = $gitRoot } else { $pathToCheck = (Get-Location).Path }
 
 # Normalize paths
-$normalize = { param($p) [IO.Path]::GetFullPath($p).TrimEnd('\') }
+$normalize = { param($p) [IO.Path]::GetFullPath($p).TrimEnd('\','/') }
 $actual = & $normalize $pathToCheck
 $expectedNorm = & $normalize $expected
 

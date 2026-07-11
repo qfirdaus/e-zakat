@@ -13,8 +13,8 @@ Dokumen ini merekodkan mapping identifier semasa yang digunakan oleh flow `Add S
 Flow yang diliputi:
 
 - `Senarai Pengguna > Akses Staf > Add Staff`
-- endpoint [user-add.php](D:\WWW\e-base\public\ajax\user-add.php)
-- source dropdown [user-list-staf-options.php](D:\WWW\e-base\public\ajax\user-list-staf-options.php)
+- endpoint [user-add.php](/var/www/app\e-base\public\ajax\user-add.php)
+- source dropdown [user-list-staf-options.php](/var/www/app\e-base\public\ajax\user-list-staf-options.php)
 
 ## Mapping Rasmi Semasa
 
@@ -32,7 +32,7 @@ Sumber Sybase `v630staf_service_skim_all`:
 
 ## Mapping Insert Semasa
 
-Dalam [user-add.php](D:\WWW\e-base\public\ajax\user-add.php):
+Dalam [user-add.php](/var/www/app\e-base\public\ajax\user-add.php):
 
 - `Sybase.nopekerja` -> `tbl_m_user.f_stafID`
 - `Sybase.idpekerja` -> `tbl_m_user.f_nopekerja`

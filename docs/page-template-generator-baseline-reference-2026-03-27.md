@@ -16,7 +16,7 @@ Objektif dokumen ini:
 
 ### Rujukan
 
-- [dashboard.php](D:\WWW\e-base\public\pages\dashboard.php)
+- [dashboard.php](/var/www/app\e-base\public\pages\dashboard.php)
 
 ### Scope yang perlu diambil
 
@@ -68,7 +68,7 @@ Ini akan jadi starting point paling neutral untuk team developer.
 
 ### Rujukan
 
-- [senarai-pengguna.php](D:\WWW\e-base\public\pages\senarai-pengguna.php)
+- [senarai-pengguna.php](/var/www/app\e-base\public\pages\senarai-pengguna.php)
 
 ### Scope yang perlu diambil
 

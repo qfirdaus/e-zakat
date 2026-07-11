@@ -92,10 +92,10 @@ final class AiChatbotPdfTextExtractor
     {
         $candidates = [
             'pdftotext',
-            'C:\\Program Files\\poppler\\Library\\bin\\pdftotext.exe',
-            'C:\\Program Files\\poppler\\bin\\pdftotext.exe',
-            'C:\\poppler\\Library\\bin\\pdftotext.exe',
-            'C:\\poppler\\bin\\pdftotext.exe',
+            'C:/Program Files/poppler/Library/bin/pdftotext.exe',
+            'C:/Program Files/poppler/bin/pdftotext.exe',
+            'C:/poppler/Library/bin/pdftotext.exe',
+            'C:/poppler/bin/pdftotext.exe',
         ];
 
         foreach ($candidates as $candidate) {
@@ -154,7 +154,7 @@ final class AiChatbotPdfTextExtractor
         $search = $streams !== [] ? implode("\n", $streams) : $raw;
 
         $parts = [];
-        if (preg_match_all('/\((?:\\\\.|[^\\\\)])*\)\s*Tj/s', $search, $matches)) {
+        if (preg_match_all('/\((?://.|[^//)])*\)\s*Tj/s', $search, $matches)) {
             foreach ($matches[0] as $token) {
                 if (preg_match('/\((.*)\)\s*Tj/s', $token, $textMatch)) {
                     $parts[] = $this->decodePdfString($textMatch[1]);
@@ -163,7 +163,7 @@ final class AiChatbotPdfTextExtractor
         }
         if (preg_match_all('/\[(.*?)\]\s*TJ/s', $search, $matches)) {
             foreach ($matches[1] as $arrayToken) {
-                if (preg_match_all('/\((?:\\\\.|[^\\\\)])*\)/s', (string)$arrayToken, $stringMatches)) {
+                if (preg_match_all('/\((?://.|[^//)])*\)/s', (string)$arrayToken, $stringMatches)) {
                     $line = '';
                     foreach ($stringMatches[0] as $stringToken) {
                         $line .= $this->decodePdfString(substr($stringToken, 1, -1));
@@ -178,7 +178,7 @@ final class AiChatbotPdfTextExtractor
 
     private function decodePdfString(string $value): string
     {
-        $value = preg_replace_callback('/\\\\([nrtbf()\\\\])/', static function (array $match): string {
+        $value = preg_replace_callback('///([nrtbf()//])/', static function (array $match): string {
             return match ($match[1]) {
                 'n' => "\n",
                 'r' => "\r",
@@ -188,7 +188,7 @@ final class AiChatbotPdfTextExtractor
                 default => $match[1],
             };
         }, $value);
-        $value = preg_replace_callback('/\\\\([0-7]{1,3})/', static fn(array $match): string => chr(octdec($match[1])), (string)$value);
+        $value = preg_replace_callback('///([0-7]{1,3})/', static fn(array $match): string => chr(octdec($match[1])), (string)$value);
 
         return (string)$value;
     }

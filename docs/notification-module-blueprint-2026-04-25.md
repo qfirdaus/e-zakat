@@ -7,7 +7,7 @@ Scope:
 - Final implementation blueprint for universal in-app notification framework
 - Phase 1 delivery remains the topbar notification inbox
 - The design must also support admin/system announcements, event-based module notifications, workflow/task notifications, reminders, and future escalation/scheduler flows
-- Workspace only: `D:\WWW\iqs-framework`
+- Workspace only: `/var/www/app\iqs-framework`
 - Identity standard locked to `tbl_m_user.f_loginID`
 - Target users include `STAF`, `PELAJAR`, and `UMUM`
 
@@ -18,12 +18,12 @@ Identity baseline:
 - Optional metadata only: `f_userID`, `f_stafID`, `f_nopekerja`
 
 Repo alignment references:
-- Dummy topbar notification dropdown: [topbar.php](D:/WWW/iqs-framework/public/includes/topbar.php:265)
-- AJAX JSON + CSRF pattern: [role-switch.php](D:/WWW/iqs-framework/public/ajax/role-switch.php:1)
-- Central audit writer: [AuditLogger.php](D:/WWW/iqs-framework/public/classes/AuditLogger.php:5)
-- Dashboard announcement payload exists but is not a notification source of truth: [dashboard.php](D:/WWW/iqs-framework/public/pages/dashboard.php:97)
-- Developer integration standard: [notification-developer-standard-2026-05-04.md](D:/WWW/iqs-framework/docs/notification-developer-standard-2026-05-04.md)
-- Developer examples: [notification-developer-examples-2026-05-03.md](D:/WWW/iqs-framework/docs/notification-developer-examples-2026-05-03.md)
+- Dummy topbar notification dropdown: [topbar.php](/var/www/app/iqs-framework/public/includes/topbar.php:265)
+- AJAX JSON + CSRF pattern: [role-switch.php](/var/www/app/iqs-framework/public/ajax/role-switch.php:1)
+- Central audit writer: [AuditLogger.php](/var/www/app/iqs-framework/public/classes/AuditLogger.php:5)
+- Dashboard announcement payload exists but is not a notification source of truth: [dashboard.php](/var/www/app/iqs-framework/public/pages/dashboard.php:97)
+- Developer integration standard: [notification-developer-standard-2026-05-04.md](/var/www/app/iqs-framework/docs/notification-developer-standard-2026-05-04.md)
+- Developer examples: [notification-developer-examples-2026-05-03.md](/var/www/app/iqs-framework/docs/notification-developer-examples-2026-05-03.md)
 
 ## Locked Decisions
 
@@ -394,19 +394,19 @@ Phase 4: Admin composer, scheduler, and escalation
 ## File List
 
 New files to add:
-- [NotificationService.php](D:/WWW/iqs-framework/public/classes/NotificationService.php)
-- [NotificationPublisher.php](D:/WWW/iqs-framework/public/classes/NotificationPublisher.php)
-- [NotificationAudienceResolver.php](D:/WWW/iqs-framework/public/classes/NotificationAudienceResolver.php)
-- [NotificationWorkflowService.php](D:/WWW/iqs-framework/public/classes/NotificationWorkflowService.php)
-- [notification-list.php](D:/WWW/iqs-framework/public/ajax/notification-list.php)
-- [notification-read.php](D:/WWW/iqs-framework/public/ajax/notification-read.php)
-- [notification-read-all.php](D:/WWW/iqs-framework/public/ajax/notification-read-all.php)
-- [notification-action.php](D:/WWW/iqs-framework/public/ajax/notification-action.php)
-- [notifications.php](D:/WWW/iqs-framework/public/pages/notifications.php)
-- [topbar-notifications.js](D:/WWW/iqs-framework/public/assets/js/topbar-notifications.js)
+- [NotificationService.php](/var/www/app/iqs-framework/public/classes/NotificationService.php)
+- [NotificationPublisher.php](/var/www/app/iqs-framework/public/classes/NotificationPublisher.php)
+- [NotificationAudienceResolver.php](/var/www/app/iqs-framework/public/classes/NotificationAudienceResolver.php)
+- [NotificationWorkflowService.php](/var/www/app/iqs-framework/public/classes/NotificationWorkflowService.php)
+- [notification-list.php](/var/www/app/iqs-framework/public/ajax/notification-list.php)
+- [notification-read.php](/var/www/app/iqs-framework/public/ajax/notification-read.php)
+- [notification-read-all.php](/var/www/app/iqs-framework/public/ajax/notification-read-all.php)
+- [notification-action.php](/var/www/app/iqs-framework/public/ajax/notification-action.php)
+- [notifications.php](/var/www/app/iqs-framework/public/pages/notifications.php)
+- [topbar-notifications.js](/var/www/app/iqs-framework/public/assets/js/topbar-notifications.js)
 
 Existing files to update:
-- [topbar.php](D:/WWW/iqs-framework/public/includes/topbar.php)
+- [topbar.php](/var/www/app/iqs-framework/public/includes/topbar.php)
 - `public/lang/ms.php`
 - `public/lang/en.php`
 - `CHANGELOG.md`
@@ -762,7 +762,7 @@ Identity resolution order:
 ## NotificationService Class Skeleton
 
 File:
-- [NotificationService.php](D:/WWW/iqs-framework/public/classes/NotificationService.php)
+- [NotificationService.php](/var/www/app/iqs-framework/public/classes/NotificationService.php)
 
 Recommended skeleton:
 
@@ -889,7 +889,7 @@ final class NotificationService
 ## NotificationPublisher Class Skeleton
 
 File:
-- [NotificationPublisher.php](D:/WWW/iqs-framework/public/classes/NotificationPublisher.php)
+- [NotificationPublisher.php](/var/www/app/iqs-framework/public/classes/NotificationPublisher.php)
 
 Purpose:
 - provide one developer-facing API for admin, system, event, workflow, and reminder notifications
@@ -940,7 +940,7 @@ final class NotificationPublisher
 ## NotificationAudienceResolver Skeleton
 
 File:
-- [NotificationAudienceResolver.php](D:/WWW/iqs-framework/public/classes/NotificationAudienceResolver.php)
+- [NotificationAudienceResolver.php](/var/www/app/iqs-framework/public/classes/NotificationAudienceResolver.php)
 
 Purpose:
 - convert framework audience shortcuts into concrete notification audience rows
@@ -1235,7 +1235,7 @@ try {
 
 ## Topbar UI Structure
 
-Existing dummy block in [topbar.php](D:/WWW/iqs-framework/public/includes/topbar.php:265) should be replaced with a render shell:
+Existing dummy block in [topbar.php](/var/www/app/iqs-framework/public/includes/topbar.php:265) should be replaced with a render shell:
 
 ```html
 <li class="dropdown notification-list" id="topbarNotificationRoot">

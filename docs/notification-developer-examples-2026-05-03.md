@@ -1,6 +1,6 @@
 # Notification Developer Examples
 
-Working directory: `D:\WWW\iqs-framework`
+Working directory: `/var/www/app\iqs-framework`
 
 These examples cover Phase 2 usage of the universal notification publisher.
 

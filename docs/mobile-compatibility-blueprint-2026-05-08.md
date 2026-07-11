@@ -1,7 +1,7 @@
 # Mobile Compatibility Blueprint
 
 Date: 2026-05-08
-Workspace: `D:\WWW\iqs-framework`
+Workspace: `/var/www/app\iqs-framework`
 
 ## Purpose
 

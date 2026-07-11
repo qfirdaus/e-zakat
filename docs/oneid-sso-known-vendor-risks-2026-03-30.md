@@ -24,7 +24,7 @@ Maksudnya, boundary auth tempatan sudah diperketatkan. Baki risiko di bawah adal
 ## Risk 1: TLS verification dimatikan
 
 Lokasi:
-- [sso_sp_client.php](/D:/WWW/e-base/public/sso_sp_client.php)
+- [sso_sp_client.php](//var/www/app/e-base/public/sso_sp_client.php)
 
 Pemerhatian:
 - `API_REQUEST()` dalam vendor block mematikan:
@@ -44,7 +44,7 @@ Tindakan disyorkan:
 ## Risk 2: Full OneID payload disimpan dalam cookie browser
 
 Lokasi:
-- [sso_sp_client.php](/D:/WWW/e-base/public/sso_sp_client.php)
+- [sso_sp_client.php](//var/www/app/e-base/public/sso_sp_client.php)
 
 Pemerhatian:
 - `COOKIE_SETTER()` dalam vendor block menyimpan seluruh `respond_user_packet` ke cookie `sso_cre`
@@ -71,7 +71,7 @@ Tindakan disyorkan:
 ## Risk 3: Branch response vendor yang brittle
 
 Lokasi:
-- [sso_sp_client.php](/D:/WWW/e-base/public/sso_sp_client.php)
+- [sso_sp_client.php](//var/www/app/e-base/public/sso_sp_client.php)
 
 Pemerhatian:
 - branch tertentu pada vendor flow seperti `respond_flag == "2"` hanya `echo "X";`
@@ -90,7 +90,7 @@ Tindakan disyorkan:
 ## Risk 4: Vendor flow masih bergantung pada cookie `sso_cre`
 
 Lokasi:
-- [sso_sp_client.php](/D:/WWW/e-base/public/sso_sp_client.php)
+- [sso_sp_client.php](//var/www/app/e-base/public/sso_sp_client.php)
 
 Pemerhatian:
 - walaupun app side tidak lagi percaya cookie itu untuk local auth completion, vendor state machine masih bergantung pada kewujudan `sso_cre`
@@ -109,7 +109,7 @@ Tindakan disyorkan:
 ## Risk 5: Callback contract sangat sensitif kepada URL yang tepat
 
 Lokasi:
-- [sso_sp_client.php](/D:/WWW/e-base/public/sso_sp_client.php)
+- [sso_sp_client.php](//var/www/app/e-base/public/sso_sp_client.php)
 
 Pemerhatian:
 - vendor flow hanya berjalan dengan betul apabila `SSO_SP_LOGINPAGE` sepadan dengan callback sebenar yang didaftarkan di OneID
