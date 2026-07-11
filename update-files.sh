@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 echo "🚀 Collecting updated files..."
 
 MARKER=".last_update_check"
@@ -59,7 +62,7 @@ find public -type f -newer "$MARKER" \
 ! -path "public/log/*" \
 ! -path "public/uploads/*" \
 ! -path "public/lang/custom/*" \
-| while read file; do
+-print0 | while IFS= read -r -d '' file; do
 
     if should_skip_update_file "$file"; then
         echo "⏭ Skipped: $file"
@@ -68,7 +71,7 @@ find public -type f -newer "$MARKER" \
 
     target="updates/$file"
     mkdir -p "$(dirname "$target")"
-    cp "$file" "$target"
+    cp -p "$file" "$target"
 
     echo "✔ Copied: $file"
 
@@ -83,7 +86,7 @@ for file in VERSION README.md CHANGELOG.md tools/language-split-tool.php tools/c
 
         target="updates/$file"
         mkdir -p "$(dirname "$target")"
-        cp "$file" "$target"
+        cp -p "$file" "$target"
 
         echo "✔ Copied: $file"
     fi

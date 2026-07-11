@@ -3,19 +3,20 @@
 # =========================
 # CONFIG
 # =========================
-BASE_PATH="/mnt/d/www"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_PATH="${BASE_PATH:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 MASTER_PROJECT="iqs-framework"
 
 PROJECTS=(
-    "e-base"
+    "e-bdr"
     "e-dqms"
-    "e-facility"
-    "e-hepa"
-    "e-prestasi"
-    "e-pr"
+    "e-facility-uat"
+    "e-hepa-uat"
+    "e-pms-uat"
+    "e-pr-uat"
+    "e-prestasi-uat"
     "sap-uat"
     "survey-uat"
-    "upnm30"
 )
 
 LOG_FILE="sync.log"
