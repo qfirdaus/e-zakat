@@ -17,3 +17,4 @@
 public/pages/dashboard.php
 public/controllers/DashboardController.php
 public/assets/js/pages/demo.dashboard.js
+docs/*
