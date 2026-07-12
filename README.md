@@ -16,6 +16,7 @@ README ini hanya mendokumenkan ciri yang wujud dalam kod semasa projek ini.
 - PHP: `8.3.30`
 - Host environment: WSL 2 with Ubuntu 24.04
 - Web server: Nginx with PHP-FPM
+- Runtime model: native WSL; Docker, Docker Compose, and container-specific Apache assets are no longer maintained in this repository
 - Main database: MySQL `8.x`
 - External database support: Sybase through ODBC/DBLIB, plus additional PDO connections configured from the system UI
 
@@ -219,6 +220,7 @@ Do not hardcode DSN, username, or password inside page/controller code.
 
 - `sync-updates.sh` distributes collected updates to the registered downstream project list, including `e-prestasi` and `upnm30`.
 - `sync-updates.sh` and `update-files.sh` support `.sync-update-ignore` so selected files can be excluded from `updates/` and project sync flows.
+- `sync-updates.sh` reports results directly in the terminal and no longer creates the unused `sync.log` or `conflict.log` files.
 - Core file protection docs and `tools/core-file-protection-audit.php` are included in framework update collection.
 - `public/lang/custom/*` remains protected from overwrite during update distribution.
 
@@ -309,6 +311,8 @@ iqs-framework/
 ```
 
 ## Setup
+
+The repository now runs directly in WSL with Nginx and PHP-FPM. The retired Docker image, Compose service, Apache container configuration, and development TLS assets have been removed and are not part of the supported setup.
 
 1. Prepare environment file.
 
