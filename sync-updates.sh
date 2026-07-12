@@ -19,8 +19,6 @@ PROJECTS=(
     "survey-uat"
 )
 
-LOG_FILE="sync.log"
-CONFLICT_LOG="conflict.log"
 LOCK_FILE=".sync.lock"
 SYNC_EXCLUDE_FILE=".sync-update-ignore"
 
@@ -284,9 +282,6 @@ touch "$LOCK_FILE"
 trap "rm -f $LOCK_FILE; exit 1" INT TERM
 
 echo "🚀 Starting sync..."
-echo "" > $LOG_FILE
-echo "" > $CONFLICT_LOG
-
 echo ""
 echo "┌──────────────┬──────────┬──────────────────────────────────────────────┐"
 printf "│ %-12s │ %-8s │ %-44s │\n" "PROJECT" "ACTION" "FILE"
