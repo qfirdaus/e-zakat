@@ -1,195 +1,119 @@
 # Database Inspection Guideline
 
-Date: 2026-06-13
+Updated: 2026-07-12
 
-Purpose: standardize how Codex should inspect the project database for this Docker-based IQS Framework workspace.
+## Purpose
 
-## Scope
+Standardize read-only database inspection for the IQS Framework workspace running natively in WSL 2 Ubuntu with Nginx and PHP-FPM.
 
-The application PHP runtime runs inside Docker, not on the Windows host.
+## Runtime
 
-Use the Docker container PHP runtime for database checks:
+- Project root: `/var/www/app/iqs-framework`
+- Application public root: `/var/www/app/iqs-framework/public`
+- CLI runtime: PHP installed in WSL
+- Web runtime: PHP-FPM behind Nginx
+- Environment file: `/var/www/app/iqs-framework/.env`
+
+Run inspection commands from the project root:
 
 ```bash
-docker exec -i iqs-framework-web php
+cd /var/www/app/iqs-framework
+php -v
+php -m
 ```
 
-The project path inside the container is:
+The PHP CLI and PHP-FPM installations can load different configuration files. Before relying on a CLI inspection result, compare their PHP versions and enabled database extensions where necessary.
 
-```text
-/var/www/html
+## Required Safety Rules
+
+Database inspection must be read-only unless a separate task explicitly authorizes a mutation.
+
+Allowed operations include:
+
+- checking connection availability;
+- listing schemas, tables, columns, indexes, and constraints;
+- running bounded `SELECT` queries;
+- using `EXPLAIN` for a read-only query;
+- reading non-sensitive aggregate or diagnostic data required for the task.
+
+Do not run:
+
+- `INSERT`, `UPDATE`, `DELETE`, `REPLACE`, or `MERGE`;
+- `CREATE`, `ALTER`, `DROP`, `TRUNCATE`, or migrations;
+- stored procedures with unknown side effects;
+- unrestricted exports of credentials, tokens, personal data, or message content;
+- broad queries without a justified filter or row limit.
+
+## Application-Accurate Bootstrap
+
+Prefer the repository's existing configuration loader so `.env` parsing and database environment selection match the application:
+
+```bash
+php <<'PHP'
+<?php
+require __DIR__ . '/public/configuration/db_config.php';
+
+$host = db_env('DB_MYSQL_MAIN_DEV_HOST');
+$port = db_env('DB_MYSQL_MAIN_DEV_PORT', '3306');
+$name = db_env('DB_MYSQL_MAIN_DEV_NAME');
+$user = db_env('DB_MYSQL_MAIN_DEV_USER');
+$pass = db_env('DB_MYSQL_MAIN_DEV_PASS');
+
+$pdo = new PDO(
+    "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
+    $user,
+    $pass,
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+);
+
+$row = $pdo->query('SELECT DATABASE() AS database_name, VERSION() AS server_version')
+    ->fetch(PDO::FETCH_ASSOC);
+
+echo json_encode($row, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;
+PHP
 ```
 
-The application database connection should be loaded through:
+Do not print connection credentials or include `.env` values in logs, patches, screenshots, or reports.
+
+## Bounded Read-Only Query Pattern
+
+Use prepared statements and an explicit row limit:
 
 ```php
-require '/var/www/html/classes/Database.php';
-$pdo = Database::getInstance('mysql')->getConnection();
-```
-
-## Read-Only Rule
-
-Codex is allowed to inspect the database only.
-
-Allowed examples:
-
-```sql
-SELECT ...
-SHOW COLUMNS ...
-DESCRIBE ...
-EXPLAIN SELECT ...
-```
-
-For table existence checks, prefer `INFORMATION_SCHEMA` instead of `SHOW TABLES LIKE ?`:
-
-```sql
-SELECT COUNT(*)
-FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME = ?
-```
-
-Do not run database-changing statements without explicit user approval.
-
-Prohibited without approval:
-
-```sql
-ALTER ...
-CREATE ...
-DROP ...
-TRUNCATE ...
-INSERT ...
-UPDATE ...
-DELETE ...
-REPLACE ...
-RENAME ...
-GRANT ...
-REVOKE ...
-```
-
-## Standard Table Check Command
-
-Use this pattern from the host/WSL terminal when checking table availability:
-
-```bash
-docker exec -i iqs-framework-web php <<'PHP'
-<?php
-require '/var/www/html/classes/Database.php';
-$pdo = Database::getInstance('mysql')->getConnection();
-
-$tables = [
-    'tbl_ai_chat_knowledge',
-    'tbl_ai_chat_knowledge_source',
-    'tbl_ai_chat_knowledge_chunk',
-];
-
-foreach ($tables as $table) {
-    $stmt = $pdo->prepare(
-        'SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
-    );
-    $stmt->execute([$table]);
-    echo $table . ': ' . ((int)$stmt->fetchColumn() > 0 ? 'EXISTS' : 'MISSING') . PHP_EOL;
-}
-PHP
-```
-
-## Standard Column Check Command
-
-Use this pattern to inspect columns without changing schema:
-
-```bash
-docker exec -i iqs-framework-web php <<'PHP'
-<?php
-require '/var/www/html/classes/Database.php';
-$pdo = Database::getInstance('mysql')->getConnection();
-
-$table = 'tbl_ai_chat_knowledge_source';
 $stmt = $pdo->prepare(
-    'SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
-     FROM INFORMATION_SCHEMA.COLUMNS
-     WHERE TABLE_SCHEMA = DATABASE()
-       AND TABLE_NAME = ?
-     ORDER BY ORDINAL_POSITION'
+    'SELECT f_id, f_status FROM example_table WHERE f_status = :status ORDER BY f_id DESC LIMIT 25'
 );
-$stmt->execute([$table]);
-
-foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $column) {
-    echo $column['COLUMN_NAME'] . ' | ' . $column['COLUMN_TYPE'] . ' | nullable=' . $column['IS_NULLABLE'] . PHP_EOL;
-}
-PHP
+$stmt->execute(['status' => 1]);
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ```
 
-## Operational Notes
+Select only the columns required for the task. Avoid `SELECT *` when inspecting tables containing personal or sensitive information.
 
-- The Windows host `php` command may not have the same extensions as the Docker PHP runtime.
-- Use Docker PHP for application-accurate database checks.
-- If a schema change is needed, stop and ask the user for explicit approval before running any migration or DDL.
+## Extension Checks
 
-## AI Chatbot Project Provider Checks
+For MySQL inspections:
 
-AI Chatbot project-aware providers must be checked using the same read-only rule.
-
-For the core `iqs-framework` project, Codex may inspect only the current IQS Framework database unless the user explicitly grants a project-specific exception.
-
-For downstream project databases such as e-PMS, access must be approved separately each time unless the user gives a new explicit read-only scope. The previous e-PMS schema inspection was limited to schema metadata and must not be treated as ongoing permission.
-
-Allowed project provider inspection examples:
-
-```sql
-SELECT COUNT(*)
-FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME IN (...)
+```bash
+php --ri pdo_mysql
 ```
 
-```sql
-SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME = ?
-ORDER BY ORDINAL_POSITION
+For ODBC or DBLIB connections:
+
+```bash
+php --ri PDO_ODBC
+php --ri pdo_dblib
 ```
 
-Avoid reading live business rows unless the user explicitly approves that specific read-only data check.
+If an extension exists in PHP-FPM but not PHP CLI, do not change global PHP configuration as part of a repository task. Report the runtime mismatch and request separate authorization for any system-level change.
 
-Project-aware chatbot code may use provider-owned read-only prepared queries at application runtime, but Codex shell inspection remains limited by the approval scope above.
+## Reporting
 
-Do not run AI Chatbot provider verification against a downstream project database without confirming:
+Report:
 
-- project path or container name,
-- database target,
-- read-only scope,
-- whether row-level checks are permitted or schema-only checks are permitted.
+- which logical connection or environment was inspected;
+- whether the check used PHP CLI or the web runtime;
+- query purpose and bounded scope;
+- schema or aggregate findings needed for the task;
+- missing extensions or runtime mismatches.
 
-## Phase 12/13 — e-PMS Verification Notes (2026-06-14)
-
-- Approved test runtime: use the `upnm30` project/runtime when verifying e-PMS provider queries. Do not query other downstream project databases unless explicitly authorized.
-
-- CLI PHP extension note: the Windows host `php` binary may lack `pdo_mysql`. For quick one-off CLI tests you can enable it with:
-
-```powershell
-php -d extension=php_pdo_mysql.dll your_test_script.php
-```
-
-Use the Docker PHP runtime where possible to avoid extension mismatches.
-
-- Example e-PMS table presence and row counts observed during verification (informational snapshot):
-
-  - `tbl_monitoring_project`: 61
-  - `tbl_monitoring_teras`: 6
-  - `tbl_monitoring_project_owner`: 88
-  - `tbl_monitoring_project_pic`: 93
-  - `tbl_monitoring_aktiviti`: 363
-  - `tbl_monitoring_laporan`: 2563
-  - `tbl_announcements`: 4
-  - `tbl_monitoring_project_feedback`: 0
-
-  These numbers are an operational snapshot from `upnm30` and should not be treated as authoritative or permanently stored in docs.
-
-- Safety and runtime behavior changes implemented in Phase 13:
-
-  - The question classifier may mark prompts as sensitive with `blocked_detail` (examples: requests for SQL/table structure, requests for other users' private records, raw feedback comments).
-  - Runtime fix: when `blocked_detail` is true, the chatbot runtime now skips building or attaching project-aware context — this prevents exposing provider rows for sensitive queries.
-  - The runtime exposes audit-only metadata via `ai_chatbot_project_context_meta()` which contains safe fields only (no raw rows): `status`, `provider`, `provider_label`, `match_score`, `intent`, `scope`, `provider_context_status`, `row_count`, `has_records`, and `denied_reason`.
-
-Follow the Read-Only Rule and the Safety constraints above when performing further verification or troubleshooting.
+Never report passwords, full DSNs containing credentials, authentication tokens, private message content, or unrelated personal records.

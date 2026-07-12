@@ -288,7 +288,7 @@ class ManualController
             return ['success' => false, 'message' => sprintf((string)__('manual_upload_max_size'), (int)app_config('upload.manual_max_mb', 10))];
         }
 
-        // Upload directory is inside the app/ folder (mapped into Docker)
+        // Upload directory is inside the application public tree.
         $uploadDir = __DIR__ . '/../uploads/manuals/';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);

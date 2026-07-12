@@ -58,12 +58,12 @@ final class DatabaseConnectionFactory
 
         $hint = match ($driver) {
             'sqlsrv' => $hasDblib
-                ? 'Runtime ini tiada sqlsrv/pdo_sqlsrv tetapi ada dblib. Untuk Docker/Linux FreeTDS, tukar Additional Database driver kepada dblib dan gunakan port MSSQL 1433 jika tiada port khusus.'
+                ? 'Runtime ini tiada sqlsrv/pdo_sqlsrv tetapi ada dblib. Untuk Linux FreeTDS, tukar Additional Database driver kepada dblib dan gunakan port MSSQL 1433 jika tiada port khusus.'
                 : ($hasOdbc
                     ? 'Runtime ini tiada sqlsrv/pdo_sqlsrv tetapi ada odbc. Gunakan driver odbc dengan DSN yang telah dikonfigurasi, atau enable sqlsrv/pdo_sqlsrv jika run di Windows/native.'
-                    : 'Enable Microsoft SQL Server PHP extensions sqlsrv dan pdo_sqlsrv untuk Windows/native, atau enable dblib/odbc untuk Docker/Linux.'),
+                    : 'Enable Microsoft SQL Server PHP extensions sqlsrv dan pdo_sqlsrv untuk Windows/native, atau enable dblib/odbc untuk Linux.'),
             'odbc' => $hasDblib
-                ? 'Runtime ini tiada pdo_odbc tetapi ada dblib. Untuk Docker/Linux FreeTDS, gunakan driver dblib atau enable PDO ODBC jika mahu guna DSN ODBC.'
+                ? 'Runtime ini tiada pdo_odbc tetapi ada dblib. Untuk Linux FreeTDS, gunakan driver dblib atau enable PDO ODBC jika mahu guna DSN ODBC.'
                 : 'Install dan enable PDO ODBC extension serta ODBC driver/DSN yang sesuai.',
             'dblib' => $hasOdbc
                 ? 'Runtime ini tiada PDO DBLIB/FreeTDS tetapi ada ODBC. Gunakan driver odbc dengan DSN yang sesuai, atau enable pdo_dblib.'

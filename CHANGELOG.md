@@ -6,6 +6,13 @@ This changelog follows a release-style summary based on major project milestones
 
 ## [Unreleased]
 
+### Changed
+- Changed the documented runtime from Docker/Apache to WSL 2 Ubuntu with Nginx and PHP-FPM.
+- Updated database inspection guidance to use the native WSL PHP runtime.
+
+### Removed
+- Removed the retired Dockerfile, Compose service, Apache/PHP container configuration, Docker ignore rules, and development TLS key material.
+
 ## [1.8.4] - 2026-06-23
 
 ### Added

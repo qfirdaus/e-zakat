@@ -1,5 +1,7 @@
 # AI Chatbot Project-Aware Data Context Plan
 
+> Historical runtime note (2026-07-12): Docker-specific verification results in this plan describe the retired development runtime. Current verification must use the WSL PHP runtime with Nginx/PHP-FPM and the same read-only data-access boundaries.
+
 Date: 2026-06-14
 
 Purpose: record Phase 12/13 outcomes and define immediate Phase 14 observability/admin steps for the AI Chatbot project-aware context work.

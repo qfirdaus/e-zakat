@@ -1,5 +1,7 @@
 # PHP 8.4 Readiness Audit
 
+> Historical note (2026-07-12): this audit was written while the project used a Docker/Apache runtime. The active project runtime is now WSL 2 Ubuntu with Nginx and PHP-FPM. Docker-specific rollout recommendations below are retained only as historical audit context; use the native WSL staging runtime for current validation.
+
 Date: 2026-04-23
 
 Scope:
