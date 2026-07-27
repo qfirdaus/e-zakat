@@ -8,6 +8,7 @@ BASE_PATH="${BASE_PATH:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 MASTER_PROJECT="iqs-framework"
 
 PROJECTS=(
+    "apel"
     "e-bdr"
     "e-dqms"
     "e-facility-uat"
@@ -15,6 +16,8 @@ PROJECTS=(
     "e-pms-uat"
     "e-pr-uat"
     "e-prestasi-uat"
+    "e-spk-uat"
+    "emadani"
     "sap-uat"
     "survey-uat"
 )
