@@ -248,7 +248,7 @@ show_menu() {
 # PRINT TABLE
 # =========================
 print_row() {
-    printf "${4}│ %-12s │ %-8s │ %-44s │${NC}\n" "$1" "$2" "$3"
+    printf "${4}│ %-16s │ %-8s │ %-44s │${NC}\n" "$1" "$2" "$3"
 }
 
 # =========================
@@ -286,9 +286,9 @@ trap "rm -f $LOCK_FILE; exit 1" INT TERM
 
 echo "🚀 Starting sync..."
 echo ""
-echo "┌──────────────┬──────────┬──────────────────────────────────────────────┐"
-printf "│ %-12s │ %-8s │ %-44s │\n" "PROJECT" "ACTION" "FILE"
-echo "├──────────────┼──────────┼──────────────────────────────────────────────┤"
+echo "┌──────────────────┬──────────┬──────────────────────────────────────────────┐"
+printf "│ %-16s │ %-8s │ %-44s │\n" "PROJECT" "ACTION" "FILE"
+echo "├──────────────────┼──────────┼──────────────────────────────────────────────┤"
 
 if [ "$DRY_RUN" = false ]; then
     read -p "Proceed with sync? (y/n): " confirm
@@ -304,7 +304,10 @@ for project in "${PROJECTS[@]}"; do
     fi
 
     TARGET="$BASE_PATH/$project"
-    [ ! -d "$TARGET" ] && continue
+    if [ ! -d "$TARGET" ]; then
+        print_row "$project" "MISSING" "Project directory not found" "$RED"
+        continue
+    fi
 
     if [ "$BACKUP" = true ]; then
         cp -r "$TARGET/public" "$TARGET/public_backup_$(date +%Y%m%d_%H%M%S)"
@@ -369,7 +372,7 @@ for project in "${PROJECTS[@]}"; do
 
 done
 
-echo "└──────────────┴──────────┴──────────────────────────────────────────────┘"
+echo "└──────────────────┴──────────┴──────────────────────────────────────────────┘"
 
 rm -f "$LOCK_FILE"
 
@@ -377,7 +380,7 @@ echo ""
 echo "====== PER PROJECT SUMMARY ======"
 
 for project in "${PROJECTS[@]}"; do
-    printf "%-12s → Updated: %-3s | New: %-3s | Conflict: %-3s\n" \
+    printf "%-16s → Updated: %-3s | New: %-3s | Conflict: %-3s\n" \
         "$project" \
         "${P_UPDATED[$project]:-0}" \
         "${P_NEW[$project]:-0}" \
