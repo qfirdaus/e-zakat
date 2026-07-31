@@ -6,7 +6,7 @@ README ini hanya mendokumenkan ciri yang wujud dalam kod semasa projek ini.
 
 ## Version
 
-- Current version: `1.8.4`
+- Current version: `1.8.5`
 - Release history: [CHANGELOG.md](./CHANGELOG.md)
 - Version file: [VERSION](./VERSION)
 - Runtime fallback: [public/configuration/settings.php](./public/configuration/settings.php)
@@ -26,6 +26,7 @@ README ini hanya mendokumenkan ciri yang wujud dalam kod semasa projek ini.
 
 - Login and logout flow through `LoginController.php` and `LogoutController.php`.
 - Session initialization, timeout handling, CSRF helpers, language loading, audit hooks, and runtime bootstrap through `public/includes/init.php`.
+- Session cookie and strict-mode settings are applied only before session startup, allowing password renewal and reset pages to reuse the core bootstrap without active-session configuration warnings.
 - Role switching for users with more than one available group context through `role-switch.php` and `role-switch-roles.php`.
 - Profile workspace with login activity, audit history, active session visibility, and session termination support.
 - Login policy configuration from System Settings, including manual login route control and SSO compatibility settings.
@@ -52,6 +53,7 @@ README ini hanya mendokumenkan ciri yang wujud dalam kod semasa projek ini.
 - Supports optional sidebar menu subgroups inside parent modules through `tbl_m_menu_subgroup` and `tbl_m_menu.f_subgroupID`.
 - Menu subgroups can be created, edited, ordered, assigned to menus, and protected from deletion while menus are still assigned.
 - Sidebar rendering remains backward-compatible: modules can still use direct menus without subgroups, while selected modules can group menus under subgroup headings.
+- Sidebar users can search accessible menus through a role-aware AJAX search below the active user profile, with module/subgroup context, keyboard navigation, request debouncing, and condensed-sidebar support.
 - Sidebar fragment updates are served by `public/ajax/sidebar-fragment.php`.
 - Related AJAX endpoints include `group-*`, `module-*`, `menu-*`, `menu-subgroup-*`, `menu-order-item-swap.php`, `modul-list.php`, and role-switch endpoints.
 - Access governance logic is supported by `GroupController.php`, `SidebarController.php`, `Group.php`, and `Modul.php`.
@@ -85,6 +87,7 @@ README ini hanya mendokumenkan ciri yang wujud dalam kod semasa projek ini.
 
 - Profile page at `public/pages/profile.php`.
 - Shows account profile, login activity, audit event history, audit metadata where authorized, and active session actions.
+- Profile identity labels adapt to the authenticated user category, including staff number/position/department for staff and matric number/programme/faculty for students.
 - AJAX endpoints include `profile-login-activity.php`, `profile-audit-events.php`, `profile-audit-event-meta.php`, and `profile-kill-session.php`.
 
 ### System Settings

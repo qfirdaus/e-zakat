@@ -16,6 +16,24 @@ This changelog follows a release-style summary based on major project milestones
 - Removed the retired Dockerfile, Compose service, Apache/PHP container configuration, Docker ignore rules, and development TLS key material.
 - Removed unused `sync.log` and `conflict.log` initialization and references from the update sync workflow.
 
+## [1.8.5] - 2026-07-31
+
+### Added
+- Added role-aware AJAX menu search below the sidebar user profile, limited to menus available to the active role and current operational mode.
+- Added menu search result context for modules and optional subgroups, plus request debouncing, stale-request cancellation, loading/empty/error states, result limits, and keyboard navigation.
+- Added condensed-sidebar search behavior that replaces the full search field with an icon and restores focus after reopening the sidebar.
+- Added Malay and English core translations for sidebar search and student-specific profile labels.
+
+### Changed
+- Changed profile identity presentation to use staff number, position, and department labels for staff while using matric number, programme, and faculty labels for students.
+- Changed student profile fallback detection to use normalized profile/session category values and identity characteristics when explicit category data is unavailable.
+- Changed student profile programme presentation to use an education-specific icon while preserving the existing staff presentation.
+- Changed project release metadata to lock the application version at `1.8.5`.
+
+### Fixed
+- Fixed student profiles showing staff-oriented labels and copy actions even when the displayed values represented student data.
+- Fixed active-session warnings on forced password renewal, forgot-password, and reset-password pages by applying session INI settings only before session startup.
+
 ## [1.8.4] - 2026-06-23
 
 ### Added
