@@ -882,3 +882,80 @@ Final automated UI integration smoke turut lulus selepas migrasi:
 - database kekal tidak berubah selepas smoke test.
 
 Browser automation tidak tersedia dalam runtime repository, maka ujian ini ialah structural dan backend UI-integration smoke, bukan rakaman klik visual browser. Visual Windows/UI acceptance telah dilengkapkan secara berasingan melalui pengesahan programmer downstream terhadap ODBC runtime.
+
+## 19. Release 1.9.0, Downstream Sync dan Pilot Validation
+
+Release feature ini ditetapkan sebagai `1.9.0`. Public consumer contract kekal `Database::pdoAdditional(string, ?string): PDO`, maka modul downstream tidak perlu menukar code panggilan. Perubahan yang perlu diselaraskan ialah salinan core framework, readiness schema registry, data variant bagi setiap database development yang berasingan, dan secret v2 pada setiap runtime yang membacanya.
+
+### 19.1 Rekod sync code downstream
+
+Core Additional Database telah disebarkan ke branch `main` bagi semua project downstream yang diluluskan. Keadaan remote yang direkodkan selepas push ialah:
+
+| Project | Commit |
+|---|---|
+| `apel` | `0bd0bb6` |
+| `e-bdr` | `5b8726b` |
+| `e-dqms` | `d130f69` |
+| `e-facility-uat` | `37d893d` |
+| `e-hepa-uat` | `837a0b9` |
+| `e-pms-uat` | `c28e4a1` |
+| `e-pr-uat` | `9ac7137` |
+| `e-prestasi-uat` | `8ae1275` |
+| `e-spk-uat` | `b8895e6` |
+| `emadani` | `cca4852` |
+| `sap-uat` | `9ff39fa` |
+| `survey-uat` | `9b897da` |
+
+Semua working tree dilaporkan bersih dan sepadan dengan remote `main` selepas operasi tersebut. Rekod ini hanya mengesahkan sync code; setiap project masih memerlukan validasi terhadap database development dan runtime OS masing-masing.
+
+### 19.2 Pilot `e-hepa-uat`
+
+Readiness check mengesahkan table dan column registry yang diperlukan telah tersedia; tiada `CREATE TABLE` atau `ALTER TABLE` dijalankan. Data `dbx_sybase_asramadb` kemudiannya dimigrasikan secara terkawal:
+
+- row asal `production / any / odbc` dipisahkan kepada `production / linux / dblib` dan `production / windows / odbc`;
+- DSN Windows dikekalkan sebagai `ASRAMADB`, master mode ditetapkan kepada `auto`, dan ciphertext sedia ada disalin tanpa mendedahkan plaintext;
+- backup permission `0600` disimpan di `_updates_archive/platform-backups/additional-db-platform-backup-20260801-063033-f28d75ae.json` dalam repository `e-hepa-uat`;
+- Linux public API memilih `dblib` dan `SELECT 1` berjaya;
+- `dbx_mysql_istaddb` memilih `mysql` dan `SELECT 1` berjaya;
+- fresh Windows ODBC smoke test selepas migrasi masih menunggu programmer Windows tersedia.
+
+Runtime Linux `e-hepa-uat` telah dipasang dengan v2 key dan disahkan `configured=yes`, `write_format=v2`, serta key ID `e-hepa-development-2026`. Credential registry masih legacy. Runtime Windows yang berkongsi registry mesti menerima key sebenar yang sama dan fingerprint perlu dibandingkan sebelum sebarang Edit/Save yang boleh menulis semula credential sebagai v2.
+
+### 19.3 Pilot `e-dqms`
+
+Readiness check turut mengesahkan schema registry lengkap tanpa migration DDL. Lima connection MSSQL berikut telah dipisahkan daripada `production / any / dblib` kepada variant `production / linux / dblib` dan `production / windows / sqlsrv`:
+
+- `db_sqlsrv_kpt` (disabled tetapi dimigrasikan untuk kegunaan masa depan);
+- `dbx_sqlsrv_kpt_staff`;
+- `dbx_sqlsrv_kpt_student`;
+- `dbx_sqlsrv_upnm_staff`;
+- `dbx_sqlsrv_upnm_student`.
+
+Master mode setiap connection ditetapkan kepada `auto`; credential ciphertext legacy disalin kepada kedua-dua variant. Backup permission `0600` disimpan di `_updates_archive/platform-backups/additional-db-platform-backup-20260801-070051-7ad2a187.json` dalam repository `e-dqms`.
+
+Semua connection aktif lulus Linux DBLIB `SELECT 1`; connection disabled kekal ditolak sebagai `disabled`, seperti contract asal. Diagnostics melaporkan platform coverage `10/10`. Amaran runtime yang tinggal ialah sepuluh credential variant masih menggunakan format legacy. Windows PDO SQLSRV smoke test dan pemasangan/penyelarasan v2 key masih belum selesai.
+
+### 19.4 Kesan database sebenar
+
+Feature core menggunakan column registry yang sudah diperkenalkan secara idempotent dalam source migration. Bagi tiga database development yang telah diperiksa dalam siri kerja ini, schema yang diperlukan sedia ada dan tiada DDL dijalankan.
+
+Perubahan database sebenar setakat rekod ini ialah:
+
+- database development `iqs-framework`: satu credential `dbx_mysql_test / development / any / mysql` dimigrasikan kepada v2, dan `dbx_sybase_asramadb` dipisahkan kepada Linux/DBLIB serta Windows/ODBC;
+- database development `e-hepa-uat`: `dbx_sybase_asramadb` dipisahkan kepada dua variant platform; credential kekal legacy;
+- database development `e-dqms`: lima connection MSSQL dipisahkan kepada sepuluh variant Linux/DBLIB dan Windows/SQLSRV; credential kekal legacy.
+
+Oleh sebab setiap downstream menggunakan database development yang berlainan, sync code sahaja tidak mengubah database project tersebut. Setiap database mesti melalui urutan berasingan: schema readiness check, platform audit dry-run, backup, controlled apply bagi connection berkaitan, Linux/Windows smoke test, kemudian credential dry-run dan apply hanya selepas key semua runtime diselaraskan.
+
+### 19.5 Baki kerja rollout
+
+- Selesaikan fresh Windows ODBC smoke test untuk `e-hepa-uat` selepas memasang key v2 yang sama pada runtime Windows.
+- Selesaikan Windows PDO SQLSRV `SELECT 1` untuk lima variant `e-dqms` yang berkaitan dan pasang key v2 secara konsisten pada semua runtime perkongsian registry.
+- Audit dan migrasikan setiap database downstream lain secara satu demi satu; jangan anggap data registry sama walaupun code core sama.
+- Simpan key di secret/environment runtime sahaja, bandingkan fingerprint tanpa memaparkan key, dan jangan commit `.env` atau key ke Git.
+- Kekalkan credential legacy sehingga semua runtime perkongsian registry disahkan mempunyai key sama; selepas itu jalankan credential migration dalam dry-run sebelum controlled apply.
+- Rekod backup, tuple yang diubah, keputusan diagnostics, driver PDO sebenar dan `SELECT 1` bagi setiap OS/project dalam dokumen operasi project berkenaan.
+
+### 19.6 Ringkasan status release
+
+Core `1.9.0` dan compatibility contract dianggap siap. Migrasi database bukan migration global dan tidak memerlukan perubahan code consumer downstream. Rollout keseluruhan hanya dianggap lengkap apabila setiap database development downstream telah melalui audit/migrasi tersendiri dan semua variant OS yang benar-benar digunakan telah lulus smoke test.
