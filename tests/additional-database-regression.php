@@ -822,8 +822,21 @@ $suite->add('platform migration tooling remains dry-run by default with controll
 $suite->add('controller and repository retain exact platform tuple and concurrency guards', static function (): void {
     $controllerSource = file_get_contents(__DIR__ . '/../public/controllers/TetapanSistemController.php');
     $repositorySource = file_get_contents(__DIR__ . '/../public/classes/DatabaseConnectionRepository.php');
-    regressionAssertTrue(is_string($controllerSource) && is_string($repositorySource), 'Platform runtime sources are missing.');
+    $frontendSource = file_get_contents(__DIR__ . '/../public/assets/js/pages/tetapan-sistem.js');
+    regressionAssertTrue(
+        is_string($controllerSource) && is_string($repositorySource) && is_string($frontendSource),
+        'Platform runtime sources are missing.'
+    );
     regressionAssertContains("!in_array(\$rowOsFamily, [\$targetOsFamily, 'any'], true)", $controllerSource, 'Controller OS guard changed.');
+    regressionAssertContains("\$targetOsFamily = PHP_OS_FAMILY === 'Windows' ? 'windows' : 'linux';", $controllerSource, 'Controller no longer enforces the server runtime OS.');
+    regressionAssertContains("\$targetDriver = '';", $controllerSource, 'Controller no longer resolves the runtime driver server-side.');
+    foreach (['inspectEnv', 'schemaEnv', 'firstEnv'] as $targetVariable) {
+        regressionAssertContains(
+            "var {$targetVariable} = getPreferredAdditionalEnvRow(connection);",
+            $frontendSource,
+            "Frontend {$targetVariable} selection no longer follows runtime diagnostics."
+        );
+    }
     regressionAssertContains('f_registry_revision', $controllerSource, 'Controller concurrency token is missing.');
     regressionAssertContains('AND f_os_family = :os_family', $repositorySource, 'Test result OS tuple is not exact.');
     regressionAssertContains('AND f_driver = :driver', $repositorySource, 'Test result driver tuple is not exact.');
