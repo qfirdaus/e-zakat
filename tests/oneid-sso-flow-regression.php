@@ -19,17 +19,26 @@ function ssoAssert(bool $condition, string $message): void
     fwrite(STDERR, "[FAIL] {$message}\n");
 }
 
-$staff = SSO_BUILD_AUTH_HANDOFF(['data3' => '1234-56']);
-ssoAssert($staff['identity_valid'] && $staff['resolved_source'] === 'data3', 'ID staf sah dipetakan daripada data3.');
+$staff = SSO_BUILD_AUTH_HANDOFF(['u_category' => 2, 'data3' => '1234-56', 'data4' => 'CA12345']);
+ssoAssert($staff['identity_valid'] && $staff['resolved_source'] === 'data3' && $staff['resolved_login_id'] === '1234-56', 'Kategori staf memilih data3 walaupun data4 turut diisi.');
 
-$student = SSO_BUILD_AUTH_HANDOFF(['data4' => 'CA12345']);
-ssoAssert($student['identity_valid'] && $student['resolved_source'] === 'data4', 'Matrik sah dipetakan daripada data4.');
+$student = SSO_BUILD_AUTH_HANDOFF(['u_category' => 10, 'data3' => '1234-56', 'data4' => 'CA12345']);
+ssoAssert($student['identity_valid'] && $student['resolved_source'] === 'data4' && $student['resolved_login_id'] === 'CA12345', 'Kategori pelajar memilih data4 walaupun data3 turut diisi.');
+
+$hybridAdminStudent = SSO_BUILD_AUTH_HANDOFF(['u_category' => 11, 'data3' => '1234-56', 'data4' => 'CA12345']);
+ssoAssert($hybridAdminStudent['identity_valid'] && $hybridAdminStudent['resolved_source'] === 'data4', 'Kategori Pentadbiran-Pelajar memilih matrik data4.');
+
+$hybridAcademicStudent = SSO_BUILD_AUTH_HANDOFF(['u_category' => 12, 'data3' => '1234-56', 'data4' => 'CA12345']);
+ssoAssert($hybridAcademicStudent['identity_valid'] && $hybridAcademicStudent['resolved_source'] === 'data4', 'Kategori Akademik-Pelajar memilih matrik data4.');
 
 $invalidIdentity = SSO_BUILD_AUTH_HANDOFF(['data3' => '123', 'data4' => 'A-123']);
 ssoAssert(!$invalidIdentity['identity_valid'], 'Payload tanpa identifier sah ditolak.');
 
-$ambiguous = SSO_BUILD_AUTH_HANDOFF(['data3' => '1234-56', 'data4' => 'CA12345']);
-ssoAssert($ambiguous['identity_conflict'] && !$ambiguous['identity_valid'], 'Payload dengan dua identiti ditolak sebagai konflik.');
+$legacyBoth = SSO_BUILD_AUTH_HANDOFF(['data3' => '1234-56', 'data4' => 'CA12345']);
+ssoAssert($legacyBoth['identity_valid'] && $legacyBoth['resolved_source'] === 'data3' && $legacyBoth['identity_resolution'] === 'legacy', 'Payload legacy tanpa kategori mengekalkan keutamaan data3.');
+
+$knownCategoryMissingIdentity = SSO_BUILD_AUTH_HANDOFF(['u_category' => 10, 'data3' => '1234-56', 'data4' => '']);
+ssoAssert(!$knownCategoryMissingIdentity['identity_valid'], 'Kategori dikenali ditolak jika identifier kanoniknya tiada.');
 
 $valid = SSO_CLASSIFY_API_RESPONSE(['respond_flag' => '1', 'respond' => '1', 'respond_user_packet' => ['data3' => '1234-56']]);
 ssoAssert($valid['status'] === 'valid' && empty($valid['reissued']), 'Respons token sah diterima.');
@@ -39,6 +48,12 @@ ssoAssert($invalidToken['status'] === 'invalid_token', 'Token ditolak dipetakan 
 
 $invalidSite = SSO_CLASSIFY_API_RESPONSE(['respond_flag' => '1', 'respond' => '0', 'message' => 'Invalid site id']);
 ssoAssert($invalidSite['status'] === 'invalid_site', 'Ralat site ID dikenal pasti daripada respons OneID.');
+
+$invalidGeneratedCode = SSO_CLASSIFY_API_RESPONSE(['respond_flag' => '1', 'respond' => '0', 'respond_description' => 'Application credential is invalid.']);
+ssoAssert($invalidGeneratedCode['status'] === 'invalid_site', 'Generated atau legacy site credential yang ditolak dikenal pasti melalui respond_description.');
+
+$siteNotAllowed = SSO_CLASSIFY_API_RESPONSE(['respond_flag' => '1', 'respond' => '0', 'respond_description' => 'Token is active and available but Site not allowed to access']);
+ssoAssert($siteNotAllowed['status'] === 'invalid_site', 'Site yang tidak dibenarkan tidak disalah lapor sebagai token tidak sah.');
 
 $reissued = SSO_CLASSIFY_API_RESPONSE(['respond_flag' => '2', 'respond_new_token' => 'replacement', 'respond_user_packet' => ['data4' => 'CA12345']]);
 ssoAssert($reissued['status'] === 'valid' && $reissued['reissued'] && $reissued['token'] === 'replacement', 'Auto-reissue menghasilkan token gantian yang sah.');
