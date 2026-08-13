@@ -2,6 +2,12 @@
 
 Tests in this directory are dependency-free PHP CLI checks. They must not connect to or modify a live database.
 
+Run the OneID SSO flow regression suite from the project root:
+
+```bash
+php tests/oneid-sso-flow-regression.php
+```
+
 Run the Additional Database compatibility suite from the project root:
 
 ```bash
