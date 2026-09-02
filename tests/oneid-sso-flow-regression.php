@@ -25,6 +25,12 @@ ssoAssert($staff['identity_valid'] && $staff['resolved_source'] === 'data3' && $
 $student = SSO_BUILD_AUTH_HANDOFF(['u_category' => 10, 'data3' => '1234-56', 'data4' => 'CA12345']);
 ssoAssert($student['identity_valid'] && $student['resolved_source'] === 'data4' && $student['resolved_login_id'] === 'CA12345', 'Kategori pelajar memilih data4 walaupun data3 turut diisi.');
 
+$normalizedStudent = SSO_BUILD_AUTH_HANDOFF(['u_category' => 10, 'data4' => ' ca12345 ']);
+ssoAssert($normalizedStudent['identity_valid'] && $normalizedStudent['resolved_login_id'] === 'CA12345', 'Nombor matrik OneID dinormalisasikan kepada huruf besar.');
+
+$normalizedStaff = SSO_BUILD_AUTH_HANDOFF(['u_category' => 2, 'data3' => '1234 - 56']);
+ssoAssert($normalizedStaff['identity_valid'] && $normalizedStaff['resolved_login_id'] === '1234-56', 'Ruang di sekitar sengkang ID staf dinormalisasikan.');
+
 $hybridAdminStudent = SSO_BUILD_AUTH_HANDOFF(['u_category' => 11, 'data3' => '1234-56', 'data4' => 'CA12345']);
 ssoAssert($hybridAdminStudent['identity_valid'] && $hybridAdminStudent['resolved_source'] === 'data4', 'Kategori Pentadbiran-Pelajar memilih matrik data4.');
 
@@ -75,6 +81,13 @@ ssoAssert(!str_contains($clientSource, 'echo "X"'), 'Tiada lagi output X bagi au
 $loginSource = file_get_contents(__DIR__ . '/../public/login.php') ?: '';
 ssoAssert(str_contains($loginSource, '$ssoHandoffTtlSeconds = 300'), 'Handoff SSO kekal mempunyai TTL lima minit.');
 ssoAssert(str_contains($loginSource, "\$correlationId === ''"), 'Handoff tanpa correlation ID ditolak.');
+
+$controllerSource = file_get_contents(__DIR__ . '/../public/controllers/LoginController.php') ?: '';
+ssoAssert(str_contains($controllerSource, "UPPER(LTRIM(RTRIM(CONVERT(VARCHAR(50), matrik))))"), 'Lookup pelajar menormalisasikan matrik daripada sumber.');
+ssoAssert(str_contains($controllerSource, "UPPER(LTRIM(RTRIM(CONVERT(VARCHAR(20), statuskategori)))) = 'AKTIF'"), 'Status aktif pelajar tahan terhadap ruang dan perbezaan huruf.');
+ssoAssert(str_contains($controllerSource, "LTRIM(RTRIM(CONVERT(VARCHAR(20), kodstatus))) = '1'"), 'Lookup staf tidak lagi menggunakan penukaran integer yang rapuh.');
+ssoAssert(str_contains($controllerSource, 'existing_account_disabled') && str_contains($controllerSource, 'existing_account_category_mismatch'), 'Akaun sedia ada yang disabled atau salah kategori dilindungi.');
+ssoAssert(strpos($controllerSource, "if (\$source === 'data4')") < strpos($controllerSource, "!empty(\$handoff['data3_valid'])"), 'Kategori provisioning mengutamakan resolved source OneID sebelum flag identifier sampingan.');
 
 fwrite(STDOUT, "\nResult: {$passed} passed, {$failed} failed.\n");
 exit($failed === 0 ? 0 : 1);
