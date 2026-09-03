@@ -96,7 +96,7 @@ should_skip_update_file() {
 
 is_collectable_update_file() {
     case "$1" in
-        public/*|storage/manuals/.gitkeep|tools/language-split-tool.php|tools/core-file-protection-audit.php|docs/core-file-protection-*|docs/core-protected-files.md|VERSION|README.md|CHANGELOG.md) return 0 ;;
+        public/*|storage/manuals/.gitkeep|tools/language-split-tool.php|tools/core-file-protection-audit.php|docs/core-file-protection-*|docs/core-protected-files.md|docs/user-sso-metadata-migration-2026-09-03.sql|VERSION|README.md|CHANGELOG.md) return 0 ;;
     esac
     return 1
 }

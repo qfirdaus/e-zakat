@@ -89,5 +89,12 @@ ssoAssert(str_contains($controllerSource, "LTRIM(RTRIM(CONVERT(VARCHAR(20), kods
 ssoAssert(str_contains($controllerSource, 'existing_account_disabled') && str_contains($controllerSource, 'existing_account_category_mismatch'), 'Akaun sedia ada yang disabled atau salah kategori dilindungi.');
 ssoAssert(strpos($controllerSource, "if (\$source === 'data4')") < strpos($controllerSource, "!empty(\$handoff['data3_valid'])"), 'Kategori provisioning mengutamakan resolved source OneID sebelum flag identifier sampingan.');
 
+$userListSource = file_get_contents(__DIR__ . '/../public/pages/senarai-pengguna.php') ?: '';
+ssoAssert(str_contains($userListSource, "\$showSsoIndicator = \$isAutoProvisioned || \$isSsoIdentity"), 'Indikator senarai pengguna meliputi akaun auto provision dan identiti OneID SSO.');
+ssoAssert(str_contains($userListSource, 'const showSsoIndicator = isAutoProvisioned || isSsoIdentity'), 'Baris pengguna AJAX mengekalkan indikator OneID SSO.');
+
+$metadataMigration = file_get_contents(__DIR__ . '/../docs/user-sso-metadata-migration-2026-09-03.sql') ?: '';
+ssoAssert(str_contains($metadataMigration, 'f_isAutoProvisioned') && str_contains($metadataMigration, 'f_identitySource'), 'Migration metadata pengguna menyediakan kedua-dua kolum indikator SSO.');
+
 fwrite(STDOUT, "\nResult: {$passed} passed, {$failed} failed.\n");
 exit($failed === 0 ? 0 : 1);
