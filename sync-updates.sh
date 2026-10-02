@@ -11,7 +11,7 @@ APPROVAL_FILE="$UPDATES_DIR/.sync-dry-run.approved"
 EXCLUDE_FILE="$SCRIPT_DIR/.sync-update-ignore"
 LOCK_FILE="$SCRIPT_DIR/.sync.lock"
 
-PROJECTS=(apel e-bdr e-dqms e-facility-uat e-hepa-uat e-pms-uat e-pr-uat e-prestasi-uat e-spk-uat emadani sap-uat survey-uat)
+PROJECTS=(apel e-bdr-uat e-mymohes-uat e-facility-uat e-hepa-uat e-pms-uat e-pr-uat e-prestasi-uat e-spk-uat sap-uat survey-uat)
 
 DRY_RUN=false
 FORCE=false
