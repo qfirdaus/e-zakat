@@ -6,6 +6,22 @@ This changelog follows a release-style summary based on major project milestones
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-10-08
+
+### Added
+- Added a Super Admin System Information workspace with runtime, PHP settings, sanitised configuration, folder-permission, and safe PHP diagnostic views.
+- Added environment-aware PHP 8.4 performance assessments with explicit optimized, acceptable, review, and action-required states.
+- Added current-versus-expected folder permissions, ownership, protection status, and operational reasons for framework runtime paths.
+
+### Changed
+- Changed project release metadata to version `1.11.0`.
+- Changed PHP setting recommendations to use the approved performance profile, including a 600-second realpath cache TTL and 30-second OPcache revalidation frequency.
+- Changed diagnostic tables to preserve values on one line with responsive horizontal scrolling.
+
+### Security
+- Prevented System Information diagnostics from exposing credentials, environment secrets, cookies, session identifiers, and raw `phpinfo()` output.
+- Restricted System Information collection and display to authenticated Super Admin users.
+
 ## [1.10.1] - 2026-10-07
 
 ### Added
