@@ -6,6 +6,21 @@ This changelog follows a release-style summary based on major project milestones
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-10-07
+
+### Added
+- Added dual-runtime PHP 8.3/8.4 compatibility regression coverage.
+- Added audited PHP 8.4.26 pool, Nginx cutover, runtime probe, rollback tooling, and staging execution documentation.
+
+### Changed
+- Changed project release metadata to version `1.10.1`.
+- Changed the IQS Framework staging web runtime baseline to PHP `8.4.26` while retaining PHP `8.3.x` compatibility for shared downstream code.
+- Changed CSV parsing and export calls to provide explicit separator, enclosure, and escape parameters.
+
+### Fixed
+- Fixed PHP 8.4 deprecation notices caused by separately excluding `E_STRICT` from runtime error reporting.
+- Fixed PHP 8.4 deprecation notices caused by relying on the default CSV escape parameter.
+
 ## [1.10.0] - 2026-10-07
 
 ### Added

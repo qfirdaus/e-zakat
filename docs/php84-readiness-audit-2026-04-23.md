@@ -1,5 +1,7 @@
 # PHP 8.4 Readiness Audit
 
+> Superseded for current planning by [`php84-upgrade-audit-2026-10-07.md`](./php84-upgrade-audit-2026-10-07.md), which validates release 1.10.0 against the installed PHP 8.4.26 runtime and the current WSL/Nginx/PHP-FPM platform.
+
 > Historical note (2026-07-12): this audit was written while the project used a Docker/Apache runtime. The active project runtime is now WSL 2 Ubuntu with Nginx and PHP-FPM. Docker-specific rollout recommendations below are retained only as historical audit context; use the native WSL staging runtime for current validation.
 
 Date: 2026-04-23
