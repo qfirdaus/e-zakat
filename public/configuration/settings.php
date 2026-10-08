@@ -13,7 +13,7 @@ return [
     // - favicon: ikon tab browser
     // - default_home: laluan utama sistem selepas login / untuk canonical dan logo link
     'site' => [
-        'title'        => 'Base System',
+        'title'        => 'Sistem e-Zakat',
         'favicon'      => 'assets/images/favicon.ico',
         'default_home' => 'pages/dashboard.php',
     ],
@@ -33,7 +33,7 @@ return [
     // Teks footer global sistem.
     // Sesuai untuk hak cipta atau organisasi pemilik projek.
     'footer' => [
-        'text' => 'Hak Cipta © ' . date('Y') . ' Sistem Induk',
+        'text' => 'Hak Cipta © ' . date('Y') . ' Sistem e-Zakat',
     ],
 
     // Metadata dan identiti teknikal sistem:
@@ -43,10 +43,10 @@ return [
     // - meta_author: nilai meta author dalam <head>
     // - support: emel sokongan global
     'system' => [
-        'name'        => 'Base System',
+        'name'        => 'Sistem e-Zakat',
         'version'     => '1.11.0',
-        'author'      => 'Sistem Induk',
-        'meta_author' => 'Base System',
+        'author'      => 'UPNM',
+        'meta_author' => 'Sistem e-Zakat',
         'support'     => 'support@example.com',
     ],
 
@@ -55,7 +55,7 @@ return [
     // - default_action_url: pautan tindakan utama dalam email (jika berkaitan)
     // - footer_note: nota standard di bahagian bawah email
     'mail' => [
-        'system_name'        => 'Base System',
+        'system_name'        => 'Sistem e-Zakat',
         'default_action_url' => '#',
         'footer_note'        => 'Emel ini dijana secara automatik. Sila jangan balas emel ini.',
     ],
@@ -81,8 +81,8 @@ return [
     // Maklumat organisasi induk / pemilik sistem.
     // Belum digunakan sepenuhnya di semua page, tetapi disediakan untuk kegunaan akan datang.
     'organization' => [
-        'name'    => 'Sistem Induk',
-        'short'   => 'BASE',
+        'name'    => 'Sistem e-Zakat',
+        'short'   => 'e-Zakat',
         'website' => '#',
     ],
 ];
