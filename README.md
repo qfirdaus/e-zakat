@@ -6,7 +6,7 @@ README ini hanya mendokumenkan ciri yang wujud dalam kod semasa projek ini.
 
 ## Version
 
-- Current version: `1.10.1`
+- Current version: `1.11.0`
 - Release history: [CHANGELOG.md](./CHANGELOG.md)
 - Version file: [VERSION](./VERSION)
 - Runtime fallback: [public/configuration/settings.php](./public/configuration/settings.php)
@@ -20,6 +20,13 @@ README ini hanya mendokumenkan ciri yang wujud dalam kod semasa projek ini.
 - Runtime model: native WSL; Docker, Docker Compose, and container-specific Apache assets are no longer maintained in this repository
 - Main database: MySQL `8.x`
 - External database support: Sybase through ODBC/DBLIB, plus additional PDO connections configured from the system UI
+
+## Version 1.11.0 System Information Diagnostics
+
+- Super Admin users can inspect runtime, PHP settings, sanitised configuration, folder permissions, and safe PHP diagnostics from the System Information workspace.
+- PHP 8.4 performance settings are assessed against the approved production profile with clear optimized, acceptable, review, and action-required states.
+- Folder diagnostics compare current and expected permissions, ownership, protection status, and operational reasons for framework runtime paths.
+- Sensitive credentials, environment secrets, cookies, session identifiers, and raw `phpinfo()` output are excluded from the diagnostic views.
 
 ## Version 1.10.1 PHP 8.4 Compatibility
 
