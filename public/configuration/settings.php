@@ -44,7 +44,7 @@ return [
     // - support: emel sokongan global
     'system' => [
         'name'        => 'Sistem e-Zakat',
-        'version'     => '1.11.0',
+        'version'     => '1.11.1',
         'author'      => 'UPNM',
         'meta_author' => 'Sistem e-Zakat',
         'support'     => 'support@example.com',
